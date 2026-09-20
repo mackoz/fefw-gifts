@@ -2520,6 +2520,12 @@ export function createReportForm({ elements, index, api, turnstile, onSubmitted 
 
   return {
     async open(characterId = '', giftId = '') {
+      // Reset first, then pre-fill. This covers Cancel, Escape and every other
+      // close path at once -- otherwise a cancelled report's reaction and note
+      // survive into the next pair the contributor opens, and they submit one
+      // pair's result against another. The `.value` assignments must follow the
+      // reset, since reset returns each select to its blank placeholder.
+      form.reset();
       status.textContent = '';
       character.value = characterId;
       gift.value = giftId;
