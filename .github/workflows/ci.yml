@@ -19,11 +19,19 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      # Run the floor and a current release. The first CI run failed because
+      # `node --test test/` works on Node 26 but not on 22, where a bare
+      # directory is resolved as a module path -- a drift the single-version
+      # job could not catch, since local development runs 26.
+      matrix:
+        node-version: ['22', '24']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ matrix.node-version }}
       - name: Validate data files
         run: npm run validate
       - name: Run tests
