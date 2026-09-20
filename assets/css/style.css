@@ -509,3 +509,53 @@ dialog input[type="text"] {
   font-size: 0.8rem;
   cursor: pointer;
 }
+
+/* --- Review queue (maintainer only) ---
+   Sized for a phone: reports get read right after a play session. */
+
+.review-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.review-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.review-pair {
+  margin: 0;
+  font-weight: 600;
+}
+
+.review-meta {
+  margin: 2px 0 0;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.review-note {
+  margin: 6px 0 0;
+  font-style: italic;
+}
+
+.review-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.review-actions button {
+  flex: 1 1 auto;
+  /* A comfortable touch target, because this page is used on a phone. */
+  min-height: 44px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: var(--color-bg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.review-approve { color: var(--color-confirmed); }
+.review-reject  { color: var(--color-warning); }
