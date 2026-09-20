@@ -25,6 +25,9 @@ function checkDuplicates(items, kind, errors) {
 export function validate(dataset) {
   const errors = [];
   const { categories, sources, observations } = dataset;
+  const RARITIES = new Set(['common', 'uncommon', 'rare']);
+  const categoryIds = new Set(categories.map((c) => c.id));
+  const sourceIds = new Set(sources.map((s) => s.id));
 
   checkDuplicates(categories, 'category', errors);
   checkDuplicates(sources, 'source', errors);
@@ -32,6 +35,21 @@ export function validate(dataset) {
   for (const c of categories) {
     if (!c.label) errors.push(`category ${c.id}: missing label`);
     if (!Array.isArray(c.aliases)) errors.push(`category ${c.id}: aliases must be an array`);
+  }
+
+  checkDuplicates(dataset.gifts, 'gift', errors);
+
+  for (const g of dataset.gifts) {
+    if (!g.name) errors.push(`gift ${g.id}: missing name`);
+    if (g.category !== null && !categoryIds.has(g.category)) {
+      errors.push(`gift ${g.id}: unknown category: ${g.category}`);
+    }
+    if (g.rarity !== null && !RARITIES.has(g.rarity)) {
+      errors.push(`gift ${g.id}: invalid rarity: ${g.rarity}`);
+    }
+    for (const s of g.sources ?? []) {
+      if (!sourceIds.has(s)) errors.push(`gift ${g.id}: unknown source: ${s}`);
+    }
   }
 
   for (const o of observations) {

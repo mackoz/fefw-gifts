@@ -42,3 +42,38 @@ test('observations must not carry identifying fields', () => {
   const { errors } = validate(d);
   assert.ok(errors.some((e) => /forbidden identifying field: reporter/.test(e)));
 });
+
+test('a gift referencing an unknown category is rejected', () => {
+  const d = base();
+  d.gifts.push({ id: 'g1', name: 'G', category: 'nope', rarity: 'common', description: '', sources: [] });
+  const { errors } = validate(d);
+  assert.match(errors[0], /gift g1: unknown category: nope/);
+});
+
+test('a gift with a null category is allowed as not yet recorded', () => {
+  const d = base();
+  d.gifts.push({ id: 'g1', name: 'G', category: null, rarity: null, description: '', sources: [] });
+  assert.deepEqual(validate(d).errors, []);
+});
+
+test('an invalid rarity is rejected', () => {
+  const d = base();
+  d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: 'legendary', description: '', sources: [] });
+  const { errors } = validate(d);
+  assert.match(errors[0], /gift g1: invalid rarity: legendary/);
+});
+
+test('a gift referencing an unknown source is rejected', () => {
+  const d = base();
+  d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: 'rare', description: '', sources: ['ghost'] });
+  const { errors } = validate(d);
+  assert.match(errors[0], /gift g1: unknown source: ghost/);
+});
+
+test('duplicate gift ids are rejected', () => {
+  const d = base();
+  const g = { id: 'g1', name: 'G', category: 'books', rarity: 'rare', description: '', sources: [] };
+  d.gifts.push(g, { ...g, name: 'G2' });
+  const { errors } = validate(d);
+  assert.ok(errors.some((e) => /duplicate gift id: g1/.test(e)));
+});
