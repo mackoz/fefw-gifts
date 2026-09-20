@@ -312,6 +312,12 @@ main#view {
   z-index: 1;
 }
 
+.matrix th.corner {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+}
+
 /* Cell tint classes for cellClasses(confidence): colour only. The visible
    symbol is already the cell's text content (see matrix.js), so unlike the
    badge classes in shared.js these never set display or add ::before/::after

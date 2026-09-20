@@ -36,14 +36,22 @@ export function render(container, index, state) {
 
   const head = el('thead');
   const headRow = el('tr');
-  headRow.append(el('th', 'corner', 'Gift'));
-  for (const character of model.characters) headRow.append(el('th', 'col-head', character.name));
+  const corner = el('th', 'corner', 'Gift');
+  corner.scope = 'col';
+  headRow.append(corner);
+  for (const character of model.characters) {
+    const th = el('th', 'col-head', character.name);
+    th.scope = 'col';
+    headRow.append(th);
+  }
   head.append(headRow);
 
   const body = el('tbody');
   for (const gift of model.gifts) {
     const row = el('tr');
-    row.append(el('th', 'row-head', gift.name));
+    const rowHead = el('th', 'row-head', gift.name);
+    rowHead.scope = 'row';
+    row.append(rowHead);
     for (const character of model.characters) {
       const confidence = model.cellAt(gift.id, character.id);
       // cellClasses, not stateClasses: a badge's inline-flex and ::before symbol
