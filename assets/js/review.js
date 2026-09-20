@@ -34,15 +34,17 @@ export function reviewRowModel(row, now = Date.now()) {
   };
 }
 
-function readToken(storage) {
+function readStoredToken(storage) {
   try { return storage?.getItem(TOKEN_KEY) ?? ''; } catch { return ''; }
 }
 
-function writeToken(storage, token) {
+// Best effort. A browser that refuses to persist the token must still allow the
+// maintainer to use the page for this session -- see the in-memory `token`.
+function persistToken(storage, value) {
   try {
-    if (token) storage?.setItem(TOKEN_KEY, token);
+    if (value) storage?.setItem(TOKEN_KEY, value);
     else storage?.removeItem(TOKEN_KEY);
-  } catch { /* the page still works for this session without persisting it */ }
+  } catch { /* the session continues without persistence */ }
 }
 
 function renderRow(model, onDecide) {
@@ -72,13 +74,15 @@ function renderRow(model, onDecide) {
 export function mountReview({ elements, storage, createClient = createApi, now = () => Date.now() }) {
   const { tokenForm, tokenInput, forget, status, list, refresh } = elements;
   let api = null;
+  // The session's source of truth. Storage only seeds it and mirrors it, so a
+  // private window or blocked site data costs persistence, never access.
+  let token = readStoredToken(storage);
 
   function setStatus(message) {
     status.textContent = message;
   }
 
   async function load() {
-    const token = readToken(storage);
     if (!token) {
       list.replaceChildren();
       setStatus('Paste your admin token to see the queue.');
@@ -118,13 +122,15 @@ export function mountReview({ elements, storage, createClient = createApi, now =
 
   tokenForm.addEventListener('submit', (event) => {
     event.preventDefault();
-    writeToken(storage, tokenInput.value.trim());
+    token = tokenInput.value.trim();
+    persistToken(storage, token);
     tokenInput.value = '';
     load();
   });
 
   forget.addEventListener('click', () => {
-    writeToken(storage, '');
+    token = '';
+    persistToken(storage, '');
     api = null;
     load();
   });
