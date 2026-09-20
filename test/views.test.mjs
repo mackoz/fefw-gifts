@@ -69,3 +69,25 @@ test('giftRows lists giftable characters ranked by confidence', () => {
   assert.deepEqual(rows.map((r) => r.character.id), ['c1', 'c2'], 'non-giftable characters are excluded');
   assert.equal(rows[0].confidence.state, 'PREDICTED');
 });
+
+import { matrixModel } from '../assets/js/views/matrix.js';
+
+test('the matrix excludes non-giftable characters and keeps every gift by default', () => {
+  const idx = buildIndex(dataset);
+  const m = matrixModel(idx, DEFAULT_FILTERS, '');
+  assert.deepEqual(m.characters.map((c) => c.id), ['c1']);
+  assert.equal(m.gifts.length, 3);
+  assert.equal(m.cellAt('brew', 'c1').state, 'FAVORITE');
+});
+
+test('hideUntested drops gift rows where no character has any signal', () => {
+  const idx = buildIndex(dataset);
+  const m = matrixModel(idx, { ...DEFAULT_FILTERS, hideUntested: true }, '');
+  assert.deepEqual(m.gifts.map((g) => g.id), ['book', 'brew'], 'the uncategorised gift row is dropped');
+});
+
+test('search narrows the gift rows', () => {
+  const idx = buildIndex(dataset);
+  const m = matrixModel(idx, DEFAULT_FILTERS, 'brew');
+  assert.deepEqual(m.gifts.map((g) => g.id), ['brew']);
+});

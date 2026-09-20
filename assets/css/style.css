@@ -267,3 +267,59 @@ main#view {
     flex: 1 1 auto;
   }
 }
+
+/* --- Full matrix view ---
+   Densest view in the site: 80 gift rows by up to 53 character columns.
+   Headers stick while the body scrolls both ways, and cells stay narrow and
+   centred so as many columns as possible fit on screen. */
+
+.matrix-scroll {
+  overflow-x: auto;
+}
+
+.matrix {
+  border-collapse: collapse;
+}
+
+.matrix th,
+.matrix td {
+  padding: 4px 8px;
+  text-align: center;
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.matrix td {
+  min-width: 2.5em;
+}
+
+.matrix th.row-head,
+.matrix th.corner {
+  text-align: left;
+}
+
+.matrix thead th {
+  position: sticky;
+  top: 0;
+  background: var(--color-bg);
+  z-index: 2;
+}
+
+.matrix th.row-head {
+  position: sticky;
+  left: 0;
+  background: var(--color-bg);
+  z-index: 1;
+}
+
+/* Cell tint classes for cellClasses(confidence): colour only. The visible
+   symbol is already the cell's text content (see matrix.js), so unlike the
+   badge classes in shared.js these never set display or add ::before/::after
+   -- either would break the table grid or duplicate the symbol. */
+.matrix td.cell-favorite  { background: var(--color-favorite-bg);  color: var(--color-favorite); }
+.matrix td.cell-confirmed { background: var(--color-confirmed-bg); color: var(--color-confirmed); }
+.matrix td.cell-contested { background: var(--color-contested-bg); color: var(--color-contested); }
+.matrix td.cell-predicted { background: var(--color-predicted-bg); color: var(--color-predicted); }
+.matrix td.cell-untested  { background: transparent; }
+.matrix td.cell-exception { outline: 2px dotted var(--color-warning); outline-offset: -2px; }
+.matrix td.cell-rarity-mismatch { border-bottom: 2px dashed var(--color-warning); }
