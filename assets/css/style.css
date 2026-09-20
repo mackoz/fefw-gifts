@@ -1,0 +1,290 @@
+/* Fortune's Weave Gift Guide — page shell styles.
+   Confidence-state colours are custom properties so every view (Tasks 7-10)
+   can share one palette, redefined for dark mode. Every state also carries a
+   text/symbol cue so it reads without relying on colour alone. */
+
+:root {
+  --color-bg: #ffffff;
+  --color-text: #1a1a1a;
+  --color-muted: #6b6b6b;
+  --color-border: #d9d9d9;
+  --color-link: #1a4fa0;
+
+  --color-favorite: #b8860b;
+  --color-favorite-bg: #fff6db;
+  --color-confirmed: #1e7a34;
+  --color-confirmed-bg: #e6f6e9;
+  --color-contested: #a34e00;
+  --color-contested-bg: #fdeee0;
+  --color-predicted: #4b4bb0;
+  --color-predicted-bg: #ececfb;
+  --color-untested: #6b6b6b;
+  --color-untested-bg: #f2f2f2;
+
+  --color-warning: #a30000;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #14161a;
+    --color-text: #eaeaea;
+    --color-muted: #a3a3a3;
+    --color-border: #3a3d42;
+    --color-link: #8ab4ff;
+
+    --color-favorite: #e6c34d;
+    --color-favorite-bg: #3a3110;
+    --color-confirmed: #5fd37c;
+    --color-confirmed-bg: #12321a;
+    --color-contested: #e2924a;
+    --color-contested-bg: #3a2210;
+    --color-predicted: #a3a3f2;
+    --color-predicted-bg: #26264a;
+    --color-untested: #a3a3a3;
+    --color-untested-bg: #23252a;
+
+    --color-warning: #ff6b6b;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-bg: #14161a;
+  --color-text: #eaeaea;
+  --color-muted: #a3a3a3;
+  --color-border: #3a3d42;
+  --color-link: #8ab4ff;
+
+  --color-favorite: #e6c34d;
+  --color-favorite-bg: #3a3110;
+  --color-confirmed: #5fd37c;
+  --color-confirmed-bg: #12321a;
+  --color-contested: #e2924a;
+  --color-contested-bg: #3a2210;
+  --color-predicted: #a3a3f2;
+  --color-predicted-bg: #26264a;
+  --color-untested: #a3a3a3;
+  --color-untested-bg: #23252a;
+
+  --color-warning: #ff6b6b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0 16px 32px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--color-link);
+}
+
+noscript {
+  display: block;
+  padding: 12px 16px;
+  margin-top: 16px;
+  background: var(--color-contested-bg);
+  color: var(--color-contested);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.site-header {
+  padding-top: 16px;
+}
+
+.site-header h1 {
+  margin: 0 0 4px;
+  font-size: 1.5rem;
+}
+
+.tagline {
+  margin: 0 0 16px;
+  color: var(--color-muted);
+  max-width: 60ch;
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+nav a {
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+nav a.active {
+  border-color: var(--color-link);
+  color: var(--color-link);
+  font-weight: 600;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+#search {
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+main#view {
+  min-height: 40vh;
+}
+
+.site-footer {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+/* --- Confidence states ---
+   Each state pairs a colour with a text label/symbol prefix so it never
+   depends on colour perception alone. */
+
+.state-favorite,
+.state-confirmed,
+.state-contested,
+.state-predicted,
+.state-untested {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  border: 1px solid transparent;
+}
+
+.state-favorite {
+  color: var(--color-favorite);
+  background: var(--color-favorite-bg);
+  border-color: currentColor;
+}
+.state-favorite::before {
+  content: "\2605";
+}
+
+.state-confirmed {
+  color: var(--color-confirmed);
+  background: var(--color-confirmed-bg);
+  border-color: currentColor;
+}
+.state-confirmed::before {
+  content: "\2713";
+}
+
+.state-contested {
+  color: var(--color-contested);
+  background: var(--color-contested-bg);
+  border-color: currentColor;
+}
+.state-contested::before {
+  content: "\26A0";
+}
+
+.state-predicted {
+  color: var(--color-predicted);
+  background: var(--color-predicted-bg);
+  border: 1px dashed currentColor;
+}
+.state-predicted::before {
+  content: "?";
+  font-weight: 700;
+}
+
+.state-untested {
+  color: var(--color-untested);
+  background: var(--color-untested-bg);
+}
+.state-untested::before {
+  content: "\2014";
+}
+
+/* Provenance of a prediction: a guide-sourced guess is shown dimmer than one
+   confirmed from the character's own in-game profile. */
+
+.provenance-guide {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.provenance-profile {
+  opacity: 1;
+}
+
+/* An observed result that contradicts its prediction. */
+.is-exception {
+  outline: 2px dotted var(--color-warning);
+  outline-offset: 2px;
+}
+.is-exception::after {
+  content: " (unexpected result)";
+  font-size: 0.8em;
+  color: var(--color-warning);
+}
+
+/* The gift's rarity is below what the character is known to require. */
+.rarity-mismatch {
+  border-bottom: 2px dashed var(--color-warning);
+}
+.rarity-mismatch::after {
+  content: " (rarity too low)";
+  font-size: 0.8em;
+  color: var(--color-warning);
+}
+
+/* Flavor-only trait text: informational, not mechanical, so it's greyed out. */
+.trait-flavor {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+@media (max-width: 480px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #search {
+    flex: 1 1 auto;
+  }
+}

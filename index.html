@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fortune's Weave Gift Guide</title>
+  <meta name="description" content="A community gift guide for Fire Emblem: Fortune's Weave, confirming which individual gift items work via anonymous player reports.">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <noscript>
+    This site needs JavaScript enabled to load the gift data and render the guide.
+  </noscript>
+
+  <header class="site-header">
+    <h1>Fortune's Weave Gift Guide</h1>
+    <p class="tagline">
+      Predicted likes are guesses carried over from published guides — only a
+      player reporting their actual in-game result counts as confirmed.
+    </p>
+
+    <nav>
+      <a href="#/character">Characters</a>
+      <a href="#/gift">Gifts</a>
+      <a href="#/matrix">Matrix</a>
+      <a href="#/favorites">Favorites</a>
+    </nav>
+
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Search characters or gifts…" aria-label="Search characters or gifts">
+
+      <label class="filter-toggle">
+        <input type="checkbox" data-filter="hideUntested">
+        Hide untested pairs
+      </label>
+      <label class="filter-toggle">
+        <input type="checkbox" data-filter="hideUnconfirmed">
+        Hide unconfirmed predictions
+      </label>
+      <label class="filter-toggle">
+        <input type="checkbox" data-filter="hideSpoilers" checked>
+        Hide spoilers
+      </label>
+
+      <!-- Plan 2 insertion point: "Report a result" button (anonymous submission
+           form backed by a Cloudflare Worker) goes here. Not implemented yet. -->
+    </div>
+  </header>
+
+  <main id="view"></main>
+
+  <footer class="site-footer">
+    <p>
+      Predicted category preferences are drawn from
+      <a href="https://www.polygon.com/fire-emblem-fortunes-weave-best-gifts-each-character/">Polygon</a>
+      and <a href="https://game8.co/games/Fire-Emblem-Fortunes-Weave/archives/621281">Game8</a>.
+      Confirmed results come only from anonymous player reports submitted
+      through this site. Full citations are in
+      <a href="https://github.com/mackoz/fefw-gifts/blob/main/data/sources.json">data/sources.json</a>.
+    </p>
+  </footer>
+
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>
