@@ -386,7 +386,45 @@ Blue-Rose Bouquet, Portrait of Yu Phas
 
 Note: the source list contains both "Candly Crystals" and "Candy Crystals". These are the same item; the first is a typo. Include it once as `candy-crystals`.
 
-Set `category` **only where the item name makes it unambiguous** — `Common Coffee` is `coffee`, `Sharp Fishhook` is `fishing`, `Blue-Rose Bouquet` is `flowers`, `Training Weights` is `training`, `Decorative Arrows` is `archery`, `Horse-Grooming Kit` is `horses`, `Eastern Board Games` is `board-games`. **Set `category: null` wherever there is any doubt.** A wrong tag silently corrupts every prediction downstream; `null` simply renders as untested and asks a contributor to fill it in. Prefer `null`.
+Set `category` **only where the item name makes it unambiguous.** A prediction
+needs both a gift category and a character link, so under-tagging leaves the site
+blank — but a wrong tag silently corrupts every prediction downstream. `null`
+renders as untested and asks a contributor to fill it in, which is the safe
+failure.
+
+Tag these families confidently. The name alone settles them:
+
+| Category | Items |
+|---|---|
+| `coffee` | every `... Coffee` (Common, Select, Southern, Orgus, Solomon) |
+| `fermented-drinks` | every `... Ghosh` and every `... Shosh` — the Polygon guide states both are fermented drinks |
+| `fishing` | Flexible Fishing Rod, Sharp Fishhook, Dual Fish Knives, Huge Fish Eyeball, Brined Fish Guts |
+| `archery` | Decorative Arrows, Wing Fletching, Joint-Relief Gloves |
+| `horses` | Horse-Grooming Kit, Mane Ornament, Dagda Beard Grass |
+| `training` | Training Weights, Training Bracelet |
+| `flowers` | Red-Rose Bouquet, Blue-Rose Bouquet |
+| `board-games` | Eastern Board Games |
+| `vegetables` | Potted Vegetables, Pickled Vegetables |
+| `crafting` | Full Sewing Kit, Crafting Knives |
+| `travel` | Sturdy Rucksack |
+| `spicy-foods` | Rare Spices, Strong Seasonings |
+
+Leave `category: null` for everything else, including these known-ambiguous cases.
+Do not guess them:
+
+- **Cookbooks** (Pastry Cookbook, Home-Recipe Book, Village Recipes, Herbal Recipe
+  Guide) — could be `books` or `cooking`, and the answer changes who they match.
+- **Pastries and sweets** (Simple/Mellow/Coffee/Fragrant Pastries, Saraminian
+  Sweets, Candy Crystals) — there is no `sweets` category in the vocabulary, so
+  whether these are `cooking` or something unrecorded is an open question.
+- **Cervi drinks, milks and teas** — the Polygon guide treats "all Cervi drinks"
+  as its own grouping, distinct from fermented drinks. Whether that maps to
+  `beverages` is unconfirmed.
+- **Figurines, portraits and pastels** — plausibly `beauty`, but unverified.
+- **Garum** — a fish sauce; could be `cooking` or `fishing`.
+
+These ambiguities are exactly what the first contributions should resolve, and
+each one is a single glance at an item description in-game.
 
 Set `rarity: null` for every item. Rarity is an in-game icon distinction that cannot be inferred from a name, and guessing it would be fabrication.
 
