@@ -1,6 +1,9 @@
 import { corsHeaders, json } from './http.js';
 import { verifyTurnstile } from './turnstile.js';
-import { validateReport, insertReport, listPending, recordVote } from './reports.js';
+import {
+  validateReport, insertReport, listPending, recordVote,
+  listForReview, setStatus, takeApproved,
+} from './reports.js';
 
 // The injectable side effects. Handlers never touch the network, the clock or
 // a UUID source directly, so a test can drive every route without any of them.
@@ -19,8 +22,19 @@ export const exact = (path) => (pathname) => (pathname === path ? {} : null);
 export const oneParam = (prefix, name) => (pathname) => {
   if (!pathname.startsWith(`${prefix}/`)) return null;
   const value = pathname.slice(prefix.length + 1);
-  if (!value || value.includes('/')) return null;
-  return { [name]: decodeURIComponent(value) };
+  if (!value) return null;
+  // Checking for a literal "/" before decoding lets an encoded "%2F" slip
+  // through as a fake single segment, so decode first and validate the
+  // result. A malformed escape (e.g. "%zz") throws from decodeURIComponent;
+  // that must not escape a matcher, so it is turned into "no match" here.
+  let decoded;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+  if (decoded.includes('/')) return null;
+  return { [name]: decoded };
 };
 
 // Generous next to a real report and small enough that a parser is never handed
@@ -108,12 +122,78 @@ async function getPending(request, env) {
   });
 }
 
+// Workers expose no timingSafeEqual, so compare every byte and accumulate --
+// the loop must not return early. The length check in front of it does leak the
+// token's length, which is an acceptable trade for a single random secret.
+function tokenMatches(presented, expected) {
+  if (typeof presented !== 'string' || typeof expected !== 'string') return false;
+  if (presented.length !== expected.length) return false;
+  let difference = 0;
+  for (let i = 0; i < presented.length; i += 1) {
+    difference |= presented.charCodeAt(i) ^ expected.charCodeAt(i);
+  }
+  return difference === 0;
+}
+
+// Returns a Response when the caller must be turned away, and null when it may
+// proceed. A Worker with no ADMIN_TOKEN configured refuses everyone rather than
+// admitting everyone -- an unset secret must never read as an open door.
+function refuseUnlessAdmin(request, env) {
+  const cors = corsHeaders(request, env);
+  if (typeof env.ADMIN_TOKEN !== 'string' || env.ADMIN_TOKEN === '') {
+    return json({ error: 'review is not configured' }, 503, cors);
+  }
+  const header = request.headers.get('Authorization') ?? '';
+  const presented = header.startsWith('Bearer ') ? header.slice(7) : '';
+  if (!tokenMatches(presented, env.ADMIN_TOKEN)) {
+    return json({ error: 'unauthorised' }, 401, cors);
+  }
+  return null;
+}
+
+const ADMIN_HEADERS = { 'Cache-Control': 'no-store' };
+
+async function getReview(request, env) {
+  const refusal = refuseUnlessAdmin(request, env);
+  if (refusal) return refusal;
+  const reports = await listForReview(env.DB);
+  return json({ reports }, 200, { ...corsHeaders(request, env), ...ADMIN_HEADERS });
+}
+
+const DECISIONS = { approve: 'approved', reject: 'rejected' };
+
+async function postDecision(request, env, deps, params) {
+  const refusal = refuseUnlessAdmin(request, env);
+  if (refusal) return refusal;
+
+  const cors = { ...corsHeaders(request, env), ...ADMIN_HEADERS };
+  const { tooLarge, body } = await readJson(request);
+  if (tooLarge) return json({ error: 'that request is too large' }, 413, cors);
+
+  const status = DECISIONS[body?.decision];
+  if (!status) return json({ error: 'decision must be "approve" or "reject"' }, 400, cors);
+
+  const changed = await setStatus(env.DB, params.id, status);
+  if (!changed) return json({ error: 'no pending report with that id' }, 404, cors);
+  return json({ id: params.id, status }, 200, cors);
+}
+
+async function postIngest(request, env) {
+  const refusal = refuseUnlessAdmin(request, env);
+  if (refusal) return refusal;
+  const reports = await takeApproved(env.DB);
+  return json({ reports }, 200, { ...corsHeaders(request, env), ...ADMIN_HEADERS });
+}
+
 // Tasks 4 and 5 push their routes in here. `handle` takes the table as an
 // argument so tests can drive the router with a stub table of their own.
 export const ROUTES = [
   { method: 'POST', match: exact('/report'), handler: postReport },
   { method: 'POST', match: exact('/vote'), handler: postVote },
   { method: 'GET', match: exact('/pending'), handler: getPending },
+  { method: 'GET', match: exact('/review'), handler: getReview },
+  { method: 'POST', match: oneParam('/review', 'id'), handler: postDecision },
+  { method: 'POST', match: exact('/ingest'), handler: postIngest },
 ];
 
 export async function handle(request, env, deps = defaultDeps(), routes = ROUTES) {
