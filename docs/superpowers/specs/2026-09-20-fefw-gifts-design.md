@@ -148,10 +148,10 @@ data/categories.json
   { id, label, inGameDescriptor, aliases: [string] }  // closed enum
 
 data/observations.json
-  { gift, character,
+  { id, gift, character,
     reaction: "none" | "slight" | "liked" | "loved" | "favorite",
     points: number | null,
-    reporter, issue, date }
+    date }                                           // no reporter: anonymous
 
 data/sources.json
   { id, title, author, publisher, url, retrieved }
@@ -202,26 +202,69 @@ Every prediction is visibly a prediction, and carries its source.
 
 ## Contributions
 
-GitHub Pages is static and cannot accept writes, so contributions route through
-GitHub itself.
+The audience is Fire Emblem players, not developers, and the unit of contribution
+is a single item-level result. Requiring a GitHub account would filter out most
+of the people who have the data. So reporting happens in a form on the site
+itself, with no account and no signup.
 
-Every character, gift and matrix cell carries a **Submit info** button that
-deep-links to a pre-filled GitHub Issue Form. Dropdowns wherever a value is
-constrained, never free text. Five forms:
+### Submission path
 
-1. **Gift result** — character, item, reaction tier, points if visible. The
-   primary one; the deep link pre-fills character and item.
-2. **Favorite found** — character, item. Fast-tracked, since this is the headline
-   gap.
-3. **Gift details** — item, category, rarity
-4. **Character profile** — character, traits as shown in-game, rarity preference
-5. **New category** — only when an item's tag is not yet in the vocabulary
+A **Report a result** button on every character, gift and matrix cell opens an
+in-page form, pre-filled with the character and item. The contributor picks a
+reaction tier, optionally enters the points gained, and submits.
 
-A GitHub Action parses the issue, validates it against the schema, and opens a
-pull request containing the JSON change. A maintainer reviews and merges; Pages
-redeploys. No hosting, no cost, and every fact carries a contributor and a date.
+The submission posts to a small Cloudflare Worker backed by D1. The row is stored
+with status `pending`. The site fetches pending rows and overlays them on the
+canonical data, so the contributor sees their report appear immediately, clearly
+labeled **pending review**.
 
-Spam is ordinary GitHub issues and is closed like any other.
+A maintainer later approves pending rows. A sync script pulls approved rows,
+appends them to `data/observations.json`, marks them ingested, and opens a pull
+request. On merge they become canonical and drop out of the pending overlay.
+
+### Worker endpoints
+
+```
+POST /submit    Turnstile-verified, rate-limited. Inserts a pending row.
+GET  /pending   Returns pending rows for the site overlay. Cached briefly.
+POST /ingest    Admin-token gated. Returns approved rows and marks them ingested.
+```
+
+Secrets (`TURNSTILE_SECRET`, `ADMIN_TOKEN`) live in Worker secrets and GitHub
+Actions secrets. CORS is restricted to the Pages origin.
+
+### Graceful degradation
+
+**The site must work completely with the Worker unavailable.** Canonical data
+ships in the repo and renders from GitHub Pages alone. If `/pending` fails or
+times out, the overlay is skipped and the form reports that submissions are
+temporarily unavailable. Nothing else changes. The repo remains the source of
+truth; the Worker is a convenience layer over it.
+
+### Anonymity and abuse
+
+**No personal data is collected.** Submissions carry no name, no email and no
+stored identifier — only the report itself and a timestamp. There is therefore no
+credit mechanism, by choice.
+
+Without identities, repeated submissions cannot be attributed, so agreement
+counts are weak evidence on their own. Three mitigations, in order of preference:
+
+1. Cloudflare Turnstile on submit, which stops automated junk without a puzzle
+2. Edge rate limiting by IP, which stores nothing
+3. Maintainer review before anything becomes canonical, which is the real
+   backstop
+
+Fingerprinting contributors is deliberately out of scope. If sock-puppeting
+becomes a real problem, a daily-rotated salted hash used only for same-source
+dedupe can be added — never displayed, never committed to the repo.
+
+### Structural changes
+
+Adding a category, correcting a gift's rarity, or fixing a character's traits are
+rare, structural edits rather than volume data. These go through a plain GitHub
+issue or a pull request, documented in `CONTRIBUTING.md`. They are not worth a
+web form.
 
 ## Validation and testing
 
@@ -237,11 +280,13 @@ request, including maintainer ones. It checks:
 - no duplicate ids in any file
 - every trait either names a valid category or is explicitly `null`
 - observations are only recorded against giftable characters
+- observations carry no reporter or other identifying field
 
 Tests use Node's built-in test runner (`node:test`). No test dependencies.
 
 - the validator, against fixtures with known-good and known-bad data
 - the match and confidence logic, which is pure functions over the data files
+- the pending-overlay merge, including the case where the Worker is unreachable
 
 ## Seeding and attribution
 
@@ -260,7 +305,7 @@ with title, author, publisher and retrieval date. Because every seeded link
 carries its source id, guide-derived data can be audited or removed wholesale.
 
 Item-level results are **never** seeded. They are the thing being gathered, and
-every one of them comes from a named reporter.
+every one of them comes from a real player report.
 
 ## Milestones
 
@@ -294,4 +339,5 @@ Tracked in the repo, not guessed at in the UI:
 - Character artwork or item icons
 - Support conversation text, recruitment requirements, other wiki content
 - User accounts, comments, or voting
+- Contributor credit or identity of any kind
 - Localisation
