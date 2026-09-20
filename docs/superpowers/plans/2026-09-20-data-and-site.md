@@ -14,7 +14,7 @@
 
 - **No dependencies.** `package.json` declares `"type": "module"` and scripts only. No `dependencies`, no `devDependencies`. If a task seems to need a package, stop and ask.
 - **No build step.** Files are served exactly as committed. GitHub Pages deploys from the branch root.
-- **Node 26+** for `node:test`. Run tests with `npm test`, validation with `npm run validate`.
+- **Node 22+.** `node:test` is stable from Node 20 and `import.meta.filename` from 21.2, so 22 is the floor. CI pins 22; local development currently runs 26. Run tests with `npm test`, validation with `npm run validate`.
 - **Browser modules must be importable by Node.** Every file under `assets/js/` uses ESM `export`, contains no top-level DOM access, and is importable in a test. DOM access lives inside functions that receive their elements as arguments.
 - **Absence of a match is never a dislike.** Only an observation may produce a negative. Any code path that renders a mismatch as "dislikes" is a bug.
 - **No artwork.** Character and item names only. Never reference or embed Nintendo image assets.
@@ -1272,7 +1272,7 @@ export function sortByConfidence(rows) {
 export function stateLabel(confidence) {
   switch (confidence.state) {
     case 'FAVORITE': return 'Favourite — double points';
-    case 'CONFIRMED': return `Confirmed: ${REACTION_LABEL[confidence.reaction]}`;
+    case 'CONFIRMED': return `Confirmed: ${REACTION_LABEL[confidence.reaction] ?? 'reported'}`;
     case 'CONTESTED': return 'Reports disagree';
     case 'PREDICTED': return confidence.predicted === 'negative' ? 'Predicted: probably no gain' : 'Predicted — not yet confirmed';
     default: return 'Not tested yet';
@@ -1810,7 +1810,7 @@ jobs:
         run: npm test
 ```
 
-Node 22 is the floor the Actions runner offers reliably and supports `node:test`. Local development uses whatever is installed, currently 26.
+Node 22 matches the floor in Global Constraints. Local development uses whatever is installed, currently 26.
 
 - [ ] **Step 2: Verify the workflow passes locally first**
 
