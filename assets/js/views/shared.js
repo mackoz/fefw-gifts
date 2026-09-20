@@ -41,3 +41,20 @@ export function stateClasses(confidence) {
   if (confidence.rarityMismatch) classes.push('rarity-mismatch');
   return classes.join(' ');
 }
+
+// The state classes are a pill badge: inline-flex, with ::before/::after content.
+// They must only ever land on an inline element -- never a <tr> or <td>, which a
+// display change removes from the table layout.
+export function badge(confidence) {
+  return el('span', stateClasses(confidence), stateLabel(confidence));
+}
+
+// Table cells get tint-only classes instead. No display change, and no
+// pseudo-elements: the caller already renders its own visible symbol as the
+// cell's text, so a ::before would duplicate it.
+export function cellClasses(confidence) {
+  const classes = [`cell-${confidence.state.toLowerCase()}`];
+  if (confidence.isException) classes.push('cell-exception');
+  if (confidence.rarityMismatch) classes.push('cell-rarity-mismatch');
+  return classes.join(' ');
+}

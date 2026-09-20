@@ -1,5 +1,5 @@
 import { passesFilters } from '../filters.js';
-import { sortByConfidence, stateLabel, stateClasses, el } from './shared.js';
+import { sortByConfidence, badge, el } from './shared.js';
 
 export function characterRows(index, characterId, filters) {
   const rows = index.gifts
@@ -54,7 +54,8 @@ export function render(container, index, state) {
   const table = el('table', 'gift-table');
   const body = el('tbody');
   for (const { gift, confidence } of characterRows(index, character.id, state.filters)) {
-    const row = el('tr', stateClasses(confidence));
+    // The state classes are an inline badge, never a row class -- see shared.js.
+    const row = el('tr');
     const nameCell = el('td');
     const link = el('a', null, gift.name);
     link.href = `#/gift/${gift.id}`;
@@ -62,7 +63,9 @@ export function render(container, index, state) {
     row.append(nameCell);
     row.append(el('td', null, gift.category ? index.byCategoryId.get(gift.category).label : '—'));
     row.append(el('td', null, gift.rarity ?? '—'));
-    row.append(el('td', null, stateLabel(confidence)));
+    const statusCell = el('td');
+    statusCell.append(badge(confidence));
+    row.append(statusCell);
     row.append(el('td', null, confidence.points === null ? '' : `${confidence.points} pts`));
     body.append(row);
   }
