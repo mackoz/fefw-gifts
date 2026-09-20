@@ -1,5 +1,5 @@
 import { passesFilters } from '../filters.js';
-import { cellClasses, stateLabel, el } from './shared.js';
+import { cellClasses, stateLabel, el, emptyState } from './shared.js';
 
 export function matrixModel(index, filters, search) {
   const characters = index.characters
@@ -26,10 +26,25 @@ export function matrixModel(index, filters, search) {
 
 const SYMBOL = { FAVORITE: '★', CONFIRMED: '✔', CONTESTED: '?', PREDICTED: '~', UNTESTED: '' };
 
+// The matrix can empty out three ways, and each one needs a different way back.
+export function emptyMatrixMessage(state) {
+  if (state.search) return `No gift’s name matches “${state.search}”.`;
+  if (state.filters.hideUnconfirmed) {
+    return 'No confirmed results yet — nobody has reported one. Clear “Hide unconfirmed predictions” to see predictions.';
+  }
+  if (state.filters.hideUntested) return 'Nothing left once untested pairs are hidden. Clear “Hide untested pairs” to see the rest.';
+  return 'Nothing to show. Untick “Hide spoilers” to see every character.';
+}
+
 export function render(container, index, state) {
   const model = matrixModel(index, state.filters, state.search);
   container.append(el('h2', null, 'Full matrix'));
   container.append(el('p', 'legend', '★ favourite · ✔ confirmed · ? reports disagree · ~ predicted, unconfirmed · blank not tested'));
+
+  if (model.gifts.length === 0 || model.characters.length === 0) {
+    container.append(emptyState(emptyMatrixMessage(state)));
+    return;
+  }
 
   const scroller = el('div', 'matrix-scroll');
   const table = el('table', 'matrix');

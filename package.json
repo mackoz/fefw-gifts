@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Community gift guide for Fire Emblem: Fortune's Weave",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "node --test test/",
     "validate": "node scripts/validate.mjs data"

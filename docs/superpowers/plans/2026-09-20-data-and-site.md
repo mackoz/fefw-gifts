@@ -6,7 +6,7 @@
 
 **Architecture:** Five hand-editable JSON files under `data/` are the single source of truth. A pure function derives a confidence state for every (character, gift) pair from those files. Four views render that derivation. No build step: browser ES modules load the JSON at runtime, and the same modules are imported directly by `node:test`.
 
-**Tech Stack:** Vanilla HTML/CSS/JavaScript (ES modules), Node 26 built-in test runner (`node:test`), GitHub Actions for validation, GitHub Pages for hosting. Zero runtime and zero test dependencies.
+**Tech Stack:** Vanilla HTML/CSS/JavaScript (ES modules), Node 22 built-in test runner (`node:test`), GitHub Actions for validation, GitHub Pages for hosting. Zero runtime and zero test dependencies.
 
 **Spec:** `docs/superpowers/specs/2026-09-20-fefw-gifts-design.md`
 

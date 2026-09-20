@@ -1,5 +1,5 @@
 import { RARITY_ORDER } from '../confidence.js';
-import { el } from './shared.js';
+import { el, emptyState } from './shared.js';
 
 function suggestionsFor(index, character) {
   return index.gifts
@@ -19,7 +19,13 @@ export function favoritesModel(index, filters) {
     if (!character.giftable) continue;
     if (filters.hideSpoilers && character.spoiler) continue;
 
-    const gifts = index.gifts.filter((gift) => index.confidenceFor(character.id, gift.id).state === 'FAVORITE');
+    // Two independent ways to know a favourite: a player report that came back
+    // FAVORITE, and the character's own `favorites` list. Either one solves the
+    // character; the list shown is their union, with no gift listed twice.
+    const observed = index.gifts.filter((gift) => index.confidenceFor(character.id, gift.id).state === 'FAVORITE');
+    const declared = (character.favorites ?? []).map((id) => index.byGiftId.get(id)).filter(Boolean);
+    const gifts = [...new Map([...observed, ...declared].map((gift) => [gift.id, gift])).values()];
+
     if (gifts.length) found.push({ character, gifts });
     else unknown.push({ character, suggestions: suggestionsFor(index, character) });
   }
@@ -34,7 +40,15 @@ export function render(container, index, state) {
   container.append(el('p', 'intro', 'Every character has at least one item that gives double support points. Most are still unknown. If you find one, report it — this is the gap no other guide fills.'));
   container.append(el('p', 'progress', `Found ${found.length} of ${found.length + unknown.length}.`));
 
+  if (found.length + unknown.length === 0) {
+    container.append(emptyState('No characters to show. Untick “Hide spoilers” to see every character.'));
+    return;
+  }
+
   container.append(el('h3', null, `Still unknown (${unknown.length})`));
+  if (unknown.length === 0) {
+    container.append(emptyState('Nothing left to hunt — every character here has a known favourite.'));
+  }
   const list = el('ul', 'favorites-unknown');
   for (const { character, suggestions } of unknown) {
     const item = el('li');
@@ -47,7 +61,7 @@ export function render(container, index, state) {
     item.append(el('span', 'suggestions', hint));
     list.append(item);
   }
-  container.append(list);
+  if (unknown.length) container.append(list);
 
   if (found.length) {
     container.append(el('h3', null, `Found (${found.length})`));

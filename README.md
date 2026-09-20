@@ -62,8 +62,8 @@ structural changes (a new category, a corrected rarity, a fixed trait).
 ## Sources
 
 - Josh Broadwell, *Best gifts for each character in Fire Emblem: Fortune's
-  Weave*, Polygon.
-- *List of All Items*, Game8.
+  Weave*, Polygon (retrieved 2026-09-20).
+- *List of All Items*, Game8 (retrieved 2026-09-20).
 
 Full citations, including URLs and retrieval dates, are recorded in
 `data/sources.json`. Guide-derived category predictions always carry their

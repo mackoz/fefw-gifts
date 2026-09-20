@@ -72,7 +72,7 @@
   {
     "id": "home-recipe-book",
     "name": "Home-Recipe Book",
-    "category": null,
+    "category": "cooking",
     "rarity": null,
     "description": "",
     "sources": [
@@ -172,7 +172,7 @@
   {
     "id": "pastry-cookbook",
     "name": "Pastry Cookbook",
-    "category": null,
+    "category": "cooking",
     "rarity": null,
     "description": "",
     "sources": [
@@ -262,7 +262,7 @@
   {
     "id": "village-recipes",
     "name": "Village Recipes",
-    "category": null,
+    "category": "cooking",
     "rarity": null,
     "description": "",
     "sources": [
@@ -522,7 +522,7 @@
   {
     "id": "herbal-recipe-guide",
     "name": "Herbal Recipe Guide",
-    "category": null,
+    "category": "cooking",
     "rarity": null,
     "description": "",
     "sources": [

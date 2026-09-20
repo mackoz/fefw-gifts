@@ -42,11 +42,29 @@ export function stateClasses(confidence) {
   return classes.join(' ');
 }
 
+// An empty result is a state worth explaining. Rendering a bare heading reads as
+// breakage, especially with "hide unconfirmed" on, which is empty by design until
+// the first player report lands.
+export function emptyState(message) {
+  return el('p', 'empty-state', message);
+}
+
+// A prediction's provenance is only meaningful if the reader can see whose guide
+// it came from. Falls back to the raw id rather than inventing a publisher.
+export function sourceName(index, sourceId) {
+  return index?.bySourceId?.get(sourceId)?.publisher ?? sourceId;
+}
+
 // The state classes are a pill badge: inline-flex, with ::before/::after content.
 // They must only ever land on an inline element -- never a <tr> or <td>, which a
 // display change removes from the table layout.
-export function badge(confidence) {
-  return el('span', stateClasses(confidence), stateLabel(confidence));
+export function badge(confidence, index) {
+  const node = el('span', stateClasses(confidence), stateLabel(confidence));
+  if (confidence.state === 'PREDICTED' && confidence.source) {
+    // Title only: the visible text must keep saying "predicted", not who guessed.
+    node.title = `Prediction carried over from ${sourceName(index, confidence.source)} — no player has confirmed it.`;
+  }
+  return node;
 }
 
 // Table cells get tint-only classes instead. No display change, and no

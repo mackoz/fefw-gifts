@@ -121,3 +121,54 @@ test('suggestions rank rare items first', () => {
   const m = favoritesModel(idx, DEFAULT_FILTERS);
   assert.deepEqual(m.unknown[0].suggestions.map((g) => g.id), ['posh', 'cheap']);
 });
+
+test('a declared favorite counts as found even with no observation', () => {
+  const idx = buildIndex({
+    ...dataset,
+    observations: [],
+    characters: [{ ...dataset.characters[0], favorites: ['book'] }],
+  });
+  const m = favoritesModel(idx, DEFAULT_FILTERS);
+  assert.deepEqual(m.found.map((f) => f.character.id), ['c1']);
+  assert.deepEqual(m.found[0].gifts.map((g) => g.id), ['book']);
+  assert.equal(m.unknown.length, 0);
+});
+
+test('found gifts are the union of observed and declared favourites, deduplicated', () => {
+  const idx = buildIndex({
+    ...dataset,
+    characters: [{ ...dataset.characters[0], favorites: ['brew', 'book'] }],
+  });
+  const m = favoritesModel(idx, DEFAULT_FILTERS);
+  // 'brew' is both observed FAVORITE and declared: it must appear exactly once.
+  assert.deepEqual(m.found[0].gifts.map((g) => g.id), ['brew', 'book']);
+});
+
+test('an unknown gift id in favorites is ignored rather than crashing', () => {
+  const idx = buildIndex({
+    ...dataset,
+    observations: [],
+    characters: [{ ...dataset.characters[0], favorites: ['no-such-gift'] }],
+  });
+  const m = favoritesModel(idx, DEFAULT_FILTERS);
+  assert.deepEqual(m.unknown.map((u) => u.character.id), ['c1']);
+});
+
+import { detailStatus } from '../assets/js/views/character.js';
+
+test('the character detail route reports why it cannot show a gift table', () => {
+  const giftable = { id: 'c1', name: 'C', giftable: true, spoiler: false };
+  assert.equal(detailStatus(undefined, DEFAULT_FILTERS), 'missing', 'a mistyped id must not dereference');
+  assert.equal(detailStatus(giftable, DEFAULT_FILTERS), 'ok');
+  assert.equal(
+    detailStatus({ ...giftable, giftable: false }, DEFAULT_FILTERS),
+    'not-giftable',
+    'a character who cannot receive gifts gets no gift table',
+  );
+  assert.equal(
+    detailStatus({ ...giftable, spoiler: true }, DEFAULT_FILTERS),
+    'hidden-spoiler',
+    'hideSpoilers applies on the detail route, not just the picker',
+  );
+  assert.equal(detailStatus({ ...giftable, spoiler: true }, { ...DEFAULT_FILTERS, hideSpoilers: false }), 'ok');
+});

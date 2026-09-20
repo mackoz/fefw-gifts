@@ -1,0 +1,57 @@
+name: Report a gift result
+description: Tell us what happened when you gave one item to one character in game.
+title: "[result] <character> — <gift>"
+labels: ["result"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One item, one character, one result. Please don't include your name,
+        handle, or anything else identifying — reports are anonymous by design,
+        and the validator rejects identifying fields in `data/observations.json`.
+
+        If you tested several items, open one issue per item.
+  - type: input
+    id: character
+    attributes:
+      label: Character
+      description: The character you gave the item to, exactly as the game spells it.
+      placeholder: Alexandra
+    validations:
+      required: true
+  - type: input
+    id: gift
+    attributes:
+      label: Gift item
+      description: The item you gave, exactly as the game spells it.
+      placeholder: Home-Recipe Book
+    validations:
+      required: true
+  - type: dropdown
+    id: reaction
+    attributes:
+      label: Reaction
+      description: What the game showed when you handed the item over.
+      options:
+        - They don't like it (no support gain)
+        - They kind of like it (small gain)
+        - They liked it (moderate gain)
+        - They really liked it (big gain)
+        - They really liked it, two yellow arrows (DOUBLE points — this is their favourite)
+    validations:
+      required: true
+  - type: input
+    id: points
+    attributes:
+      label: Support points gained (optional)
+      description: The exact number, if you were able to read it off the support gauge.
+      placeholder: "20"
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes (optional)
+      description: Anything else worth knowing — the item's rarity icon, the support rank you were at, or anything that looked unusual.
+    validations:
+      required: false

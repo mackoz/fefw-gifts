@@ -1,0 +1,66 @@
+name: Propose a gift's category
+description: Tell us which of the existing categories an untagged item belongs to.
+title: "[category] <item name>"
+labels: ["category"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Categories are a closed vocabulary. This form proposes which **existing**
+        category an item belongs to — it does not add a new one. The dropdown is
+        the whole list on purpose: free-typed category names drift, and a drifted
+        name silently breaks every prediction that depends on it.
+
+        If you genuinely believe none of these fit, open a blank issue instead
+        and make the case for a new category.
+  - type: input
+    id: item
+    attributes:
+      label: Item name
+      description: The item as the game spells it.
+      placeholder: Home-Recipe Book
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: Which existing category does this item belong to?
+      options:
+        - fashion
+        - beauty
+        - flowers
+        - cooking
+        - fermented-drinks
+        - beverages
+        - coffee
+        - training
+        - weapons
+        - military
+        - horses
+        - books
+        - board-games
+        - vegetables
+        - crafting
+        - fishing
+        - archery
+        - agriculture
+        - travel
+        - spicy-foods
+    validations:
+      required: true
+  - type: textarea
+    id: descriptor
+    attributes:
+      label: In-game description
+      description: The item's in-game description, copied word for word. This is the evidence — the game's own wording is what ties an item to a category.
+      placeholder: A collection of recipes handed down in one family.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes (optional)
+      description: Where you saw the item, or why this category rather than a near neighbour.
+    validations:
+      required: false
