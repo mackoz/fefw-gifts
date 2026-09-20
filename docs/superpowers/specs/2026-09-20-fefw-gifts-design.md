@@ -140,8 +140,9 @@ data/characters.json
     notes: string | null }                           // e.g. Bertrand's Act 1 rule
 
 data/gifts.json
-  { id, name, category: "<category-id>",
-    rarity: "common" | "uncommon" | "rare",
+  { id, name,
+    category: "<category-id>" | null,                // null = not yet recorded
+    rarity: "common" | "uncommon" | "rare" | null,   // null = not yet recorded
     description, sources: [ "<source-id>" ] }
 
 data/categories.json
