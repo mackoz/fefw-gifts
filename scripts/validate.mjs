@@ -52,6 +52,54 @@ export function validate(dataset) {
     }
   }
 
+  const STATES = new Set(['guide', 'profile', 'discovered', 'refuted']);
+  const RARITY_PREFS = new Set(['any', 'uncommon-plus', 'rare']);
+  const REACTIONS = new Set(['none', 'slight', 'liked', 'loved', 'favorite']);
+  const giftIds = new Set(dataset.gifts.map((g) => g.id));
+
+  checkDuplicates(dataset.characters, 'character', errors);
+
+  for (const ch of dataset.characters) {
+    if (!ch.name) errors.push(`character ${ch.id}: missing name`);
+
+    for (const [catId, link] of Object.entries(ch.categories ?? {})) {
+      if (!categoryIds.has(catId)) errors.push(`character ${ch.id}: unknown category: ${catId}`);
+      if (!STATES.has(link.state)) errors.push(`character ${ch.id}: invalid state for ${catId}: ${link.state}`);
+      // Guide-derived links must always be attributable, so they can be audited or removed wholesale.
+      if (link.state === 'guide' && !link.source) {
+        errors.push(`character ${ch.id}: category ${catId} has state "guide" but no source`);
+      }
+      if (link.source && !sourceIds.has(link.source)) {
+        errors.push(`character ${ch.id}: unknown source: ${link.source}`);
+      }
+    }
+
+    for (const t of ch.traits ?? []) {
+      if (t.category !== null && !categoryIds.has(t.category)) {
+        errors.push(`character ${ch.id}: trait "${t.text}" names unknown category: ${t.category}`);
+      }
+    }
+
+    for (const f of ch.favorites ?? []) {
+      if (!giftIds.has(f)) errors.push(`character ${ch.id}: unknown favorite gift: ${f}`);
+    }
+
+    if (ch.rarityPreference !== null && !RARITY_PREFS.has(ch.rarityPreference)) {
+      errors.push(`character ${ch.id}: invalid rarityPreference: ${ch.rarityPreference}`);
+    }
+  }
+
+  const charById = new Map(dataset.characters.map((c) => [c.id, c]));
+  checkDuplicates(observations, 'observation', errors);
+
+  for (const o of observations) {
+    if (!giftIds.has(o.gift)) errors.push(`observation ${o.id}: unknown gift: ${o.gift}`);
+    const ch = charById.get(o.character);
+    if (!ch) errors.push(`observation ${o.id}: unknown character: ${o.character}`);
+    else if (!ch.giftable) errors.push(`observation ${o.id}: character ${o.character} is not giftable`);
+    if (!REACTIONS.has(o.reaction)) errors.push(`observation ${o.id}: invalid reaction: ${o.reaction}`);
+  }
+
   for (const o of observations) {
     for (const field of FORBIDDEN_OBSERVATION_FIELDS) {
       if (field in o) errors.push(`observation ${o.id}: forbidden identifying field: ${field}`);

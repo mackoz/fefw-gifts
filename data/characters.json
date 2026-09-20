@@ -1,1 +1,1225 @@
-[]
+[
+  {
+    "id": "alexandra",
+    "name": "Alexandra",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "horses": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "beauty": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "anatolia",
+    "name": "Anatolia",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "fashion": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": "uncommon-plus",
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "anna",
+    "name": "Anna",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "aurora",
+    "name": "Aurora",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "benditz",
+    "name": "Benditz",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "weapons": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "military": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "board-games": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "bertrand",
+    "name": "Bertrand",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": "In Act 1, only Cai can give Bertrand gifts."
+  },
+  {
+    "id": "bonaventure",
+    "name": "Bonaventure",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "buccar",
+    "name": "Buccar",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "fermented-drinks": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "military": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "training": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "cai",
+    "name": "Cai",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "horses": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "training": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "catania",
+    "name": "Catania",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "coffee": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "beauty": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": "rare",
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "centurio",
+    "name": "Centurio",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "creek",
+    "name": "Creek",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "dadao",
+    "name": "Dadao",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "dante",
+    "name": "Dante",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "coffee": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "diego",
+    "name": "Diego",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "archery": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "board-games": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "dietrich",
+    "name": "Dietrich",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "beauty": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "eshmel",
+    "name": "Eshmel",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "esmeralda",
+    "name": "Esmeralda",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "fishing": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "fabio",
+    "name": "Fabio",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "coffee": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "fianna",
+    "name": "Fianna",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "coffee": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "spicy-foods": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "fortuna",
+    "name": "Fortuna",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "gaitz",
+    "name": "Gaitz",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "weapons": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "horses": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "goliath",
+    "name": "Goliath",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "coffee": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "board-games": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "guzran",
+    "name": "Guzran",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "fermented-drinks": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "halvin",
+    "name": "Halvin",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "vegetables": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "hong-hua",
+    "name": "Hong Hua",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "inyoni",
+    "name": "Inyoni",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "archery": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "fishing": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "io",
+    "name": "Io",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "horses": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "jasmine",
+    "name": "Jasmine",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "board-games": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "cooking": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "jester",
+    "name": "Jester",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "crafting": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "fashion": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "kalla",
+    "name": "Kalla",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "kiroc",
+    "name": "Kiroc",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "flowers": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "fashion": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "leda",
+    "name": "Leda",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "fashion": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "beauty": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "lilian",
+    "name": "Lilian",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "fashion": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "flowers": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "loretta",
+    "name": "Loretta",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "ludia",
+    "name": "Ludia",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "coffee": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "beauty": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "lysander",
+    "name": "Lysander",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "weapons": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "training": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "military": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "majide",
+    "name": "Majide",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "fermented-drinks": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "maria",
+    "name": "Maria",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "mars",
+    "name": "Mars",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "mikaela",
+    "name": "Mikaela",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "coffee": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "mu",
+    "name": "Mu",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "coffee": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "nathan",
+    "name": "Nathan",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "nezha",
+    "name": "Nezha",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "vegetables": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "board-games": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "ninae",
+    "name": "Ninae",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "flowers": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "beauty": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "fashion": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "noctula",
+    "name": "Noctula",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "training": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "nuzzuo",
+    "name": "Nuzzuo",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "cooking": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "vegetables": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "nydine",
+    "name": "Nydine",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "archery": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "horses": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "olympia",
+    "name": "Olympia",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "flowers": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "beauty": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "board-games": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "orchel",
+    "name": "Orchel",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "peppe",
+    "name": "Peppe",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "coffee": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "peter",
+    "name": "Peter",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "raksha",
+    "name": "Raksha",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "seteth",
+    "name": "Seteth",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "fishing": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "sha-lan",
+    "name": "Sha Lan",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "cooking": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "simon",
+    "name": "Simon",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "vegetables": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "sirocco",
+    "name": "Sirocco",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "fermented-drinks": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "beauty": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "sofia",
+    "name": "Sofia",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "cooking": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "solel",
+    "name": "Solel",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "sothis",
+    "name": "Sothis",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "talimun",
+    "name": "Talimun",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "fermented-drinks": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "coffee": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "board-games": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "beauty": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "the-lady-of-lillies",
+    "name": "The Lady of Lillies",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "theodora",
+    "name": "Theodora",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "beauty": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "coffee": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "training": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "fashion": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "travel": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "cooking": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "tialla",
+    "name": "Tialla",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "board-games": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "tobias",
+    "name": "Tobias",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "fermented-drinks": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "troy",
+    "name": "Troy",
+    "giftable": false,
+    "spoiler": false,
+    "traits": [],
+    "categories": {},
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "ultand",
+    "name": "Ultand",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "cooking": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "ursula",
+    "name": "Ursula",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "coffee": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "board-games": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "beauty": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "flowers": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "yang-jie",
+    "name": "Yang Jie",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "fermented-drinks": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  },
+  {
+    "id": "zarcone",
+    "name": "Zarcone",
+    "giftable": true,
+    "spoiler": false,
+    "traits": [],
+    "categories": {
+      "vegetables": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
+    "rarityPreference": null,
+    "favorites": [],
+    "notes": null
+  }
+]

@@ -77,3 +77,74 @@ test('duplicate gift ids are rejected', () => {
   const { errors } = validate(d);
   assert.ok(errors.some((e) => /duplicate gift id: g1/.test(e)));
 });
+
+const character = (over = {}) => ({
+  id: 'c1', name: 'C', giftable: true, spoiler: false,
+  traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null, ...over,
+});
+
+test('a character category link with an unknown category is rejected', () => {
+  const d = base();
+  d.characters.push(character({ categories: { nope: { state: 'profile', source: null } } }));
+  const { errors } = validate(d);
+  assert.match(errors[0], /character c1: unknown category: nope/);
+});
+
+test('a guide-state link without a source is rejected', () => {
+  const d = base();
+  d.characters.push(character({ categories: { books: { state: 'guide', source: null } } }));
+  const { errors } = validate(d);
+  assert.match(errors[0], /character c1: category books has state "guide" but no source/);
+});
+
+test('an invalid link state is rejected', () => {
+  const d = base();
+  d.characters.push(character({ categories: { books: { state: 'maybe', source: null } } }));
+  const { errors } = validate(d);
+  assert.match(errors[0], /character c1: invalid state for books: maybe/);
+});
+
+test('a trait may name a valid category or be explicitly null', () => {
+  const d = base();
+  d.characters.push(character({ traits: [{ text: 'poetry', category: 'books' }, { text: 'his little sister', category: null }] }));
+  assert.deepEqual(validate(d).errors, []);
+});
+
+test('a trait naming an unknown category is rejected', () => {
+  const d = base();
+  d.characters.push(character({ traits: [{ text: 'x', category: 'nope' }] }));
+  const { errors } = validate(d);
+  assert.match(errors[0], /character c1: trait "x" names unknown category: nope/);
+});
+
+test('a favorite referencing an unknown gift is rejected', () => {
+  const d = base();
+  d.characters.push(character({ favorites: ['ghost-gift'] }));
+  const { errors } = validate(d);
+  assert.match(errors[0], /character c1: unknown favorite gift: ghost-gift/);
+});
+
+test('an invalid rarityPreference is rejected', () => {
+  const d = base();
+  d.characters.push(character({ rarityPreference: 'shiny' }));
+  const { errors } = validate(d);
+  assert.match(errors[0], /character c1: invalid rarityPreference: shiny/);
+});
+
+test('an observation against a non-giftable character is rejected', () => {
+  const d = base();
+  d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: null, description: '', sources: [] });
+  d.characters.push(character({ giftable: false }));
+  d.observations.push({ id: 'o1', gift: 'g1', character: 'c1', reaction: 'liked', points: null, date: '2026-09-20' });
+  const { errors } = validate(d);
+  assert.match(errors[0], /observation o1: character c1 is not giftable/);
+});
+
+test('an observation with an unknown gift or invalid reaction is rejected', () => {
+  const d = base();
+  d.characters.push(character());
+  d.observations.push({ id: 'o1', gift: 'ghost', character: 'c1', reaction: 'meh', points: null, date: '2026-09-20' });
+  const { errors } = validate(d);
+  assert.ok(errors.some((e) => /observation o1: unknown gift: ghost/.test(e)));
+  assert.ok(errors.some((e) => /observation o1: invalid reaction: meh/.test(e)));
+});
