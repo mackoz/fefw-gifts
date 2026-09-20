@@ -127,6 +127,10 @@ export function createReportForm({ elements, index, api, turnstile, onSubmitted 
 
   return {
     async open(characterId = '', giftId = '') {
+      // Reset first, then pre-fill. This covers Cancel, Escape and any other
+      // close path at once -- otherwise a cancelled report's reaction and note
+      // survive into the next pair the contributor opens.
+      form.reset();
       status.textContent = '';
       character.value = characterId;
       gift.value = giftId;
