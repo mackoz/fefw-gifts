@@ -43,7 +43,7 @@ export function render(container, index, state) {
     item.append(link);
     const hint = suggestions.length
       ? ` — worth trying: ${suggestions.slice(0, 5).map((g) => g.name).join(', ')}`
-      : ' — no predicted categories yet, so no suggestions';
+      : ' — nothing untested to suggest yet';
     item.append(el('span', 'suggestions', hint));
     list.append(item);
   }

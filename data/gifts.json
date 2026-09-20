@@ -192,7 +192,7 @@
   {
     "id": "the-works-of-dante",
     "name": "The Works of Dante",
-    "category": null,
+    "category": "books",
     "rarity": null,
     "description": "",
     "sources": [
@@ -202,7 +202,7 @@
   {
     "id": "eastern-love-story",
     "name": "Eastern Love Story",
-    "category": null,
+    "category": "books",
     "rarity": null,
     "description": "",
     "sources": [
@@ -302,7 +302,7 @@
   {
     "id": "gaudy-bangle",
     "name": "Gaudy Bangle",
-    "category": null,
+    "category": "fashion",
     "rarity": null,
     "description": "",
     "sources": [
@@ -352,7 +352,7 @@
   {
     "id": "exquisite-ring",
     "name": "Exquisite Ring",
-    "category": null,
+    "category": "fashion",
     "rarity": null,
     "description": "",
     "sources": [
@@ -502,7 +502,7 @@
   {
     "id": "shield-portrait",
     "name": "Shield Portrait",
-    "category": null,
+    "category": "beauty",
     "rarity": null,
     "description": "",
     "sources": [
@@ -512,7 +512,7 @@
   {
     "id": "tales-of-adventure",
     "name": "Tales of Adventure",
-    "category": null,
+    "category": "books",
     "rarity": null,
     "description": "",
     "sources": [
@@ -712,7 +712,7 @@
   {
     "id": "outdoor-cooking-set",
     "name": "Outdoor Cooking Set",
-    "category": null,
+    "category": "cooking",
     "rarity": null,
     "description": "",
     "sources": [
@@ -792,7 +792,7 @@
   {
     "id": "portrait-of-yu-phas",
     "name": "Portrait of Yu Phas",
-    "category": null,
+    "category": "beauty",
     "rarity": null,
     "description": "",
     "sources": [
