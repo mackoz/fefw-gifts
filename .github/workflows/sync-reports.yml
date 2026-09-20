@@ -1,0 +1,61 @@
+name: sync-reports
+
+# Pulls approved reports out of the Worker and opens a pull request adding them
+# to data/observations.json. Nothing merges automatically: the repository stays
+# the source of truth, and a human still says yes.
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  sync:
+    # A fork has neither the secrets nor a reason to run this.
+    if: github.repository == 'mackoz/fefw-gifts'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Pull approved reports
+        id: ingest
+        env:
+          WORKER_URL: ${{ secrets.WORKER_URL }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: npm run ingest
+
+      # A pull request opened with GITHUB_TOKEN does not start another workflow,
+      # so validation runs here instead. The deploy gate is untouched either
+      # way: deploy only ever runs on a push to master, and that push does
+      # trigger ci.yml.
+      - name: Validate and test the result
+        if: steps.ingest.outputs.added != '0'
+        run: npm run validate && npm test
+
+      - name: Open a pull request
+        if: steps.ingest.outputs.added != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ADDED: ${{ steps.ingest.outputs.added }}
+          NOTES: ${{ steps.ingest.outputs.notes }}
+        run: |
+          BRANCH="reports/$(date -u +%Y-%m-%d-%H%M)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add data/observations.json
+          git commit -m "Add ${ADDED} approved player report(s)"
+          git push origin "$BRANCH"
+          printf '%s\n\n%s\n\n%s\n' \
+            "${ADDED} approved report(s) from the submission Worker." \
+            "Notes left by contributors (not committed — add anything worth keeping by hand):" \
+            "${NOTES:-none}" \
+            | gh pr create --base master --head "$BRANCH" \
+                --title "Add ${ADDED} approved player report(s)" --body-file -

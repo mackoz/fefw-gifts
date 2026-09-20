@@ -28,6 +28,26 @@
   wholesale.
 - **Run `npm test` and `npm run validate` before committing.** Both must pass
   cleanly (no stray warnings) before any change lands.
+- **Votes never reach the published site.** `GET /pending` must not select or
+  return `upvotes`/`downvotes`, and no public view may render a tally in any
+  form. It is enforced in the SQL in `worker/src/reports.js`, and tests assert
+  it. A visible tally would read as confirmation and manufacture confidence out
+  of guesswork — see the spec's "Peer validation by voting".
+- **A pending report is not a confirmation.** It may not flip a pair to
+  `CONFIRMED` or `FAVORITE`, contribute points, count toward a tally, or produce
+  a negative verdict. Only an approved observation merged into `data/` may.
+- **The Worker collects no personal data.** No name, email, IP, hashed IP,
+  session id or fingerprint, in the D1 schema, the Worker or the client.
+  Turnstile is called without `remoteip`. Adding any of these is a design
+  change, not a fix.
+- **The site must work with the Worker unavailable or unconfigured.**
+  `assets/js/config.js` ships with `WORKER_URL = null`, which is a supported
+  state, not a bug.
+- **Worker modules stay Node-importable**, like the browser modules: no
+  top-level `env` access and no Cloudflare-only globals at module scope, so
+  `node:test` can import them directly.
+- **Wrangler is never installed.** It runs through `npx --yes wrangler …`, so
+  `package.json` keeps no dependencies.
 
 See `docs/superpowers/specs/2026-09-20-fefw-gifts-design.md` for the full
 design and `docs/superpowers/plans/2026-09-20-data-and-site.md` for the task

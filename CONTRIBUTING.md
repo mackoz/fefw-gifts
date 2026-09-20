@@ -2,21 +2,30 @@
 
 ## Reporting a gift result
 
+The quickest way is the **Report a result** button on the site. It needs no
+account and no sign-up. Pick the character and the gift, say what the game
+showed you, and submit.
+
+Your report is anonymous. Nothing about you is stored — not a name, not an
+email, not an IP address, not a session identifier. There is no credit
+mechanism, by choice.
+
+A report appears on the site straight away marked **awaiting review**, which is
+not the same as confirmed: it contributes no points and settles nothing until a
+maintainer approves it and it is merged into `data/observations.json`.
+
+While it is waiting, other visitors can say whether it matches what they have
+seen. Those responses are private: they help the maintainer decide what to check
+first and never change anything the site shows.
+
+If the site's form is unavailable, the GitHub issue form below still works.
+
 **Report one now:** open a
 [gift result issue](https://github.com/mackoz/fefw-gifts/issues/new?template=report-result.yml).
 The form asks for the character, the item, and the reaction the game showed,
 plus the exact support points and any notes if you have them. Please don't add
 your name or anything else identifying — reports are anonymous by design, and
 the validator rejects identifying fields in `data/observations.json`.
-
-The in-page "Report a result" form is the intended way to submit a result once
-it ships. Until then, the issue form above is the route, and a maintainer
-transcribes each report into `data/observations.json`.
-
-When the in-page form is live: pick the character and gift item (both are often
-pre-filled from the page you reported from), choose the reaction tier the
-game displayed, and optionally enter the exact support points gained. No
-account or personal information will be requested or stored.
 
 ## Structural changes
 
