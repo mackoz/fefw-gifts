@@ -57,6 +57,15 @@ test('an unknown decision is a 400', async () => {
   assert.equal(db.calls.length, 0);
 });
 
+test('an inherited key is rejected like any other bad decision', async () => {
+  for (const decision of ['__proto__', 'constructor', 'hasOwnProperty', 'toString']) {
+    const db = fakeD1();
+    const res = await handle(authed('POST', '/review/r1', { decision }), env(db), deps);
+    assert.equal(res.status, 400, decision);
+    assert.equal(db.calls.length, 0, decision);
+  }
+});
+
 test('deciding twice is reported honestly rather than pretended', async () => {
   const res = await handle(authed('POST', '/review/r1', { decision: 'approve' }), env(fakeD1([{ meta: { changes: 0 } }])), deps);
   assert.equal(res.status, 404);

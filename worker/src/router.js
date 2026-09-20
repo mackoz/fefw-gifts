@@ -170,7 +170,7 @@ async function postDecision(request, env, deps, params) {
   const { tooLarge, body } = await readJson(request);
   if (tooLarge) return json({ error: 'that request is too large' }, 413, cors);
 
-  const status = DECISIONS[body?.decision];
+  const status = Object.hasOwn(DECISIONS, body?.decision) ? DECISIONS[body.decision] : undefined;
   if (!status) return json({ error: 'decision must be "approve" or "reject"' }, 400, cors);
 
   const changed = await setStatus(env.DB, params.id, status);
