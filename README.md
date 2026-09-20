@@ -1,7 +1,8 @@
 # Fire Emblem: Fortune's Weave — Gift Guide
 
-A community gift guide for Fire Emblem: Fortune's Weave. Live at
-**https://mackoz.github.io/fefw-gifts/**.
+A community gift guide for Fire Emblem: Fortune's Weave. Deploys to
+**https://mackoz.github.io/fefw-gifts/** via GitHub Pages once enabled for
+this repository.
 
 ## Why this exists
 
