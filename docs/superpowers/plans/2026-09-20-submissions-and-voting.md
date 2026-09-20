@@ -3275,15 +3275,20 @@ export function reviewRowModel(row, now = Date.now()) {
   };
 }
 
-function readToken(storage) {
+// Storage only ever seeds and mirrors the token; the session's source of truth
+// is the `token` variable inside mountReview. A browser that refuses to persist
+// -- a private window, or blocked site data -- must cost persistence, never
+// access: routing reads back through storage would leave the maintainer typing
+// a correct token into a page that silently never uses it.
+function readStoredToken(storage) {
   try { return storage?.getItem(TOKEN_KEY) ?? ''; } catch { return ''; }
 }
 
-function writeToken(storage, token) {
+function persistToken(storage, token) {
   try {
     if (token) storage?.setItem(TOKEN_KEY, token);
     else storage?.removeItem(TOKEN_KEY);
-  } catch { /* the page still works for this session without persisting it */ }
+  } catch { /* the session continues without persistence */ }
 }
 
 function renderRow(model, onDecide) {
@@ -3313,13 +3318,15 @@ function renderRow(model, onDecide) {
 export function mountReview({ elements, storage, createClient = createApi, now = () => Date.now() }) {
   const { tokenForm, tokenInput, forget, status, list, refresh } = elements;
   let api = null;
+  // The session's source of truth. Storage seeds it once here and mirrors it on
+  // change; nothing below ever reads the token back out of storage.
+  let token = readStoredToken(storage);
 
   function setStatus(message) {
     status.textContent = message;
   }
 
   async function load() {
-    const token = readToken(storage);
     if (!token) {
       list.replaceChildren();
       setStatus('Paste your admin token to see the queue.');
@@ -3359,13 +3366,17 @@ export function mountReview({ elements, storage, createClient = createApi, now =
 
   tokenForm.addEventListener('submit', (event) => {
     event.preventDefault();
-    writeToken(storage, tokenInput.value.trim());
+    token = tokenInput.value.trim();
+    persistToken(storage, token);
     tokenInput.value = '';
     load();
   });
 
   forget.addEventListener('click', () => {
-    writeToken(storage, '');
+    // Clear the variable before persisting: if persistToken throws, the session
+    // must still have forgotten the token.
+    token = '';
+    persistToken(storage, '');
     api = null;
     load();
   });
