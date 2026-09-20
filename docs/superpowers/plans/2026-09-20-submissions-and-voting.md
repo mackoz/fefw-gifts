@@ -2579,7 +2579,12 @@ And add, just before the closing `</body>`:
 
 ```html
   <dialog id="report-dialog" aria-labelledby="report-title">
-    <form id="report-form">
+    <!-- novalidate: `required` and `min`/`max` below stay as semantic and
+         assistive-tech hints, but native constraint validation must not block
+         submit -- otherwise a blank form shows a browser tooltip while the
+         reaction and Turnstile errors can only ever reach #report-status, and
+         one form ends up with two different error presentations. -->
+    <form id="report-form" novalidate>
       <h2 id="report-title">Report a result</h2>
       <p class="dialog-intro">
         Report only what the game itself showed you. There is no account and no
