@@ -1,0 +1,15 @@
+name = "fefw-gifts-api"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# ALLOWED_ORIGINS is a plain variable, not a secret: it is the list of sites a
+# browser may call this Worker from, and it is public by nature. The real
+# secrets -- TURNSTILE_SECRET and ADMIN_TOKEN -- are set with
+# `npx wrangler secret put` and never appear in this file or in git.
+[vars]
+ALLOWED_ORIGINS = "https://mackoz.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "fefw-gifts"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
