@@ -28,10 +28,23 @@ export const oneParam = (prefix, name) => (pathname) => {
 const MAX_BODY_BYTES = 8192;
 
 async function readJson(request) {
-  const declared = Number(request.headers.get('Content-Length') ?? 0);
+  // The declared length is a cheap first filter, but it is not trusted: a
+  // request with no Content-Length (chunked encoding) or a non-numeric one
+  // would otherwise skip the check entirely. The byte cap below is the real
+  // guard, and it runs before any parsing.
+  const declared = Number(request.headers.get('Content-Length'));
   if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) return { tooLarge: true, body: null };
+
+  let buffer;
   try {
-    return { tooLarge: false, body: await request.json() };
+    buffer = await request.arrayBuffer();
+  } catch {
+    return { tooLarge: false, body: null };
+  }
+  if (buffer.byteLength > MAX_BODY_BYTES) return { tooLarge: true, body: null };
+
+  try {
+    return { tooLarge: false, body: JSON.parse(new TextDecoder().decode(buffer)) };
   } catch {
     return { tooLarge: false, body: null };
   }

@@ -69,6 +69,42 @@ test('an oversized body is refused before it is parsed', async () => {
   assert.equal((await handle(request, env(fakeD1()), deps())).status, 413);
 });
 
+test('an oversized body with no Content-Length header is still refused', async () => {
+  const db = fakeD1();
+  const request = new Request('https://api.test/report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: ORIGIN },
+    body: JSON.stringify({ ...REPORT, note: 'x'.repeat(9000) }),
+  });
+  const res = await handle(request, env(db), deps());
+  assert.equal(res.status, 413);
+  assert.equal(db.calls.length, 0);
+});
+
+test('an oversized body with a non-numeric Content-Length is still refused', async () => {
+  const db = fakeD1();
+  const request = new Request('https://api.test/report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: ORIGIN, 'Content-Length': 'banana' },
+    body: JSON.stringify({ ...REPORT, note: 'x'.repeat(9000) }),
+  });
+  const res = await handle(request, env(db), deps());
+  assert.equal(res.status, 413);
+  assert.equal(db.calls.length, 0);
+});
+
+test('a body that lies by understating its Content-Length is still refused', async () => {
+  const db = fakeD1();
+  const request = new Request('https://api.test/report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: ORIGIN, 'Content-Length': '10' },
+    body: JSON.stringify({ ...REPORT, note: 'x'.repeat(9000) }),
+  });
+  const res = await handle(request, env(db), deps());
+  assert.equal(res.status, 413);
+  assert.equal(db.calls.length, 0);
+});
+
 test('a vote increments a counter and returns no tally whatsoever', async () => {
   const db = fakeD1([{ meta: { changes: 1 } }]);
   const res = await handle(post('/vote', { id: 'r1', direction: 'up', turnstileToken: 'tok' }), env(db), deps());
