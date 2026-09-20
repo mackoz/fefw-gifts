@@ -193,3 +193,31 @@ test('the matrix has a symbol for pending that no other state uses', () => {
   const used = Object.values(SYMBOL).filter(Boolean);
   assert.equal(new Set(used).size, used.length);
 });
+
+const OVERLAY_DATASET = {
+  categories: [{ id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] }],
+  gifts: [{ id: 'book', name: 'Book', category: 'books', rarity: 'common', description: '', sources: [] }],
+  characters: [{ id: 'c1', name: 'C', giftable: true, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null }],
+  observations: [],
+  sources: [],
+};
+
+test('a pending report reaches confidenceFor through the index', () => {
+  const idx = buildIndex(OVERLAY_DATASET, [{ id: 'r1', character: 'c1', gift: 'book', reaction: 'loved', points: 40 }]);
+  assert.equal(idx.confidenceFor('c1', 'book').state, 'PENDING');
+  assert.deepEqual(idx.pendingFor('c1', 'book').map((r) => r.id), ['r1']);
+  assert.deepEqual(idx.pendingFor('c1', 'nothing'), []);
+});
+
+test('an index built without an overlay behaves exactly as before', () => {
+  const idx = buildIndex(OVERLAY_DATASET);
+  assert.equal(idx.confidenceFor('c1', 'book').state, 'UNTESTED');
+  assert.deepEqual(idx.pendingFor('c1', 'book'), []);
+});
+
+test('a pending favourite report does not close a favourites-hunt slot', () => {
+  const idx = buildIndex(OVERLAY_DATASET, [{ id: 'r1', character: 'c1', gift: 'book', reaction: 'favorite', points: 80 }]);
+  const { found, unknown } = favoritesModel(idx, DEFAULT_FILTERS);
+  assert.equal(found.length, 0);
+  assert.equal(unknown.length, 1);
+});
