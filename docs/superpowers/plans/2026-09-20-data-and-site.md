@@ -1430,7 +1430,7 @@ Expected: FAIL — `Cannot find module '../assets/js/views/gift.js'`
 
 ```js
 import { passesFilters } from '../filters.js';
-import { sortByConfidence, stateLabel, stateClasses, el } from './shared.js';
+import { sortByConfidence, badge, el } from './shared.js';
 
 export function giftRows(index, giftId, filters) {
   const rows = index.characters
@@ -1480,12 +1480,15 @@ export function render(container, index, state) {
   head.append(headRow);
   const body = el('tbody');
   for (const { character, confidence } of giftRows(index, gift.id, state.filters)) {
-    const row = el('tr', stateClasses(confidence));
+    // The state classes are an inline badge, never a row class -- see shared.js.
+    const row = el('tr');
     const nameCell = el('td');
     const link = el('a', null, character.name);
     link.href = `#/character/${character.id}`;
     nameCell.append(link);
-    row.append(nameCell, el('td', null, stateLabel(confidence)), el('td', null, confidence.points === null ? '' : `${confidence.points} pts`));
+    const statusCell = el('td');
+    statusCell.append(badge(confidence));
+    row.append(nameCell, statusCell, el('td', null, confidence.points === null ? '' : `${confidence.points} pts`));
     body.append(row);
   }
   table.append(head, body);
@@ -1554,7 +1557,7 @@ Expected: FAIL — `Cannot find module '../assets/js/views/matrix.js'`
 
 ```js
 import { passesFilters } from '../filters.js';
-import { stateClasses, stateLabel, el } from './shared.js';
+import { cellClasses, stateLabel, el } from './shared.js';
 
 export function matrixModel(index, filters, search) {
   const characters = index.characters
@@ -1601,7 +1604,9 @@ export function render(container, index, state) {
     row.append(el('th', 'row-head', gift.name));
     for (const character of model.characters) {
       const confidence = model.cellAt(gift.id, character.id);
-      const cell = el('td', stateClasses(confidence), SYMBOL[confidence.state]);
+      // cellClasses, not stateClasses: a badge's inline-flex and ::before symbol
+      // would break the table grid and duplicate the symbol already set here.
+      const cell = el('td', cellClasses(confidence), SYMBOL[confidence.state]);
       cell.title = `${character.name} · ${gift.name}: ${stateLabel(confidence)}`;
       row.append(cell);
     }
@@ -1617,6 +1622,18 @@ export function render(container, index, state) {
 - [ ] **Step 4: Add matrix styles to `assets/css/style.css`**
 
 `.matrix-scroll { overflow-x: auto; }`. Make `.matrix th.row-head` sticky to the left and `.matrix thead th` sticky to the top so headers stay visible while scrolling. Keep cells narrow and centred.
+
+Also define the cell tint classes `cellClasses` emits. These must set **colour only** — no `display`, no `::before`, no `::after`. The visible symbol is already the cell's text content, so a pseudo-element would duplicate it, and any `display` change removes the cell from the table grid:
+
+```css
+.matrix td.cell-favorite  { background: var(--color-favorite-bg);  color: var(--color-favorite); }
+.matrix td.cell-confirmed { background: var(--color-confirmed-bg); color: var(--color-confirmed); }
+.matrix td.cell-contested { background: var(--color-contested-bg); color: var(--color-contested); }
+.matrix td.cell-predicted { background: var(--color-predicted-bg); color: var(--color-predicted); }
+.matrix td.cell-untested  { background: transparent; }
+.matrix td.cell-exception { outline: 2px dotted var(--color-warning); outline-offset: -2px; }
+.matrix td.cell-rarity-mismatch { border-bottom: 2px dashed var(--color-warning); }
+```
 
 - [ ] **Step 5: Run test to verify it passes**
 
