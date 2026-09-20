@@ -70,7 +70,7 @@ test('giftRows lists giftable characters ranked by confidence', () => {
   assert.equal(rows[0].confidence.state, 'PREDICTED');
 });
 
-import { matrixModel } from '../assets/js/views/matrix.js';
+import { matrixModel, SYMBOL } from '../assets/js/views/matrix.js';
 
 test('the matrix excludes non-giftable characters and keeps every gift by default', () => {
   const idx = buildIndex(dataset);
@@ -171,4 +171,25 @@ test('the character detail route reports why it cannot show a gift table', () =>
     'hideSpoilers applies on the detail route, not just the picker',
   );
   assert.equal(detailStatus({ ...giftable, spoiler: true }, { ...DEFAULT_FILTERS, hideSpoilers: false }), 'ok');
+});
+
+test('pending sorts below contested and above predicted', () => {
+  const rows = ['PREDICTED', 'UNTESTED', 'PENDING', 'CONTESTED', 'CONFIRMED', 'FAVORITE']
+    .map((state) => ({ confidence: { state } }));
+  assert.deepEqual(
+    sortByConfidence(rows).map((r) => r.confidence.state),
+    ['FAVORITE', 'CONFIRMED', 'CONTESTED', 'PENDING', 'PREDICTED', 'UNTESTED'],
+  );
+});
+
+test('a pending pair is labelled as awaiting review, never as confirmed', () => {
+  const label = stateLabel({ state: 'PENDING' });
+  assert.match(label, /awaiting review/i);
+  assert.doesNotMatch(label, /confirmed|dislike/i);
+});
+
+test('the matrix has a symbol for pending that no other state uses', () => {
+  assert.ok(SYMBOL.PENDING);
+  const used = Object.values(SYMBOL).filter(Boolean);
+  assert.equal(new Set(used).size, used.length);
 });

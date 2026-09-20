@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deriveConfidence } from '../assets/js/confidence.js';
+import { deriveConfidence, REACTIONS, POSITIVE_REACTIONS } from '../assets/js/confidence.js';
 
 const gift = (over = {}) => ({ id: 'g1', name: 'G', category: 'books', rarity: 'common', ...over });
 const character = (over = {}) => ({ id: 'c1', name: 'C', giftable: true, categories: {}, rarityPreference: null, favorites: [], ...over });
@@ -107,4 +107,48 @@ test('unknown rarity never reports a mismatch', () => {
   const character_ = character({ rarityPreference: 'rare' });
   const c = deriveConfidence({ character: character_, gift: gift({ rarity: null }), observations: [] });
   assert.equal(c.rarityMismatch, false);
+});
+
+const CHAR = { id: 'c1', name: 'C', giftable: true, categories: { books: { state: 'guide', source: 's1' } }, rarityPreference: null };
+const BOOK = { id: 'book', name: 'Book', category: 'books', rarity: 'common' };
+const ROCK = { id: 'rock', name: 'Rock', category: null, rarity: null };
+const PENDING_ROW = { id: 'r1', character: 'c1', gift: 'book', reaction: 'loved', points: 40 };
+
+test('a pending report outranks a prediction without becoming a confirmation', () => {
+  const c = deriveConfidence({ character: CHAR, gift: BOOK, observations: [], pending: [PENDING_ROW] });
+  assert.equal(c.state, 'PENDING');
+  assert.equal(c.pendingCount, 1);
+  // The four things a pending report must never do.
+  assert.equal(c.points, null);
+  assert.equal(c.reaction, null);
+  assert.equal(c.isException, false);
+  assert.equal(c.observationCount, 0);
+});
+
+test('a pending report on a pair with no category link is still PENDING', () => {
+  const c = deriveConfidence({ character: CHAR, gift: ROCK, observations: [], pending: [{ ...PENDING_ROW, gift: 'rock' }] });
+  assert.equal(c.state, 'PENDING');
+  assert.equal(c.predicted, null);
+});
+
+test('a pending report never downgrades a merged observation', () => {
+  const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'liked', points: 20 }];
+  const c = deriveConfidence({ character: CHAR, gift: BOOK, observations, pending: [PENDING_ROW] });
+  assert.equal(c.state, 'CONFIRMED');
+  assert.equal(c.points, 20);
+  assert.equal(c.pendingCount, 1);
+});
+
+test('a pending report claiming a favourite does not make it one', () => {
+  const c = deriveConfidence({ character: CHAR, gift: BOOK, observations: [], pending: [{ ...PENDING_ROW, reaction: 'favorite' }] });
+  assert.equal(c.state, 'PENDING');
+});
+
+test('pending defaults to empty, so every existing caller is unaffected', () => {
+  assert.equal(deriveConfidence({ character: CHAR, gift: BOOK, observations: [] }).pendingCount, 0);
+});
+
+test('the reaction vocabulary has one definition', () => {
+  assert.deepEqual(REACTIONS, ['none', 'slight', 'liked', 'loved', 'favorite']);
+  assert.deepEqual(POSITIVE_REACTIONS, REACTIONS.filter((r) => r !== 'none'));
 });

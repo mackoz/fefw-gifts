@@ -16,6 +16,8 @@
   --color-confirmed-bg: #e6f6e9;
   --color-contested: #a34e00;
   --color-contested-bg: #fdeee0;
+  --color-pending: #0f6d78;
+  --color-pending-bg: #e0f4f6;
   --color-predicted: #4b4bb0;
   --color-predicted-bg: #ececfb;
   --color-untested: #6b6b6b;
@@ -38,6 +40,8 @@
     --color-confirmed-bg: #12321a;
     --color-contested: #e2924a;
     --color-contested-bg: #3a2210;
+    --color-pending: #63cbd6;
+    --color-pending-bg: #0d3035;
     --color-predicted: #a3a3f2;
     --color-predicted-bg: #26264a;
     --color-untested: #a3a3a3;
@@ -181,6 +185,7 @@ main#view {
 .state-favorite,
 .state-confirmed,
 .state-contested,
+.state-pending,
 .state-predicted,
 .state-untested {
   display: inline-flex;
@@ -217,6 +222,18 @@ main#view {
 }
 .state-contested::before {
   content: "\26A0";
+}
+
+.state-pending {
+  color: var(--color-pending);
+  background: var(--color-pending-bg);
+  border-color: currentColor;
+}
+.state-pending::before {
+  /* Matches the matrix legend's "•". Not "~": that is a guide's guess, and this
+     is a player's unreviewed result. */
+  content: "\2022";
+  font-weight: 700;
 }
 
 .state-predicted {
@@ -365,6 +382,7 @@ main#view {
 .matrix td.cell-favorite  { background: var(--color-favorite-bg);  color: var(--color-favorite); }
 .matrix td.cell-confirmed { background: var(--color-confirmed-bg); color: var(--color-confirmed); }
 .matrix td.cell-contested { background: var(--color-contested-bg); color: var(--color-contested); }
+.matrix td.cell-pending   { background: var(--color-pending-bg);   color: var(--color-pending); }
 .matrix td.cell-predicted { background: var(--color-predicted-bg); color: var(--color-predicted); }
 .matrix td.cell-untested  { background: transparent; }
 .matrix td.cell-exception { outline: 2px dotted var(--color-warning); outline-offset: -2px; }

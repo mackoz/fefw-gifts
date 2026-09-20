@@ -24,7 +24,7 @@ export function matrixModel(index, filters, search) {
   return { characters, gifts, cellAt: (giftId, characterId) => cells.get(key(giftId, characterId)) };
 }
 
-const SYMBOL = { FAVORITE: '★', CONFIRMED: '✔', CONTESTED: '?', PREDICTED: '~', UNTESTED: '' };
+export const SYMBOL = { FAVORITE: '★', CONFIRMED: '✔', CONTESTED: '?', PENDING: '•', PREDICTED: '~', UNTESTED: '' };
 
 // The matrix can empty out three ways, and each one needs a different way back.
 export function emptyMatrixMessage(state) {
@@ -39,7 +39,7 @@ export function emptyMatrixMessage(state) {
 export function render(container, index, state) {
   const model = matrixModel(index, state.filters, state.search);
   container.append(el('h2', null, 'Full matrix'));
-  container.append(el('p', 'legend', '★ favourite · ✔ confirmed · ? reports disagree · ~ predicted, unconfirmed · blank not tested'));
+  container.append(el('p', 'legend', '★ favourite · ✔ confirmed · ? reports disagree · • reported, awaiting review · ~ predicted, unconfirmed · blank not tested'));
 
   if (model.gifts.length === 0 || model.characters.length === 0) {
     container.append(emptyState(emptyMatrixMessage(state)));
