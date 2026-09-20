@@ -1,5 +1,6 @@
 import { passesFilters } from '../filters.js';
 import { sortByConfidence, badge, el, emptyState, sourceName, reportButton } from './shared.js';
+import { voteControl, voteControlModel } from '../vote-control.js';
 
 export function characterRows(index, characterId, filters) {
   const rows = index.gifts
@@ -130,6 +131,11 @@ export function render(container, index, state) {
     row.append(el('td', null, gift.rarity ?? '—'));
     const statusCell = el('td');
     statusCell.append(badge(confidence, index));
+    if (confidence.state === 'PENDING' && state.submissionsEnabled) {
+      for (const report of index.pendingFor(character.id, gift.id)) {
+        statusCell.append(voteControl(voteControlModel(report, state.storage)));
+      }
+    }
     row.append(statusCell);
     row.append(el('td', null, confidence.points === null ? '' : `${confidence.points} pts`));
     const actionCell = el('td');

@@ -1,5 +1,6 @@
 import { passesFilters } from '../filters.js';
 import { sortByConfidence, badge, el, emptyState, reportButton } from './shared.js';
+import { voteControl, voteControlModel } from '../vote-control.js';
 
 export function giftRows(index, giftId, filters) {
   const rows = index.characters
@@ -78,6 +79,11 @@ export function render(container, index, state) {
     nameCell.append(link);
     const statusCell = el('td');
     statusCell.append(badge(confidence, index));
+    if (confidence.state === 'PENDING' && state.submissionsEnabled) {
+      for (const report of index.pendingFor(character.id, gift.id)) {
+        statusCell.append(voteControl(voteControlModel(report, state.storage)));
+      }
+    }
     row.append(nameCell, statusCell, el('td', null, confidence.points === null ? '' : `${confidence.points} pts`));
     const actionCell = el('td');
     if (state.submissionsEnabled) actionCell.append(reportButton(character.id, gift.id));

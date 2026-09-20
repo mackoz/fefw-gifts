@@ -104,6 +104,22 @@
     </form>
   </dialog>
 
+  <dialog id="vote-dialog" aria-labelledby="vote-title">
+    <form id="vote-form">
+      <h2 id="vote-title">Confirm your response</h2>
+      <p class="dialog-intro">
+        This helps the maintainer decide what to check first. It never changes
+        what the site shows, and nothing about you is stored.
+      </p>
+      <div id="vote-turnstile"></div>
+      <p id="vote-status" class="dialog-status" role="status" aria-live="polite"></p>
+      <menu class="dialog-actions">
+        <button type="button" id="vote-cancel">Cancel</button>
+        <button type="submit" id="vote-submit">Send</button>
+      </menu>
+    </form>
+  </dialog>
+
   <script type="module" src="assets/js/app.js"></script>
 </body>
 </html>

@@ -478,3 +478,34 @@ dialog input[type="text"] {
 .report-button {
   font-size: 0.85rem;
 }
+
+/* --- Peer voting ---
+   A prompt and two buttons. There is deliberately no count, score or bar here:
+   votes are a private maintainer signal, and a visible tally would read as
+   confirmation -- exactly the manufactured confidence this project exists to
+   eliminate. Do not add one. */
+
+.vote-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.vote-prompt {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  max-width: 32ch;
+}
+
+.vote-button {
+  padding: 2px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}

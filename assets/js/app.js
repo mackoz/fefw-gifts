@@ -4,6 +4,7 @@ import { createApi } from './api.js';
 import { TURNSTILE_SITE_KEY } from './config.js';
 import { createTurnstile } from './turnstile.js';
 import { createReportForm } from './report-form.js';
+import { recordVote } from './votes.js';
 import * as characterView from './views/character.js';
 import * as giftView from './views/gift.js';
 import * as matrixView from './views/matrix.js';
@@ -26,6 +27,10 @@ const state = {
   api,
   submissionsEnabled: api.enabled,
 };
+
+// Handed to the views rather than read from a global, so the vote control stays
+// testable and a blocked localStorage is one try/catch, not a crash.
+state.storage = (() => { try { return globalThis.localStorage; } catch { return undefined; } })();
 
 function render() {
   const container = document.getElementById('view');
@@ -120,6 +125,56 @@ async function main() {
   container.addEventListener('click', (event) => {
     const button = event.target.closest('.report-button');
     if (button) reportForm.open(button.dataset.character, button.dataset.gift);
+  });
+
+  const voteDialog = document.getElementById('vote-dialog');
+  const voteStatus = document.getElementById('vote-status');
+  const voteSubmit = document.getElementById('vote-submit');
+  const voteTurnstile = createTurnstile({
+    siteKey: TURNSTILE_SITE_KEY,
+    container: document.getElementById('vote-turnstile'),
+  });
+  let pendingVote = null;
+
+  document.getElementById('vote-cancel').addEventListener('click', () => voteDialog.close());
+
+  document.getElementById('vote-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const vote = pendingVote;            // capture before any await
+    const token = voteTurnstile.token();
+    if (!token) {
+      voteStatus.textContent = 'Complete the “I’m human” check first.';
+      return;
+    }
+
+    voteSubmit.disabled = true;
+    const result = await api.sendVote({ ...vote, turnstileToken: token });
+    voteSubmit.disabled = false;
+    voteTurnstile.reset();
+
+    if (!result.ok) {
+      voteStatus.textContent = result.error;
+      return;
+    }
+
+    // Recorded locally only after the Worker accepted it, so a failed send can
+    // be retried.
+    recordVote(state.storage, vote.id, vote.direction);
+    voteDialog.close();
+    render();
+  });
+
+  container.addEventListener('click', async (event) => {
+    const button = event.target.closest('.vote-button');
+    if (!button) return;
+    pendingVote = { id: button.dataset.report, direction: button.dataset.direction };
+    voteStatus.textContent = '';
+    voteDialog.showModal();
+    try {
+      await voteTurnstile.mount();
+    } catch {
+      voteStatus.textContent = 'The “I’m human” check could not load. Try again in a moment.';
+    }
   });
 }
 
