@@ -91,3 +91,33 @@ test('search narrows the gift rows', () => {
   const m = matrixModel(idx, DEFAULT_FILTERS, 'brew');
   assert.deepEqual(m.gifts.map((g) => g.id), ['brew']);
 });
+
+import { favoritesModel } from '../assets/js/views/favorites.js';
+
+test('a character with a confirmed favourite is listed as found', () => {
+  const idx = buildIndex(dataset);
+  const m = favoritesModel(idx, DEFAULT_FILTERS);
+  assert.deepEqual(m.found.map((f) => f.character.id), ['c1']);
+  assert.deepEqual(m.found[0].gifts.map((g) => g.id), ['brew']);
+  assert.equal(m.unknown.length, 0);
+});
+
+test('a character with no favourite is listed as unknown with suggestions from liked categories', () => {
+  const idx = buildIndex({ ...dataset, observations: [] });
+  const m = favoritesModel(idx, DEFAULT_FILTERS);
+  assert.deepEqual(m.unknown.map((u) => u.character.id), ['c1']);
+  assert.deepEqual(m.unknown[0].suggestions.map((g) => g.id), ['book'], 'only untested gifts in predicted categories');
+});
+
+test('suggestions rank rare items first', () => {
+  const idx = buildIndex({
+    ...dataset,
+    observations: [],
+    gifts: [
+      { id: 'cheap', name: 'Cheap Book', category: 'books', rarity: 'common', description: '', sources: [] },
+      { id: 'posh', name: 'Posh Book', category: 'books', rarity: 'rare', description: '', sources: [] },
+    ],
+  });
+  const m = favoritesModel(idx, DEFAULT_FILTERS);
+  assert.deepEqual(m.unknown[0].suggestions.map((g) => g.id), ['posh', 'cheap']);
+});
