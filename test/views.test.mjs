@@ -4,6 +4,7 @@ import { buildIndex } from '../assets/js/data.js';
 import { characterRows } from '../assets/js/views/character.js';
 import { sortByConfidence, stateLabel } from '../assets/js/views/shared.js';
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
+import { giftRows } from '../assets/js/views/gift.js';
 
 const dataset = {
   categories: [
@@ -53,4 +54,18 @@ test('sortByConfidence is stable for equal states', () => {
     { gift: { id: 'b' }, confidence: { state: 'PREDICTED' } },
   ];
   assert.deepEqual(sortByConfidence(rows).map((r) => r.gift.id), ['a', 'b']);
+});
+
+test('giftRows lists giftable characters ranked by confidence', () => {
+  const idx = buildIndex({
+    ...dataset,
+    characters: [
+      dataset.characters[0],
+      { id: 'c2', name: 'D', giftable: true, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null },
+      { id: 'c3', name: 'E', giftable: false, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null },
+    ],
+  });
+  const rows = giftRows(idx, 'book', DEFAULT_FILTERS);
+  assert.deepEqual(rows.map((r) => r.character.id), ['c1', 'c2'], 'non-giftable characters are excluded');
+  assert.equal(rows[0].confidence.state, 'PREDICTED');
 });
