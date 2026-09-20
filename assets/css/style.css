@@ -387,3 +387,94 @@ main#view {
 .matrix td.cell-untested  { background: transparent; }
 .matrix td.cell-exception { outline: 2px dotted var(--color-warning); outline-offset: -2px; }
 .matrix td.cell-rarity-mismatch { border-bottom: 2px dashed var(--color-warning); }
+
+/* --- Dialogs ---
+   The report and vote dialogs. Sized for a phone first: reports get written
+   right after playing, on the device that is to hand. */
+
+dialog {
+  width: min(32rem, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+
+dialog h2 {
+  margin-top: 0;
+}
+
+dialog label {
+  display: block;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+dialog select,
+dialog input[type="number"],
+dialog input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+#report-reactions {
+  margin-top: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.reaction-choice {
+  display: block;
+  font-weight: 400;
+  margin: 6px 0;
+}
+
+.field-note {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.dialog-intro {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+/* Reserves its line so the dialog does not jump when a message appears. */
+.dialog-status {
+  min-height: 1.5em;
+  margin: 12px 0 0;
+  color: var(--color-warning);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.dialog-actions button,
+.report-button {
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.report-button {
+  font-size: 0.85rem;
+}

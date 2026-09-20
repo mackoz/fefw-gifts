@@ -79,3 +79,14 @@ export function cellClasses(confidence) {
   if (confidence.rarityMismatch) classes.push('cell-rarity-mismatch');
   return classes.join(' ');
 }
+
+// A per-pair report trigger. It carries its ids in dataset attributes and does
+// nothing itself: app.js listens once on the container and opens the dialog.
+export function reportButton(characterId, giftId) {
+  const button = el('button', 'report-button', 'Report');
+  button.type = 'button';
+  button.dataset.character = characterId;
+  button.dataset.gift = giftId;
+  button.setAttribute('aria-label', 'Report a result for this pair');
+  return button;
+}

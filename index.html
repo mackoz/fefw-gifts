@@ -47,9 +47,8 @@
         <a href="https://github.com/mackoz/fefw-gifts/issues/new/choose">open an issue</a>.
       </p>
 
-      <!-- Plan 2 insertion point: "Report a result" button (anonymous submission
-           form backed by a Cloudflare Worker) goes here. Not implemented yet. -->
-      <a class="report-link" href="https://github.com/mackoz/fefw-gifts/issues/new/choose">Report a result on GitHub</a>
+      <button type="button" id="report-open" class="report-link" hidden>Report a result</button>
+      <a class="report-link" id="report-fallback" href="https://github.com/mackoz/fefw-gifts/issues/new/choose">Report a result on GitHub</a>
     </div>
   </header>
 
@@ -61,12 +60,49 @@
       <a href="https://www.polygon.com/fire-emblem-fortunes-weave-best-gifts-each-character/">Polygon</a>;
       the item list comes from
       <a href="https://game8.co/games/Fire-Emblem-Fortunes-Weave/archives/621281">Game8</a>.
-      Confirmed results come only from player reports. In-site submission
-      isn’t built yet — until it is, report a result
-      <a href="https://github.com/mackoz/fefw-gifts/issues/new/choose">on GitHub</a>.
+      Confirmed results come only from player reports.
+      Reporting a result takes a few seconds and needs no account.
+      Structural corrections still go through
+      <a href="https://github.com/mackoz/fefw-gifts/issues/new/choose">GitHub issues</a>.
       Full citations are in <a href="data/sources.json">data/sources.json</a>.
     </p>
   </footer>
+
+  <dialog id="report-dialog" aria-labelledby="report-title">
+    <form id="report-form">
+      <h2 id="report-title">Report a result</h2>
+      <p class="dialog-intro">
+        Report only what the game itself showed you. There is no account and no
+        sign-up, and nothing about you is stored — not a name, not an email, not
+        an IP address.
+      </p>
+
+      <label for="report-character">Character</label>
+      <select id="report-character" required></select>
+
+      <label for="report-gift">Gift</label>
+      <select id="report-gift" required></select>
+
+      <fieldset id="report-reactions">
+        <legend>What did the game show?</legend>
+      </fieldset>
+
+      <label for="report-points">Support points gained (optional)</label>
+      <input id="report-points" type="number" min="0" max="999" inputmode="numeric">
+
+      <label for="report-note">Anything unusual worth noting? (optional)</label>
+      <input id="report-note" type="text" maxlength="280">
+      <p class="field-note">Reports are published. Don’t put anything personal in here.</p>
+
+      <div id="report-turnstile"></div>
+      <p id="report-status" class="dialog-status" role="status" aria-live="polite"></p>
+
+      <menu class="dialog-actions">
+        <button type="button" id="report-cancel">Cancel</button>
+        <button type="submit" id="report-submit">Submit</button>
+      </menu>
+    </form>
+  </dialog>
 
   <script type="module" src="assets/js/app.js"></script>
 </body>

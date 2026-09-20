@@ -1,5 +1,5 @@
 import { passesFilters } from '../filters.js';
-import { sortByConfidence, badge, el, emptyState } from './shared.js';
+import { sortByConfidence, badge, el, emptyState, reportButton } from './shared.js';
 
 export function giftRows(index, giftId, filters) {
   const rows = index.characters
@@ -62,7 +62,7 @@ export function render(container, index, state) {
   const table = el('table', 'gift-table');
   const head = el('thead');
   const headRow = el('tr');
-  for (const h of ['Character', 'Status', 'Points']) {
+  for (const h of ['Character', 'Status', 'Points', 'Report']) {
     const th = el('th', null, h);
     th.scope = 'col';
     headRow.append(th);
@@ -79,6 +79,9 @@ export function render(container, index, state) {
     const statusCell = el('td');
     statusCell.append(badge(confidence, index));
     row.append(nameCell, statusCell, el('td', null, confidence.points === null ? '' : `${confidence.points} pts`));
+    const actionCell = el('td');
+    if (state.submissionsEnabled) actionCell.append(reportButton(character.id, gift.id));
+    row.append(actionCell);
     body.append(row);
   }
   table.append(head, body);
