@@ -3710,17 +3710,32 @@ async function main() {
   await report(added.length, rows);
 }
 
-// Hands the count and the notes to the workflow. Writing to GITHUB_OUTPUT is a
-// no-op locally, so the script behaves the same either way.
-async function report(count, rows) {
-  const notes = rows
+// Pure, so the newline-stripping and delimiter-collision behaviour is testable:
+// this string is written into $GITHUB_OUTPUT, where a stray newline or a line
+// matching the heredoc delimiter would let contributor text inject workflow
+// outputs. The `- character / gift: ` prefix is load-bearing -- it is what makes
+// a bare delimiter line impossible.
+export function formatNotes(rows) {
+  return rows
     .filter((row) => row.note)
     .map((row) => `- ${row.character} / ${row.gift}: ${String(row.note).replace(/\s+/g, ' ')}`)
     .join('\n');
+}
+
+// Hands the count and the notes to the workflow. Writing to GITHUB_OUTPUT is a
+// no-op locally, so the script behaves the same either way.
+async function report(count, rows) {
+  const notes = formatNotes(rows);
 
   if (!process.env.GITHUB_OUTPUT) return;
+  // A random delimiter per write. With a static one, a note containing a line
+  // equal to it would end the value early and the rest would parse as new
+  // workflow outputs -- including `added`, which gates the validate and
+  // pull-request steps. formatNotes's line prefix makes that impossible today,
+  // but that is a formatting choice, not a guarantee.
+  const delimiter = `NOTES_${crypto.randomUUID()}`;
   await appendFile(process.env.GITHUB_OUTPUT, `added=${count}\n`);
-  await appendFile(process.env.GITHUB_OUTPUT, `notes<<NOTES_EOF\n${notes}\nNOTES_EOF\n`);
+  await appendFile(process.env.GITHUB_OUTPUT, `notes<<${delimiter}\n${notes}\n${delimiter}\n`);
 }
 
 // CLI entry point: `npm run ingest`. Importing this file runs nothing.
@@ -3776,11 +3791,17 @@ jobs:
       # way: deploy only ever runs on a push to master, and that push does
       # trigger ci.yml.
       - name: Validate and test the result
-        if: steps.ingest.outputs.added != '0'
+        # success() is explicit: a custom `if:` REPLACES the implicit
+        # `if: success()`, so without it a failed ingest step would still let
+        # these run with `added` unset.
+        if: success() && steps.ingest.outputs.added != '0'
         run: npm run validate && npm test
 
       - name: Open a pull request
-        if: steps.ingest.outputs.added != '0'
+        # success() is explicit: a custom `if:` REPLACES the implicit
+        # `if: success()`, so without it a failed ingest step would still let
+        # these run with `added` unset.
+        if: success() && steps.ingest.outputs.added != '0'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ADDED: ${{ steps.ingest.outputs.added }}
