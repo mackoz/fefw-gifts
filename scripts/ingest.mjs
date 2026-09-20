@@ -80,17 +80,31 @@ async function main() {
   await report(added.length, rows);
 }
 
-// Hands the count and the notes to the workflow. Writing to GITHUB_OUTPUT is a
-// no-op locally, so the script behaves the same either way.
-async function report(count, rows) {
-  const notes = rows
+// Pure so the delimiter-collision and newline-stripping behaviour is testable:
+// this string is written into $GITHUB_OUTPUT, where a stray newline or a line
+// matching the heredoc delimiter would let contributor text inject workflow
+// outputs.
+export function formatNotes(rows) {
+  return rows
     .filter((row) => row.note)
     .map((row) => `- ${row.character} / ${row.gift}: ${String(row.note).replace(/\s+/g, ' ')}`)
     .join('\n');
+}
+
+// Hands the count and the notes to the workflow. Writing to GITHUB_OUTPUT is a
+// no-op locally, so the script behaves the same either way.
+async function report(count, rows) {
+  const notes = formatNotes(rows);
 
   if (!process.env.GITHUB_OUTPUT) return;
+  // A static delimiter is GitHub's documented output-injection footgun: if any
+  // line of `notes` equalled the delimiter, the runner's line-based parser
+  // would end the value early and parse the rest as new output assignments,
+  // including `added`, which gates the validate/test and PR steps. Generating
+  // the delimiter per write closes that off regardless of the notes format.
+  const delimiter = `NOTES_${crypto.randomUUID()}`;
   await appendFile(process.env.GITHUB_OUTPUT, `added=${count}\n`);
-  await appendFile(process.env.GITHUB_OUTPUT, `notes<<NOTES_EOF\n${notes}\nNOTES_EOF\n`);
+  await appendFile(process.env.GITHUB_OUTPUT, `notes<<${delimiter}\n${notes}\n${delimiter}\n`);
 }
 
 // CLI entry point: `npm run ingest`. Importing this file runs nothing.

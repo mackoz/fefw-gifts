@@ -36,11 +36,11 @@ jobs:
       # way: deploy only ever runs on a push to master, and that push does
       # trigger ci.yml.
       - name: Validate and test the result
-        if: steps.ingest.outputs.added != '0'
+        if: success() && steps.ingest.outputs.added != '0'
         run: npm run validate && npm test
 
       - name: Open a pull request
-        if: steps.ingest.outputs.added != '0'
+        if: success() && steps.ingest.outputs.added != '0'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ADDED: ${{ steps.ingest.outputs.added }}

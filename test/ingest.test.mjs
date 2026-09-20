@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toObservation, mergeObservations } from '../scripts/ingest.mjs';
+import { toObservation, mergeObservations, formatNotes } from '../scripts/ingest.mjs';
 
 const ROW = {
   id: '9f1c2f7a-0000-4000-8000-000000000001',
@@ -57,4 +57,30 @@ test('nothing to ingest leaves the file untouched', () => {
   const { observations, added } = mergeObservations(existing, []);
   assert.deepEqual(observations, existing);
   assert.deepEqual(added, []);
+});
+
+// formatNotes() feeds $GITHUB_OUTPUT, where a stray newline or a line matching
+// the heredoc delimiter would let contributor text inject workflow outputs.
+// The random per-write delimiter in report() is the actual defence; these
+// tests pin the second layer: a note must never contribute a line of its own.
+test("a note's embedded newlines never survive into the output", () => {
+  const rows = [{ ...ROW, note: 'line one\nline two\r\nline three\tindented' }];
+  const result = formatNotes(rows);
+  const lines = result.split('\n');
+  assert.equal(lines.length, 1, 'a single note must produce exactly one output line');
+  assert.ok(!result.includes('\n\n'));
+});
+
+test('a note that contains the literal delimiter text cannot produce a line equal to it', () => {
+  const rows = [{ ...ROW, note: 'NOTES_EOF' }];
+  const result = formatNotes(rows);
+  const lines = result.split('\n');
+  for (const line of lines) {
+    assert.notEqual(line, 'NOTES_EOF', 'the character/gift prefix must keep every line from matching a bare delimiter');
+  }
+});
+
+test('rows without a note are skipped, and an empty input produces an empty string', () => {
+  assert.equal(formatNotes([]), '');
+  assert.equal(formatNotes([{ ...ROW, note: undefined }, { ...ROW, note: '' }]), '');
 });
