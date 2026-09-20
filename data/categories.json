@@ -1,0 +1,22 @@
+[
+  { "id": "fashion",          "label": "Fashion",          "inGameDescriptor": null, "aliases": ["clothing", "jewellery", "jewelry", "gemstones"] },
+  { "id": "beauty",           "label": "Beauty",           "inGameDescriptor": "those who appreciate beauty", "aliases": ["paintings", "art"] },
+  { "id": "flowers",          "label": "Flowers",          "inGameDescriptor": null, "aliases": ["bouquets"] },
+  { "id": "cooking",          "label": "Cooking",          "inGameDescriptor": "people who love to cook", "aliases": ["cookbooks", "food"] },
+  { "id": "fermented-drinks", "label": "Fermented drinks", "inGameDescriptor": null, "aliases": ["ghosh", "shosh", "booze", "alcohol"] },
+  { "id": "beverages",        "label": "Beverages",        "inGameDescriptor": null, "aliases": ["tea", "milk", "cervi"] },
+  { "id": "coffee",           "label": "Coffee",           "inGameDescriptor": null, "aliases": [] },
+  { "id": "training",         "label": "Training",         "inGameDescriptor": "training enthusiasts", "aliases": ["exercise"] },
+  { "id": "weapons",          "label": "Weapons",          "inGameDescriptor": null, "aliases": [] },
+  { "id": "military",         "label": "Military",         "inGameDescriptor": null, "aliases": ["medals", "tactics"] },
+  { "id": "horses",           "label": "Horses",           "inGameDescriptor": null, "aliases": ["steeds", "mounts"] },
+  { "id": "books",            "label": "Books",            "inGameDescriptor": "book lovers", "aliases": ["reading", "poetry"] },
+  { "id": "board-games",      "label": "Board games",      "inGameDescriptor": null, "aliases": [] },
+  { "id": "vegetables",       "label": "Vegetables",       "inGameDescriptor": null, "aliases": ["seeds", "bulbs"] },
+  { "id": "crafting",         "label": "Crafting",         "inGameDescriptor": null, "aliases": ["sewing", "carving"] },
+  { "id": "fishing",          "label": "Fishing",          "inGameDescriptor": null, "aliases": [] },
+  { "id": "archery",          "label": "Archery",          "inGameDescriptor": null, "aliases": ["bows", "arrows"] },
+  { "id": "agriculture",      "label": "Agriculture",      "inGameDescriptor": null, "aliases": ["farming"] },
+  { "id": "travel",           "label": "Travel",           "inGameDescriptor": null, "aliases": ["rucksacks"] },
+  { "id": "spicy-foods",      "label": "Spicy foods",      "inGameDescriptor": null, "aliases": ["seasonings"] }
+]

@@ -1,0 +1,11 @@
+{
+  "name": "fefw-gifts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Community gift guide for Fire Emblem: Fortune's Weave",
+  "scripts": {
+    "test": "node --test test/",
+    "validate": "node scripts/validate.mjs data"
+  }
+}
