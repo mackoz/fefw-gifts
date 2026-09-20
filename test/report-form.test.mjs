@@ -112,3 +112,21 @@ test('a script that never provides the global is reported, not hung on', async (
   const turnstile = createTurnstile({ siteKey: 'site', container: {}, loadScript: async () => {}, getGlobal: () => undefined });
   await assert.rejects(() => turnstile.mount(), /failed to load/);
 });
+
+test('a failed load can be retried: the cache is cleared, not stuck rejected', async () => {
+  const fake = fakeTurnstile();
+  let calls = 0;
+  const turnstile = createTurnstile({
+    siteKey: 'site', container: {},
+    loadScript: async () => {
+      calls += 1;
+      if (calls === 1) throw new Error('network down');
+    },
+    getGlobal: () => fake.global,
+  });
+
+  await assert.rejects(() => turnstile.mount(), /network down/);
+  await turnstile.mount();
+  assert.equal(turnstile.token(), null);
+  assert.equal(calls, 2, 'loadScript must be retried, not replayed from a cached rejection');
+});

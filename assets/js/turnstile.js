@@ -8,7 +8,12 @@ function defaultLoadScript(src) {
     script.src = src;
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error('turnstile failed to load'));
+    // A script that failed to load is removed before rejecting, not left in
+    // <head>: if it stayed, the next attempt's querySelector above would find
+    // this dead element and resolve instantly against it, then throw when the
+    // global still isn't there. See the comment on `loading` in ready() below
+    // -- both halves of the retry exist because of this one element.
+    script.onerror = () => { script.remove(); reject(new Error('turnstile failed to load')); };
     document.head.append(script);
   });
 }
@@ -31,7 +36,13 @@ export function createTurnstile({
 
   async function ready() {
     if (!configured) throw new Error('turnstile is not configured');
-    if (!loading) loading = loadScript(SCRIPT_URL);
+    // Cleared on failure so a later mount() genuinely retries instead of
+    // replaying a cached rejection forever. This alone is not enough: without
+    // defaultLoadScript also removing its failed <script> element, the retry
+    // would find that dead element still in <head> and resolve against it
+    // instantly, then fail again when the global is still missing. Both halves
+    // are needed together.
+    if (!loading) loading = loadScript(SCRIPT_URL).catch((err) => { loading = null; throw err; });
     await loading;
     const global = getGlobal();
     if (!global) throw new Error('turnstile failed to load');

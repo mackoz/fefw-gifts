@@ -99,9 +99,18 @@ if this stops being acceptable.
 ## The ingest trade-off
 
 `POST /ingest` returns the approved rows **and marks them ingested in the same
-call**. If the pull request it produces is closed without merging, those rows
-will not be offered again and have to be re-entered by hand. Merge the sync pull
-request or, if you close it, re-add the rows yourself.
+call**. That means any failure *after* the call returns -- the merged dataset
+failing validation, `git push` failing, `gh pr create` failing, or the
+resulting pull request being closed without merging -- leaves those rows
+gone from D1 with nothing else to show for it, and they have to be re-entered
+by hand.
+
+`scripts/ingest.mjs` prints the fetched rows (`console.log(JSON.stringify(rows,
+null, 2))`) before it does anything that can fail, specifically so they are
+recoverable in that case: open the failed GitHub Actions run for
+`sync-reports.yml`, find that log line, and re-enter the rows by hand (or
+re-run the merge locally against the logged JSON). The log is visible only to
+people with access to the repository.
 
 ## Local development
 

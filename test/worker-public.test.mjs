@@ -132,7 +132,9 @@ test('an unverified vote is refused', async () => {
 });
 
 test('the public pending feed carries no vote information at all', async () => {
-  const rows = [{ id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: 40, note: null, created_at: '2026-09-20T00:00:00.000Z' }];
+  // No `note` in the fixture: listPending never selects it, so a row it
+  // returns never carries one -- see worker/src/reports.js.
+  const rows = [{ id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: 40, created_at: '2026-09-20T00:00:00.000Z' }];
   const db = fakeD1([{ results: rows }]);
   const request = new Request('https://api.test/pending', { headers: { Origin: ORIGIN } });
   const res = await handle(request, env(db), deps());
@@ -140,6 +142,7 @@ test('the public pending feed carries no vote information at all', async () => {
   const body = await res.text();
   assert.deepEqual(JSON.parse(body), { pending: rows });
   assert.doesNotMatch(body, /upvotes|downvotes/);
+  assert.doesNotMatch(body, /"note"/);
   assert.match(res.headers.get('Cache-Control'), /max-age=60/);
 });
 

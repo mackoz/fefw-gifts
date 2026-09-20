@@ -138,14 +138,18 @@ export function render(container, index, state) {
     }
     row.append(statusCell);
     row.append(el('td', null, confidence.points === null ? '' : `${confidence.points} pts`));
-    const actionCell = el('td');
-    if (state.submissionsEnabled) actionCell.append(reportButton(character.id, gift.id));
-    row.append(actionCell);
+    if (state.submissionsEnabled) {
+      const actionCell = el('td');
+      actionCell.append(reportButton(character.id, gift.id));
+      row.append(actionCell);
+    }
     body.append(row);
   }
   const head = el('thead');
   const headRow = el('tr');
-  for (const h of ['Gift', 'Category', 'Rarity', 'Status', 'Points', 'Report']) {
+  const headers = ['Gift', 'Category', 'Rarity', 'Status', 'Points'];
+  if (state.submissionsEnabled) headers.push('Report');
+  for (const h of headers) {
     const th = el('th', null, h);
     th.scope = 'col';
     headRow.append(th);

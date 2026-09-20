@@ -67,6 +67,14 @@ test('listPending never selects a vote column', async () => {
   assert.deepEqual(rows, [{ id: 'r1' }]);
 });
 
+// Unmoderated free text from an anonymous submitter: it must never reach the
+// public feed, so it must never even be selected.
+test('listPending never selects the note column either', async () => {
+  const db = fakeD1([{ results: [{ id: 'r1' }] }]);
+  await listPending(db);
+  assert.doesNotMatch(db.calls[0].sql, /\bnote\b/);
+});
+
 test('listPending survives a driver that returns no results array', async () => {
   assert.deepEqual(await listPending(fakeD1([{}])), []);
 });

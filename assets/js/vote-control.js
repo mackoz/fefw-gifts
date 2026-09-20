@@ -1,7 +1,7 @@
 import { el } from './views/shared.js';
 import { votedDirection } from './votes.js';
 
-const BEFORE = 'A player reported this. Does it match what you have seen?';
+const BEFORE = 'Someone reported a result for this pair. Have you given this gift to this character yourself?';
 const AFTER = 'Thanks — noted for the maintainer.';
 
 // Pure. Deliberately reads only `report.id` from the row: even if a future
@@ -22,7 +22,7 @@ export function voteControl(model) {
   wrapper.append(el('span', 'vote-prompt', model.prompt));
   if (model.voted) return wrapper;
 
-  for (const [direction, label] of [['up', 'Matches'], ['down', 'Doesn’t match']]) {
+  for (const [direction, label] of [['up', 'Yes, it worked'], ['down', 'No, it didn’t']]) {
     const button = el('button', 'vote-button', label);
     button.type = 'button';
     button.dataset.report = model.reportId;

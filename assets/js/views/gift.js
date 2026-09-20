@@ -63,7 +63,9 @@ export function render(container, index, state) {
   const table = el('table', 'gift-table');
   const head = el('thead');
   const headRow = el('tr');
-  for (const h of ['Character', 'Status', 'Points', 'Report']) {
+  const headers = ['Character', 'Status', 'Points'];
+  if (state.submissionsEnabled) headers.push('Report');
+  for (const h of headers) {
     const th = el('th', null, h);
     th.scope = 'col';
     headRow.append(th);
@@ -85,9 +87,11 @@ export function render(container, index, state) {
       }
     }
     row.append(nameCell, statusCell, el('td', null, confidence.points === null ? '' : `${confidence.points} pts`));
-    const actionCell = el('td');
-    if (state.submissionsEnabled) actionCell.append(reportButton(character.id, gift.id));
-    row.append(actionCell);
+    if (state.submissionsEnabled) {
+      const actionCell = el('td');
+      actionCell.append(reportButton(character.id, gift.id));
+      row.append(actionCell);
+    }
     body.append(row);
   }
   table.append(head, body);

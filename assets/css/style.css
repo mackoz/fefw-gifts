@@ -497,6 +497,7 @@ dialog input[type="text"] {
   color: var(--color-muted);
   font-size: 0.8rem;
   max-width: 32ch;
+  overflow-wrap: anywhere;
 }
 
 .vote-button {
@@ -538,6 +539,7 @@ dialog input[type="text"] {
 .review-note {
   margin: 6px 0 0;
   font-style: italic;
+  overflow-wrap: anywhere;
 }
 
 .review-actions {

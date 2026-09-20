@@ -225,8 +225,10 @@ itself, with no account and no signup.
 
 ### Submission path
 
-A **Report a result** button on every character, gift and matrix cell opens an
-in-page form, pre-filled with the character and item. The contributor picks a
+A **Report a result** button on every character and gift row opens an in-page
+form, pre-filled with the character and item; the matrix view has no button of
+its own, since 80 rows by 53 columns would mean over four thousand of them and
+a matrix cell is far too small to tap on a phone. The contributor picks a
 reaction tier, optionally enters the points gained, and submits.
 
 The submission posts to a Cloudflare Worker backed by D1 and is stored with

@@ -49,10 +49,15 @@ export async function insertReport(db, { id, character, gift, reaction, points, 
 // The public overlay shape. The vote columns are not merely omitted from the
 // response -- they are never selected. That is what makes "votes never reach
 // the published site" true at the API boundary rather than a habit the UI is
-// trusted to keep.
+// trusted to keep. `note` is excluded for the same reason, for a different
+// danger: it is unmoderated free text from an anonymous, unauthenticated
+// submitter, and no client code reads it from a pending row (only `id`,
+// `character` and `gift` are used). Selecting it here would publish it on a
+// cached public endpoint before any maintainer has read it. The maintainer
+// reads notes on the admin-gated review page instead -- see listForReview.
 export async function listPending(db, limit = 500) {
   const { results } = await db.prepare(
-    `SELECT id, "character" AS character, gift, reaction, points, note, created_at
+    `SELECT id, "character" AS character, gift, reaction, points, created_at
        FROM reports
       WHERE status = 'pending'
       ORDER BY created_at DESC

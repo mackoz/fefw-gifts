@@ -55,6 +55,11 @@ async function main() {
   const { reports } = await response.json();
   const rows = Array.isArray(reports) ? reports : [];
 
+  // Printed before anything can fail: takeApproved has already marked these rows
+  // ingested in D1, so if validation or the pull request fails afterwards this
+  // log is the only copy left.
+  console.log(JSON.stringify(rows, null, 2));
+
   const observationsPath = path.join(dataDir, 'observations.json');
   const existing = JSON.parse(await readFile(observationsPath, 'utf8'));
   const { observations, added } = mergeObservations(existing, rows);

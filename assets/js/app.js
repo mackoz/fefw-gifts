@@ -43,10 +43,18 @@ function render() {
 }
 
 // Re-reads the overlay and rebuilds the index. Called after a report lands so
-// the contributor sees their own submission appear straight away.
+// the contributor sees their own submission appear straight away. Also handed
+// to createReportForm as onSubmitted and invoked there bare (not `.then`'d),
+// so the try/catch lives here rather than at each call site: fetchPending()
+// itself never rejects, but render() can throw, and the overlay is optional
+// by design -- a failure here must never surface as an unhandled rejection.
 async function refreshPending() {
-  state.index = buildIndex(state.dataset, await api.fetchPending());
-  render();
+  try {
+    state.index = buildIndex(state.dataset, await api.fetchPending());
+    render();
+  } catch (err) {
+    console.error('failed to refresh the pending overlay', err);
+  }
 }
 
 async function main() {
