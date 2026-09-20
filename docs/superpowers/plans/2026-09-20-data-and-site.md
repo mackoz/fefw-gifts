@@ -1810,7 +1810,7 @@ name: validate
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
 
 jobs:
@@ -1839,12 +1839,14 @@ Expected: `data valid`, then all tests passing. Fix anything failing before push
 ```bash
 git add .github/workflows/validate.yml README.md
 git commit -m "Add CI validation workflow"
-git push -u origin main
+git push -u origin master
 ```
 
 - [ ] **Step 4: Enable GitHub Pages**
 
-In the repository settings, under Pages, set Source to "Deploy from a branch", branch `main`, folder `/ (root)`. Confirm the site appears at `https://mackoz.github.io/fefw-gifts/`.
+In the repository settings, under Pages, set Source to **GitHub Actions**. Confirm the site appears at `https://mackoz.github.io/fefw-gifts/`.
+
+Superseded after the plan was written: deployment moved from "Deploy from a branch" to a `deploy` job in `.github/workflows/ci.yml` that declares `needs: test`. Deploying from a branch would have republished on every push regardless of whether validation passed, which defeats the point of having a validator.
 
 - [ ] **Step 5: Verify the deployed site**
 

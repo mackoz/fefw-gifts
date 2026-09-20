@@ -1,8 +1,14 @@
 # Fire Emblem: Fortune's Weave — Gift Guide
 
 A community gift guide for Fire Emblem: Fortune's Weave. Deploys to
-**https://mackoz.github.io/fefw-gifts/** via GitHub Pages once enabled for
-this repository.
+**https://mackoz.github.io/fefw-gifts/** once GitHub Pages is enabled for this
+repository, with **Source** set to **GitHub Actions** (not "Deploy from a
+branch").
+
+Publishing runs from `.github/workflows/ci.yml` on every push to `master`. Its
+`deploy` job declares `needs: test`, so the site cannot be published unless
+`npm run validate` and `npm test` passed on that same commit — invalid data
+cannot reach the live site.
 
 ## Why this exists
 

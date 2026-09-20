@@ -4,7 +4,13 @@
   `devDependencies`, only scripts. If a task seems to need a package, stop and
   ask instead of adding one.
 - **No build step, ever.** Files are served exactly as committed. GitHub Pages
-  deploys straight from the branch root.
+  publishes the repository as-is from `.github/workflows/ci.yml`, which uploads
+  the tree without transforming it.
+- **Deployment is gated on validation.** The `deploy` job declares
+  `needs: test`, so it cannot start unless `npm run validate` and `npm test`
+  passed on that same commit. Never remove that dependency, and never add a
+  deploy path that bypasses it — it is the only thing stopping invalid data
+  from reaching the published site.
 - **Browser modules must stay Node-importable.** Every file under
   `assets/js/` uses ESM `export`, has no top-level DOM access, and must be
   importable directly by `node:test`. DOM access lives inside functions that
