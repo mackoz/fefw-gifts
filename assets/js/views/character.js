@@ -231,6 +231,7 @@ function untestedBlock(character, rows, state) {
   details.append(el('p', 'untested-note', 'Nobody has given any of these to this character. Any one of them is worth a report.'));
 
   const grid = el('ul', 'chip-list');
+  grid.setAttribute('role', 'list');
   for (const { gift } of rows) {
     const item = el('li');
     if (state.submissionsEnabled) {
