@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildIndex } from '../assets/js/data.js';
-import { characterRows } from '../assets/js/views/character.js';
+import { characterRows, characterIndexModel, characterSummary, signalHeading } from '../assets/js/views/character.js';
 import { sortByConfidence, stateLabel, partitionRows, categoryChips } from '../assets/js/views/shared.js';
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
 import { giftRows } from '../assets/js/views/gift.js';
@@ -266,4 +266,60 @@ test('categoryChips falls back to the raw id rather than inventing a label', () 
 test('categoryChips tolerates a character with no categories key', () => {
   const idx = buildIndex(dataset);
   assert.deepEqual(categoryChips(idx, {}), []);
+});
+
+test('characterSummary reports the strongest true thing, never a negative', () => {
+  const idx = buildIndex(dataset);
+  // The fixture's c1 has one favourite observation on `brew`.
+  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite found');
+});
+
+test('characterSummary counts a declared favourite the Favourites tab would count', () => {
+  const characters = [{ ...dataset.characters[0], favorites: ['rock'] }];
+  const idx = buildIndex({ ...dataset, characters, observations: [] });
+  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite found');
+});
+
+test('characterSummary falls back through confirmed, predicted, then nothing', () => {
+  const base = { ...dataset.characters[0], favorites: [] };
+
+  const predictedOnly = buildIndex({ ...dataset, characters: [base], observations: [] });
+  // c1 likes books, and `book` is a books item, so exactly one prediction.
+  assert.equal(characterSummary(predictedOnly, predictedOnly.byCharacterId.get('c1')), '1 worth trying');
+
+  const confirmed = buildIndex({
+    ...dataset,
+    characters: [base],
+    observations: [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'liked', date: '2026-09-21' }],
+  });
+  assert.equal(characterSummary(confirmed, confirmed.byCharacterId.get('c1')), '1 confirmed');
+
+  const bare = buildIndex({ ...dataset, characters: [{ ...base, categories: {} }], observations: [] });
+  assert.equal(characterSummary(bare, bare.byCharacterId.get('c1')), 'nothing tested yet');
+});
+
+test('characterIndexModel hides non-giftable characters and honours search', () => {
+  const characters = [
+    { ...dataset.characters[0], id: 'aa', name: 'Aada' },
+    { ...dataset.characters[0], id: 'bb', name: 'Bruno' },
+    { ...dataset.characters[0], id: 'cc', name: 'Cass', giftable: false },
+  ];
+  const idx = buildIndex({ ...dataset, characters });
+  assert.deepEqual(characterIndexModel(idx, DEFAULT_FILTERS, '').map((e) => e.character.id), ['aa', 'bb']);
+  assert.deepEqual(characterIndexModel(idx, DEFAULT_FILTERS, 'bru').map((e) => e.character.id), ['bb']);
+});
+
+test('characterIndexModel carries the category chips for each character', () => {
+  const idx = buildIndex(dataset);
+  const [entry] = characterIndexModel(idx, DEFAULT_FILTERS, '');
+  assert.deepEqual(entry.categories.map((c) => c.label), ['Books']);
+});
+
+test('signalHeading only claims "worth trying" while every row is a guess', () => {
+  assert.equal(signalHeading([{ confidence: { state: 'PREDICTED' } }]), 'Worth trying');
+  assert.equal(
+    signalHeading([{ confidence: { state: 'PREDICTED' } }, { confidence: { state: 'CONFIRMED' } }]),
+    'What we know',
+  );
+  assert.equal(signalHeading([{ confidence: { state: 'PENDING' } }]), 'What we know');
 });

@@ -1,5 +1,8 @@
 import { passesFilters } from '../filters.js';
-import { sortByConfidence, badge, el, emptyState, sourceName, reportButton } from './shared.js';
+import {
+  sortByConfidence, badge, el, emptyState, sourceName, reportButton,
+  partitionRows, categoryChips, chip,
+} from './shared.js';
 import { voteControl, voteControlModel } from '../vote-control.js';
 
 export function characterRows(index, characterId, filters) {
@@ -18,50 +21,191 @@ export function detailStatus(character, filters) {
   return 'ok';
 }
 
-function renderPicker(container, index, state) {
-  const list = el('ul', 'picker');
-  let count = 0;
-  for (const ch of index.characters) {
-    if (!ch.giftable) continue;
-    if (state.filters.hideSpoilers && ch.spoiler) continue;
-    if (state.search && !ch.name.toLowerCase().includes(state.search)) continue;
-    const item = el('li');
-    const link = el('a', null, ch.name);
-    link.href = `#/character/${ch.id}`;
-    item.append(link);
-    list.append(item);
-    count += 1;
+// The strongest true statement about a character, in a fixed order. It never
+// implies a negative: a character nobody has tested reads as untested, not as
+// one whose gifts fail.
+export function characterSummary(index, character) {
+  // Union by gift id, exactly as favoritesModel does, so this and the
+  // Favourites tab can never disagree about whether a favourite is known.
+  const favourites = new Set(
+    (character.favorites ?? []).map((id) => index.byGiftId.get(id)).filter(Boolean).map((g) => g.id),
+  );
+  let confirmed = 0;
+  let predicted = 0;
+
+  for (const gift of index.gifts) {
+    const { state } = index.confidenceFor(character.id, gift.id);
+    if (state === 'FAVORITE') favourites.add(gift.id);
+    else if (state === 'CONFIRMED') confirmed += 1;
+    else if (state === 'PREDICTED') predicted += 1;
   }
-  container.append(el('h2', null, 'Pick a character'));
-  if (count === 0) {
+
+  if (favourites.size > 0) return `${favourites.size} favourite${favourites.size === 1 ? '' : 's'} found`;
+  if (confirmed > 0) return `${confirmed} confirmed`;
+  if (predicted > 0) return `${predicted} worth trying`;
+  return 'nothing tested yet';
+}
+
+export function characterIndexModel(index, filters, search) {
+  return index.characters
+    .filter((c) => c.giftable)
+    .filter((c) => !(filters.hideSpoilers && c.spoiler))
+    .filter((c) => !search || c.name.toLowerCase().includes(search))
+    .map((character) => ({
+      character,
+      categories: categoryChips(index, character),
+      summary: characterSummary(index, character),
+    }));
+}
+
+// "Worth trying" is only true while every row is still a guess. Once a player
+// has reported one, the section is reporting results, not making suggestions.
+export function signalHeading(rows) {
+  return rows.every((row) => row.confidence.state === 'PREDICTED') ? 'Worth trying' : 'What we know';
+}
+
+function chipList(entries, className) {
+  const list = el('ul', ['chip-list', className].filter(Boolean).join(' '));
+  for (const entry of entries) {
+    const item = el('li');
+    item.append(chip(entry.label, { className: `provenance-${entry.state}` }));
+    list.append(item);
+  }
+  return list;
+}
+
+function renderPicker(container, index, state) {
+  const entries = characterIndexModel(index, state.filters, state.search);
+  container.append(el('h2', null, 'Characters'));
+
+  if (entries.length === 0) {
     container.append(emptyState(state.search
       ? `No character’s name matches “${state.search}”.`
       : 'No characters to show. Untick “Hide spoilers” to see every character.'));
     return;
   }
-  container.append(list);
+
+  const grid = el('ul', 'tessera-grid');
+  for (const entry of entries) {
+    const item = el('li', 'tessera');
+    const link = el('a', 'tessera-name', entry.character.name);
+    link.href = `#/character/${entry.character.id}`;
+    item.append(link);
+    if (entry.categories.length) item.append(chipList(entry.categories));
+    item.append(el('p', 'tessera-summary', entry.summary));
+    grid.append(item);
+  }
+  container.append(grid);
 }
 
-// Liked categories are guide-derived: every one is an unconfirmed guess until a
-// player reports an actual result. A refuted link is not a like, so it is left out.
-function renderLikedCategories(container, index, character) {
-  const links = Object.entries(character.categories ?? {}).filter(([, link]) => link.state !== 'refuted');
-  if (links.length === 0) return;
-
-  const list = el('ul', 'liked-categories');
-  for (const [categoryId, link] of links) {
-    const label = index.byCategoryId.get(categoryId)?.label ?? categoryId;
-    const item = el('li', `liked-category provenance-${link.state}`, label);
-    if (link.state === 'guide') item.append(el('span', 'unconfirmed-tag', ' — unconfirmed'));
-    list.append(item);
+// Profile and rarity render only when the data exists. Today no character has
+// traits, and a heading followed by "nobody has entered this yet" on all 53
+// pages is furniture, not information.
+function renderProfile(container, index, character) {
+  if (character.traits.length > 0) {
+    const traits = el('ul', 'traits');
+    for (const t of character.traits) {
+      const item = el('li', t.category ? 'trait' : 'trait trait-flavor', t.text);
+      if (!t.category) item.append(el('span', 'flavor-tag', ' (flavour — not a gift type)'));
+      traits.append(item);
+    }
+    container.append(el('h3', null, 'Profile'), traits);
   }
 
-  const publishers = [...new Set(links.map(([, link]) => link.source).filter(Boolean).map((s) => sourceName(index, s)))];
-  container.append(el('h3', null, 'Reported to like'));
-  container.append(list);
+  if (character.rarityPreference) {
+    // Guide-derived and still unresolved in the spec: never stated as fact.
+    container.append(el('p', 'rarity-pref', `Reported to prefer ${character.rarityPreference === 'rare' ? 'rare' : 'uncommon or rare'} items — unconfirmed.`));
+  }
+
+  const chips = categoryChips(index, character);
+  if (chips.length === 0) return;
+
+  const publishers = [...new Set(chips.map((c) => c.source).filter(Boolean).map((s) => sourceName(index, s)))];
+  container.append(el('h3', null, 'Reported to like'), chipList(chips));
   container.append(el('p', 'provenance-note', publishers.length
     ? `Category preferences carried over from ${publishers.join(' and ')}. Nobody has confirmed them item by item yet.`
     : 'Category preferences are unconfirmed until a player reports an actual result.'));
+}
+
+function giftTable(index, character, rows, state) {
+  // No gift has a recorded rarity today, so the column would be 100% em-dashes.
+  const showRarity = rows.some(({ gift }) => gift.rarity);
+
+  const headers = ['Gift', 'Category'];
+  if (showRarity) headers.push('Rarity');
+  headers.push('Status');
+  if (state.submissionsEnabled) headers.push('Report');
+
+  const headRow = el('tr');
+  for (const h of headers) {
+    const th = el('th', null, h);
+    th.scope = 'col';
+    headRow.append(th);
+  }
+  const head = el('thead');
+  head.append(headRow);
+
+  const body = el('tbody');
+  for (const { gift, confidence } of rows) {
+    // The state classes are an inline badge, never a row class -- see shared.js.
+    const row = el('tr');
+    const nameCell = el('td');
+    const link = el('a', null, gift.name);
+    link.href = `#/gift/${gift.id}`;
+    nameCell.append(link);
+    row.append(nameCell);
+    row.append(el('td', null, gift.category ? index.byCategoryId.get(gift.category).label : '—'));
+    if (showRarity) row.append(el('td', null, gift.rarity ?? '—'));
+
+    const statusCell = el('td');
+    statusCell.append(badge(confidence, index));
+    if (confidence.state === 'PENDING' && state.submissionsEnabled) {
+      for (const report of index.pendingFor(character.id, gift.id)) {
+        statusCell.append(voteControl(voteControlModel(report, state.storage)));
+      }
+    }
+    row.append(statusCell);
+
+    if (state.submissionsEnabled) {
+      const actionCell = el('td');
+      actionCell.append(reportButton(character.id, gift.id));
+      row.append(actionCell);
+    }
+    body.append(row);
+  }
+
+  const table = el('table', 'gift-table');
+  table.append(head, body);
+  return table;
+}
+
+// 75 of a character's 80 rows are untested. As a table that buries everything
+// else; as chips it stays complete and one click from a report. Each chip is a
+// report trigger carrying the same `.report-button` class app.js listens for,
+// and degrades to a link to the gift when submissions are off.
+function untestedBlock(character, rows, state) {
+  const details = el('details', 'untested-block');
+  details.append(el('summary', null, `Not tested yet (${rows.length})`));
+  details.append(el('p', 'untested-note', 'Nobody has given any of these to this character. Any one of them is worth a report.'));
+
+  const grid = el('ul', 'chip-list');
+  for (const { gift } of rows) {
+    const item = el('li');
+    if (state.submissionsEnabled) {
+      const button = el('button', 'chip chip-action report-button', gift.name);
+      button.type = 'button';
+      button.dataset.character = character.id;
+      button.dataset.gift = gift.id;
+      button.setAttribute('aria-label', `Report a result for ${gift.name}`);
+      item.append(button);
+    } else {
+      item.append(chip(gift.name, { href: `#/gift/${gift.id}` }));
+    }
+    grid.append(item);
+  }
+
+  details.append(grid);
+  return details;
 }
 
 export function render(container, index, state) {
@@ -71,7 +215,7 @@ export function render(container, index, state) {
   const status = detailStatus(character, state.filters);
 
   if (status === 'missing') {
-    container.append(el('p', null, `No character called "${state.id}".`));
+    container.append(el('p', null, `No character called “${state.id}”.`));
     return renderPicker(container, index, state);
   }
 
@@ -89,71 +233,21 @@ export function render(container, index, state) {
     return;
   }
 
-  if (character.traits.length === 0) {
-    container.append(el('p', 'help-wanted', 'Nobody has entered this character’s in-game profile yet.'));
-  } else {
-    const traits = el('ul', 'traits');
-    for (const t of character.traits) {
-      const item = el('li', t.category ? 'trait' : 'trait trait-flavor', t.text);
-      if (!t.category) item.append(el('span', 'flavor-tag', ' (flavour — not a gift type)'));
-      traits.append(item);
-    }
-    container.append(el('h3', null, 'Profile'), traits);
-  }
-
-  if (character.rarityPreference) {
-    // Guide-derived and still unresolved in the spec: never stated as fact.
-    container.append(el('p', 'rarity-pref', `Reported to prefer ${character.rarityPreference === 'rare' ? 'rare' : 'uncommon or rare'} items — unconfirmed.`));
-  }
-
-  renderLikedCategories(container, index, character);
+  renderProfile(container, index, character);
 
   const rows = characterRows(index, character.id, state.filters);
-  container.append(el('h3', null, 'Gifts'));
   if (rows.length === 0) {
+    container.append(el('h3', null, 'Gifts'));
     container.append(emptyState(state.filters.hideUnconfirmed
       ? 'No confirmed results yet — nobody has reported one for this character. Clear “Hide unconfirmed predictions” to see predictions.'
       : 'No gifts match the current filters. Clear “Hide untested pairs” to see the rest.'));
     return;
   }
 
-  const table = el('table', 'gift-table');
-  const body = el('tbody');
-  for (const { gift, confidence } of rows) {
-    // The state classes are an inline badge, never a row class -- see shared.js.
-    const row = el('tr');
-    const nameCell = el('td');
-    const link = el('a', null, gift.name);
-    link.href = `#/gift/${gift.id}`;
-    nameCell.append(link);
-    row.append(nameCell);
-    row.append(el('td', null, gift.category ? index.byCategoryId.get(gift.category).label : '—'));
-    row.append(el('td', null, gift.rarity ?? '—'));
-    const statusCell = el('td');
-    statusCell.append(badge(confidence, index));
-    if (confidence.state === 'PENDING' && state.submissionsEnabled) {
-      for (const report of index.pendingFor(character.id, gift.id)) {
-        statusCell.append(voteControl(voteControlModel(report, state.storage)));
-      }
-    }
-    row.append(statusCell);
-    if (state.submissionsEnabled) {
-      const actionCell = el('td');
-      actionCell.append(reportButton(character.id, gift.id));
-      row.append(actionCell);
-    }
-    body.append(row);
+  const { signal, untested } = partitionRows(rows);
+  if (signal.length > 0) {
+    container.append(el('h3', null, signalHeading(signal)));
+    container.append(giftTable(index, character, signal, state));
   }
-  const head = el('thead');
-  const headRow = el('tr');
-  const headers = ['Gift', 'Category', 'Rarity', 'Status'];
-  if (state.submissionsEnabled) headers.push('Report');
-  for (const h of headers) {
-    const th = el('th', null, h);
-    th.scope = 'col';
-    headRow.append(th);
-  }
-  head.append(headRow);
-  table.append(head, body);
-  container.append(table);
+  if (untested.length > 0) container.append(untestedBlock(character, untested, state));
 }

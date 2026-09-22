@@ -678,3 +678,125 @@ a.chip:hover {
   border-style: dashed;
   color: var(--muted);
 }
+
+/* --- Characters index ---
+   A tessellation, not a card kit: cells share hairlines instead of each
+   carrying its own border, radius and shadow. */
+
+.tessera-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+}
+
+.tessera {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+  background: var(--ground);
+}
+
+.tessera-name {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 24;
+  font-size: var(--step-1);
+  text-decoration: none;
+}
+
+.tessera-name:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.tessera-summary {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+/* --- Gift and character tables --- */
+
+.gift-table {
+  width: 100%;
+  margin-top: 12px;
+  border-collapse: collapse;
+  font-size: var(--text-table);
+}
+
+.gift-table th,
+.gift-table td {
+  padding: 9px 14px 9px 0;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rule);
+}
+
+.gift-table thead th {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+.gift-table tbody tr:hover td {
+  background: var(--raised);
+}
+
+/* --- The untested block --- */
+
+.untested-block {
+  margin-top: 30px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+
+.untested-block > summary {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 24;
+  font-size: var(--step-1);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.untested-note {
+  max-width: var(--measure);
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+/* A chip that triggers a report rather than navigating. Dashed while the pair
+   is untested, solid on hover, so it reads as an invitation. */
+.chip-action {
+  font: inherit;
+  font-size: var(--step--1);
+  color: var(--untested);
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.chip-action:hover {
+  color: var(--ink);
+  border-style: solid;
+  border-color: var(--edge);
+}
+
+.traits,
+.liked-categories {
+  max-width: var(--measure);
+  margin: 8px 0 0;
+  padding-left: 1.2em;
+}
+
+.provenance-note,
+.rarity-pref,
+.notes {
+  max-width: var(--measure);
+  color: var(--muted);
+  font-size: var(--step--1);
+}
