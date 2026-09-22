@@ -34,10 +34,13 @@ export function characterSummary(index, character) {
   let predicted = 0;
 
   for (const gift of index.gifts) {
-    const { state } = index.confidenceFor(character.id, gift.id);
-    if (state === 'FAVORITE') favourites.add(gift.id);
-    else if (state === 'CONFIRMED') confirmed += 1;
-    else if (state === 'PREDICTED') predicted += 1;
+    const confidence = index.confidenceFor(character.id, gift.id);
+    if (confidence.state === 'FAVORITE') favourites.add(gift.id);
+    else if (confidence.state === 'CONFIRMED') confirmed += 1;
+    // A refuted-category prediction is a guess that the gift will NOT land --
+    // it is not something "worth trying", so only a positive prediction
+    // counts here. See suggestionsFor in favorites.js, which this mirrors.
+    else if (confidence.state === 'PREDICTED' && confidence.predicted === 'positive') predicted += 1;
   }
 
   if (favourites.size > 0) return `${favourites.size} favourite${favourites.size === 1 ? '' : 's'} found`;
@@ -58,10 +61,14 @@ export function characterIndexModel(index, filters, search) {
     }));
 }
 
-// "Worth trying" is only true while every row is still a guess. Once a player
-// has reported one, the section is reporting results, not making suggestions.
+// "Worth trying" is only true while every row is still a guess that the gift
+// will land. A negative prediction (a refuted-category guess) present in the
+// rows means the section is reporting a mix, including at least one item a
+// guide says NOT to bother with -- so it is no longer purely suggestions.
 export function signalHeading(rows) {
-  return rows.every((row) => row.confidence.state === 'PREDICTED') ? 'Worth trying' : 'What we know';
+  return rows.every((row) => row.confidence.state === 'PREDICTED' && row.confidence.predicted === 'positive')
+    ? 'Worth trying'
+    : 'What we know';
 }
 
 function chipList(entries, className) {

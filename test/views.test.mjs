@@ -298,6 +298,18 @@ test('characterSummary falls back through confirmed, predicted, then nothing', (
   assert.equal(characterSummary(bare, bare.byCharacterId.get('c1')), 'nothing tested yet');
 });
 
+// A character whose only category link is refuted has a guide guess that the
+// gift will NOT land. That must never surface as "worth trying" -- see
+// suggestionsFor in favorites.js, which this is made to agree with.
+test('characterSummary does not count a refuted-category prediction as worth trying', () => {
+  const idx = buildIndex({
+    ...dataset,
+    characters: [{ ...dataset.characters[0], categories: { books: { state: 'refuted', source: 'polygon' } } }],
+    observations: [],
+  });
+  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), 'nothing tested yet');
+});
+
 test('characterIndexModel hides non-giftable characters and honours search', () => {
   const characters = [
     { ...dataset.characters[0], id: 'aa', name: 'Aada' },
@@ -315,13 +327,33 @@ test('characterIndexModel carries the category chips for each character', () => 
   assert.deepEqual(entry.categories.map((c) => c.label), ['Books']);
 });
 
-test('signalHeading only claims "worth trying" while every row is a guess', () => {
-  assert.equal(signalHeading([{ confidence: { state: 'PREDICTED' } }]), 'Worth trying');
+test('signalHeading only claims "worth trying" while every row is a positive guess', () => {
+  assert.equal(signalHeading([{ confidence: { state: 'PREDICTED', predicted: 'positive' } }]), 'Worth trying');
   assert.equal(
-    signalHeading([{ confidence: { state: 'PREDICTED' } }, { confidence: { state: 'CONFIRMED' } }]),
+    signalHeading([
+      { confidence: { state: 'PREDICTED', predicted: 'positive' } },
+      { confidence: { state: 'CONFIRMED' } },
+    ]),
     'What we know',
   );
   assert.equal(signalHeading([{ confidence: { state: 'PENDING' } }]), 'What we know');
+});
+
+// A refuted-category prediction is a guess the gift will NOT land. Counting
+// it toward "Worth trying" would invite players to spend gifts on items a
+// guide says will not work -- the inverse of this project's core rule.
+test('signalHeading does not call a refuted-category prediction "worth trying"', () => {
+  assert.equal(
+    signalHeading([{ confidence: { state: 'PREDICTED', predicted: 'negative' } }]),
+    'What we know',
+  );
+  assert.equal(
+    signalHeading([
+      { confidence: { state: 'PREDICTED', predicted: 'positive' } },
+      { confidence: { state: 'PREDICTED', predicted: 'negative' } },
+    ]),
+    'What we know',
+  );
 });
 
 test('giftIndexModel groups by category, alphabetically', () => {
