@@ -438,12 +438,6 @@ dialog input[type="text"] {
   margin: 6px 0;
 }
 
-.field-note {
-  margin: 4px 0 0;
-  font-size: 0.8rem;
-  color: var(--color-muted);
-}
-
 .dialog-intro {
   color: var(--color-muted);
   font-size: 0.9rem;
@@ -534,12 +528,6 @@ dialog input[type="text"] {
   margin: 2px 0 0;
   color: var(--color-muted);
   font-size: 0.85rem;
-}
-
-.review-note {
-  margin: 6px 0 0;
-  font-style: italic;
-  overflow-wrap: anywhere;
 }
 
 .review-actions {

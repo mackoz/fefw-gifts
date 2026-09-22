@@ -2,30 +2,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   validateReport, insertReport, listPending, listForReview,
-  recordVote, setStatus, takeApproved, MAX_NOTE,
+  recordVote, setStatus, takeApproved,
 } from '../worker/src/reports.js';
 import { fakeD1 } from '../worker/test-support/fake-d1.mjs';
 
-const GOOD = { character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: 40, note: ' rides an ornius ' };
+const GOOD = { character: 'nydine', gift: 'grooming-kit', reaction: 'loved' };
 
 test('a well-formed report validates and is trimmed', () => {
   const { errors, value } = validateReport(GOOD);
   assert.deepEqual(errors, []);
-  assert.deepEqual(value, { character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: 40, note: 'rides an ornius' });
-});
-
-test('points and note are optional and normalise to null', () => {
-  const { value } = validateReport({ character: 'a', gift: 'b', reaction: 'none' });
-  assert.deepEqual(value, { character: 'a', gift: 'b', reaction: 'none', points: null, note: null });
-});
-
-test('an empty-string note is null, not an empty string', () => {
-  assert.equal(validateReport({ character: 'a', gift: 'b', reaction: 'none', note: '   ' }).value.note, null);
-});
-
-test('a long note is truncated rather than rejected', () => {
-  const { value } = validateReport({ character: 'a', gift: 'b', reaction: 'none', note: 'x'.repeat(400) });
-  assert.equal(value.note.length, MAX_NOTE);
+  assert.deepEqual(value, { character: 'nydine', gift: 'grooming-kit', reaction: 'loved' });
 });
 
 test('ids must look like data-file ids', () => {
@@ -39,12 +25,6 @@ test('the reaction must be one of the five in-game tiers', () => {
   assert.deepEqual(validateReport({ ...GOOD, reaction: 'favorite' }).errors, []);
 });
 
-test('points must be a whole number in range', () => {
-  for (const bad of [-1, 1000, 2.5, 'lots']) {
-    assert.ok(validateReport({ ...GOOD, points: bad }).errors.length > 0, `expected ${bad} to be rejected`);
-  }
-});
-
 test('a failed validation returns no value at all', () => {
   assert.equal(validateReport({}).value, null);
 });
@@ -55,7 +35,7 @@ test('insertReport writes a pending row with zeroed counters', async () => {
   const [call] = db.calls;
   assert.match(call.sql, /INSERT INTO reports/);
   assert.match(call.sql, /'pending'/);
-  assert.deepEqual(call.params, ['r1', 'nydine', 'grooming-kit', 'loved', 40, 'rides an ornius', '2026-09-20T00:00:00.000Z']);
+  assert.deepEqual(call.params, ['r1', 'nydine', 'grooming-kit', 'loved', '2026-09-20T00:00:00.000Z']);
 });
 
 // This is the constraint the whole voting design rests on. If it ever fails,
@@ -65,14 +45,6 @@ test('listPending never selects a vote column', async () => {
   const rows = await listPending(db);
   assert.doesNotMatch(db.calls[0].sql, /upvotes|downvotes/);
   assert.deepEqual(rows, [{ id: 'r1' }]);
-});
-
-// Unmoderated free text from an anonymous submitter: it must never reach the
-// public feed, so it must never even be selected.
-test('listPending never selects the note column either', async () => {
-  const db = fakeD1([{ results: [{ id: 'r1' }] }]);
-  await listPending(db);
-  assert.doesNotMatch(db.calls[0].sql, /\bnote\b/);
 });
 
 test('listPending survives a driver that returns no results array', async () => {

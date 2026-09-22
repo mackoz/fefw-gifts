@@ -2,9 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createApi } from '../assets/js/api.js';
 import { buildPendingIndex } from '../assets/js/overlay.js';
-import { WORKER_URL } from '../assets/js/config.js';
+import { WORKER_URL, TURNSTILE_SITE_KEY } from '../assets/js/config.js';
 
-const ROW = { id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: 40, note: null, created_at: '2026-09-20T00:00:00.000Z' };
+const ROW = { id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved', created_at: '2026-09-20T00:00:00.000Z' };
 
 function stubFetch(handler) {
   const calls = [];
@@ -18,8 +18,23 @@ function stubFetch(handler) {
 
 const ok = (body) => new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
-test('the committed config ships with submissions switched off', () => {
-  assert.equal(WORKER_URL, null);
+// The committed config is public by design, but two mistakes would be easy to
+// make and expensive to notice: shipping a localhost URL left over from a local
+// test, or shipping a placeholder. Null is still valid -- it means submissions
+// are switched off, which the rest of this file proves is a supported state.
+test('the committed Worker URL is null or a real https origin, never localhost', () => {
+  if (WORKER_URL !== null) {
+    assert.match(WORKER_URL, /^https:\/\//, 'must be https');
+    assert.doesNotMatch(WORKER_URL, /localhost|127\.0\.0\.1|REPLACE/i);
+  }
+});
+
+test('the committed Turnstile site key is null or a non-empty string', () => {
+  if (TURNSTILE_SITE_KEY !== null) {
+    assert.equal(typeof TURNSTILE_SITE_KEY, 'string');
+    assert.ok(TURNSTILE_SITE_KEY.length > 0);
+    assert.doesNotMatch(TURNSTILE_SITE_KEY, /REPLACE|your-site-key/i);
+  }
 });
 
 test('a client with no base URL is disabled and still answers every call', async () => {

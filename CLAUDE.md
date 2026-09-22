@@ -34,8 +34,8 @@
   it. A visible tally would read as confirmation and manufacture confidence out
   of guesswork — see the spec's "Peer validation by voting".
 - **A pending report is not a confirmation.** It may not flip a pair to
-  `CONFIRMED` or `FAVORITE`, contribute points, count toward a tally, or produce
-  a negative verdict. Only an approved observation merged into `data/` may.
+  `CONFIRMED` or `FAVORITE`, contribute a reaction, count toward a tally, or
+  produce a negative verdict. Only an approved observation merged into `data/` may.
 - **The Worker collects no personal data.** No name, email, IP, hashed IP,
   session id or fingerprint, in the D1 schema, the Worker or the client.
   Turnstile is called without `remoteip`. Adding any of these is a design

@@ -37,7 +37,7 @@ single source of truth and the Worker stays a convenience layer over it.
 - **Absence of a match is never a dislike.** Only an actual observation may
   produce a negative result.
 - **A `PENDING` report must not** flip a pair to `CONFIRMED` or `FAVORITE`,
-  contribute `points`, count toward a confirmed-report tally, or produce a
+  contribute a `reaction`, count toward a confirmed-report tally, or produce a
   negative verdict on a pair.
 - **Votes never reach the published site.** `GET /pending` must not select or
   return `upvotes`/`downvotes`, and no public view may render a tally. This is
@@ -345,8 +345,6 @@ CREATE TABLE IF NOT EXISTS reports (
   "character" TEXT NOT NULL,
   gift        TEXT NOT NULL,
   reaction    TEXT NOT NULL,
-  points      INTEGER,
-  note        TEXT,
   status      TEXT NOT NULL DEFAULT 'pending',
   upvotes     INTEGER NOT NULL DEFAULT 0,
   downvotes   INTEGER NOT NULL DEFAULT 0,
@@ -535,10 +533,10 @@ git commit -m "Verify Turnstile tokens without sending an IP address"
 **Interfaces:**
 - Consumes: nothing.
 - Produces:
-  - `REACTIONS: string[]`, `MAX_NOTE: 280`, `MAX_POINTS: 999`
-  - `validateReport(input) -> { errors: string[], value: { character, gift, reaction, points, note } | null }`
-  - `insertReport(db, { id, character, gift, reaction, points, note, createdAt }) -> Promise<void>`
-  - `listPending(db, limit?) -> Promise<Array<{ id, character, gift, reaction, points, note, created_at }>>`
+  - `REACTIONS: string[]`
+  - `validateReport(input) -> { errors: string[], value: { character, gift, reaction } | null }`
+  - `insertReport(db, { id, character, gift, reaction, createdAt }) -> Promise<void>`
+  - `listPending(db, limit?) -> Promise<Array<{ id, character, gift, reaction, created_at }>>`
   - `listForReview(db, limit?) -> Promise<Array<{ …the above…, upvotes, downvotes }>>`
   - `recordVote(db, id, direction) -> Promise<boolean>` — throws on an unknown direction
   - `setStatus(db, id, status) -> Promise<boolean>`
@@ -593,30 +591,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   validateReport, insertReport, listPending, listForReview,
-  recordVote, setStatus, takeApproved, MAX_NOTE,
+  recordVote, setStatus, takeApproved,
 } from '../worker/src/reports.js';
 import { fakeD1 } from '../worker/test-support/fake-d1.mjs';
 
-const GOOD = { character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: 40, note: ' rides an ornius ' };
+const GOOD = { character: 'nydine', gift: 'grooming-kit', reaction: 'loved' };
 
 test('a well-formed report validates and is trimmed', () => {
   const { errors, value } = validateReport(GOOD);
   assert.deepEqual(errors, []);
-  assert.deepEqual(value, { character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: 40, note: 'rides an ornius' });
-});
-
-test('points and note are optional and normalise to null', () => {
-  const { value } = validateReport({ character: 'a', gift: 'b', reaction: 'none' });
-  assert.deepEqual(value, { character: 'a', gift: 'b', reaction: 'none', points: null, note: null });
-});
-
-test('an empty-string note is null, not an empty string', () => {
-  assert.equal(validateReport({ character: 'a', gift: 'b', reaction: 'none', note: '   ' }).value.note, null);
-});
-
-test('a long note is truncated rather than rejected', () => {
-  const { value } = validateReport({ character: 'a', gift: 'b', reaction: 'none', note: 'x'.repeat(400) });
-  assert.equal(value.note.length, MAX_NOTE);
+  assert.deepEqual(value, { character: 'nydine', gift: 'grooming-kit', reaction: 'loved' });
 });
 
 test('ids must look like data-file ids', () => {
@@ -630,12 +614,6 @@ test('the reaction must be one of the five in-game tiers', () => {
   assert.deepEqual(validateReport({ ...GOOD, reaction: 'favorite' }).errors, []);
 });
 
-test('points must be a whole number in range', () => {
-  for (const bad of [-1, 1000, 2.5, 'lots']) {
-    assert.ok(validateReport({ ...GOOD, points: bad }).errors.length > 0, `expected ${bad} to be rejected`);
-  }
-});
-
 test('a failed validation returns no value at all', () => {
   assert.equal(validateReport({}).value, null);
 });
@@ -646,7 +624,7 @@ test('insertReport writes a pending row with zeroed counters', async () => {
   const [call] = db.calls;
   assert.match(call.sql, /INSERT INTO reports/);
   assert.match(call.sql, /'pending'/);
-  assert.deepEqual(call.params, ['r1', 'nydine', 'grooming-kit', 'loved', 40, 'rides an ornius', '2026-09-20T00:00:00.000Z']);
+  assert.deepEqual(call.params, ['r1', 'nydine', 'grooming-kit', 'loved', '2026-09-20T00:00:00.000Z']);
 });
 
 // This is the constraint the whole voting design rests on. If it ever fails,
@@ -718,8 +696,6 @@ Create `worker/src/reports.js`:
 
 ```js
 export const REACTIONS = ['none', 'slight', 'liked', 'loved', 'favorite'];
-export const MAX_NOTE = 280;
-export const MAX_POINTS = 999;
 
 // The same shape the data files use. The Worker holds no copy of the dataset,
 // so it cannot check that an id exists -- only that it could. An id that names
@@ -737,32 +713,14 @@ export function validateReport(input) {
   if (!ID_PATTERN.test(gift)) errors.push('gift must be a gift-guide id');
   if (!REACTIONS.includes(reaction)) errors.push(`reaction must be one of: ${REACTIONS.join(', ')}`);
 
-  let points = null;
-  const rawPoints = input?.points;
-  if (rawPoints !== null && rawPoints !== undefined && rawPoints !== '') {
-    const parsed = typeof rawPoints === 'number' ? rawPoints : Number(rawPoints);
-    if (!Number.isInteger(parsed) || parsed < 0 || parsed > MAX_POINTS) {
-      errors.push(`points must be a whole number between 0 and ${MAX_POINTS}`);
-    } else {
-      points = parsed;
-    }
-  }
-
-  // A note is truncated rather than rejected: losing the tail of a long note is
-  // a far better outcome than losing the report it came with.
-  let note = null;
-  if (typeof input?.note === 'string' && input.note.trim() !== '') {
-    note = input.note.trim().slice(0, MAX_NOTE);
-  }
-
-  return { errors, value: errors.length ? null : { character, gift, reaction, points, note } };
+  return { errors, value: errors.length ? null : { character, gift, reaction } };
 }
 
-export async function insertReport(db, { id, character, gift, reaction, points, note, createdAt }) {
+export async function insertReport(db, { id, character, gift, reaction, createdAt }) {
   await db.prepare(
-    `INSERT INTO reports (id, "character", gift, reaction, points, note, status, upvotes, downvotes, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, 'pending', 0, 0, ?)`,
-  ).bind(id, character, gift, reaction, points, note, createdAt).run();
+    `INSERT INTO reports (id, "character", gift, reaction, status, upvotes, downvotes, created_at)
+     VALUES (?, ?, ?, ?, 'pending', 0, 0, ?)`,
+  ).bind(id, character, gift, reaction, createdAt).run();
 }
 
 // The public overlay shape. The vote columns are not merely omitted from the
@@ -771,7 +729,7 @@ export async function insertReport(db, { id, character, gift, reaction, points, 
 // trusted to keep.
 export async function listPending(db, limit = 500) {
   const { results } = await db.prepare(
-    `SELECT id, "character" AS character, gift, reaction, points, note, created_at
+    `SELECT id, "character" AS character, gift, reaction, created_at
        FROM reports
       WHERE status = 'pending'
       ORDER BY created_at DESC
@@ -783,7 +741,7 @@ export async function listPending(db, limit = 500) {
 // The maintainer's view, and the only place a tally is ever produced.
 export async function listForReview(db, limit = 200) {
   const { results } = await db.prepare(
-    `SELECT id, "character" AS character, gift, reaction, points, note,
+    `SELECT id, "character" AS character, gift, reaction,
             upvotes, downvotes, created_at
        FROM reports
       WHERE status = 'pending'
@@ -821,7 +779,7 @@ export async function setStatus(db, id, status) {
 // re-entered by hand. `worker/README.md` records that.
 export async function takeApproved(db, limit = 200) {
   const { results } = await db.prepare(
-    `SELECT id, "character" AS character, gift, reaction, points, note, created_at
+    `SELECT id, "character" AS character, gift, reaction, created_at
        FROM reports
       WHERE status = 'approved'
       ORDER BY created_at ASC
@@ -843,7 +801,7 @@ export async function takeApproved(db, limit = 200) {
 - [ ] **Step 5: Run the tests**
 
 Run: `node --test test/worker-reports.test.mjs`
-Expected: PASS, 18 tests.
+Expected: PASS, 14 tests.
 
 Run: `npm test && npm run validate`
 Expected: PASS.
@@ -901,7 +859,7 @@ const post = (path, body) => new Request(`https://api.test${path}`, {
   body: JSON.stringify(body),
 });
 
-const REPORT = { character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: 40, turnstileToken: 'tok' };
+const REPORT = { character: 'nydine', gift: 'grooming-kit', reaction: 'loved', turnstileToken: 'tok' };
 
 test('a verified report is stored as pending and its id comes back', async () => {
   const db = fakeD1();
@@ -974,7 +932,7 @@ test('an unverified vote is refused', async () => {
 });
 
 test('the public pending feed carries no vote information at all', async () => {
-  const rows = [{ id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: 40, note: null, created_at: '2026-09-20T00:00:00.000Z' }];
+  const rows = [{ id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved', created_at: '2026-09-20T00:00:00.000Z' }];
   const db = fakeD1([{ results: rows }]);
   const request = new Request('https://api.test/pending', { headers: { Origin: ORIGIN } });
   const res = await handle(request, env(db), deps());
@@ -1176,7 +1134,7 @@ test('an unconfigured Worker refuses rather than letting everyone in', async () 
 });
 
 test('the review queue comes back with its vote counts, uncached', async () => {
-  const rows = [{ id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: 40, note: null, upvotes: 3, downvotes: 1, created_at: '2026-09-20T00:00:00.000Z' }];
+  const rows = [{ id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved', upvotes: 3, downvotes: 1, created_at: '2026-09-20T00:00:00.000Z' }];
   const res = await handle(authed('GET', '/review'), env(fakeD1([{ results: rows }])), deps);
   assert.equal(res.status, 200);
   assert.deepEqual(await res.json(), { reports: rows });
@@ -1498,14 +1456,13 @@ Then append:
 const CHAR = { id: 'c1', name: 'C', giftable: true, categories: { books: { state: 'guide', source: 's1' } }, rarityPreference: null };
 const BOOK = { id: 'book', name: 'Book', category: 'books', rarity: 'common' };
 const ROCK = { id: 'rock', name: 'Rock', category: null, rarity: null };
-const PENDING_ROW = { id: 'r1', character: 'c1', gift: 'book', reaction: 'loved', points: 40 };
+const PENDING_ROW = { id: 'r1', character: 'c1', gift: 'book', reaction: 'loved' };
 
 test('a pending report outranks a prediction without becoming a confirmation', () => {
   const c = deriveConfidence({ character: CHAR, gift: BOOK, observations: [], pending: [PENDING_ROW] });
   assert.equal(c.state, 'PENDING');
   assert.equal(c.pendingCount, 1);
-  // The four things a pending report must never do.
-  assert.equal(c.points, null);
+  // The three things a pending report must never do.
   assert.equal(c.reaction, null);
   assert.equal(c.isException, false);
   assert.equal(c.observationCount, 0);
@@ -1518,10 +1475,9 @@ test('a pending report on a pair with no category link is still PENDING', () => 
 });
 
 test('a pending report never downgrades a merged observation', () => {
-  const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'liked', points: 20 }];
+  const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'liked' }];
   const c = deriveConfidence({ character: CHAR, gift: BOOK, observations, pending: [PENDING_ROW] });
   assert.equal(c.state, 'CONFIRMED');
-  assert.equal(c.points, 20);
   assert.equal(c.pendingCount, 1);
 });
 
@@ -1615,8 +1571,8 @@ Replace the no-observations branch with:
 ```js
   if (observations.length === 0) {
     // A pending report is a real player's result, so it outranks a guide's
-    // guess -- but it is not a confirmation. `reaction` and `points` stay null
-    // deliberately: an unreviewed report contributes neither. Only an approved
+    // guess -- but it is not a confirmation. `reaction` stays null
+    // deliberately: an unreviewed report contributes nothing. Only an approved
     // observation merged into the repository may do that.
     if (pending.length > 0) {
       result.state = 'PENDING';
@@ -1758,7 +1714,7 @@ import { createApi } from '../assets/js/api.js';
 import { buildPendingIndex } from '../assets/js/overlay.js';
 import { WORKER_URL } from '../assets/js/config.js';
 
-const ROW = { id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: 40, note: null, created_at: '2026-09-20T00:00:00.000Z' };
+const ROW = { id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved', created_at: '2026-09-20T00:00:00.000Z' };
 
 function stubFetch(handler) {
   const calls = [];
@@ -2117,7 +2073,7 @@ const OVERLAY_DATASET = {
 };
 
 test('a pending report reaches confidenceFor through the index', () => {
-  const idx = buildIndex(OVERLAY_DATASET, [{ id: 'r1', character: 'c1', gift: 'book', reaction: 'loved', points: 40 }]);
+  const idx = buildIndex(OVERLAY_DATASET, [{ id: 'r1', character: 'c1', gift: 'book', reaction: 'loved' }]);
   assert.equal(idx.confidenceFor('c1', 'book').state, 'PENDING');
   assert.deepEqual(idx.pendingFor('c1', 'book').map((r) => r.id), ['r1']);
   assert.deepEqual(idx.pendingFor('c1', 'nothing'), []);
@@ -2130,7 +2086,7 @@ test('an index built without an overlay behaves exactly as before', () => {
 });
 
 test('a pending favourite report does not close a favourites-hunt slot', () => {
-  const idx = buildIndex(OVERLAY_DATASET, [{ id: 'r1', character: 'c1', gift: 'book', reaction: 'favorite', points: 80 }]);
+  const idx = buildIndex(OVERLAY_DATASET, [{ id: 'r1', character: 'c1', gift: 'book', reaction: 'favorite' }]);
   const { found, unknown } = favoritesModel(idx, DEFAULT_FILTERS);
   assert.equal(found.length, 0);
   assert.equal(unknown.length, 1);
@@ -2193,7 +2149,7 @@ import { buildReportPayload, REACTION_PROMPTS } from '../assets/js/report-form.j
 import { createTurnstile } from '../assets/js/turnstile.js';
 import { REACTIONS } from '../assets/js/confidence.js';
 
-const FIELDS = { character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: '40', note: ' rides an ornius ', turnstileToken: 'tok' };
+const FIELDS = { character: 'nydine', gift: 'grooming-kit', reaction: 'loved', turnstileToken: 'tok' };
 
 test('the form offers exactly the five in-game tiers, in order', () => {
   assert.deepEqual(REACTION_PROMPTS.map((p) => p.value), REACTIONS);
@@ -2205,14 +2161,8 @@ test('a complete form produces the Worker payload', () => {
   assert.deepEqual(errors, []);
   assert.deepEqual(payload, {
     character: 'nydine', gift: 'grooming-kit', reaction: 'loved',
-    points: 40, note: 'rides an ornius', turnstileToken: 'tok',
+    turnstileToken: 'tok',
   });
-});
-
-test('points and note are optional and come through as null', () => {
-  const { payload } = buildReportPayload({ ...FIELDS, points: '', note: '' });
-  assert.equal(payload.points, null);
-  assert.equal(payload.note, null);
 });
 
 test('each missing field produces its own plain-language message', () => {
@@ -2220,16 +2170,6 @@ test('each missing field produces its own plain-language message', () => {
   assert.match(buildReportPayload({ ...FIELDS, gift: '' }).errors[0], /gift/i);
   assert.match(buildReportPayload({ ...FIELDS, reaction: '' }).errors[0], /game showed/i);
   assert.match(buildReportPayload({ ...FIELDS, turnstileToken: '' }).errors[0], /human/i);
-});
-
-test('points outside the game’s range are refused', () => {
-  for (const points of ['-1', '1000', '2.5', 'lots']) {
-    assert.ok(buildReportPayload({ ...FIELDS, points }).errors.length > 0, points);
-  }
-});
-
-test('an over-long note is refused rather than silently cut', () => {
-  assert.match(buildReportPayload({ ...FIELDS, note: 'x'.repeat(281) }).errors[0], /280/);
 });
 
 test('a failed build yields no payload at all', () => {
@@ -2393,8 +2333,6 @@ export function createTurnstile({
 ```js
 import { REACTIONS } from './confidence.js';
 
-export const MAX_POINTS = 999;
-
 // The player-facing wording for each tier, in the game's own terms. The values
 // are the five tiers from confidence.js; a test keeps the two in step.
 export const REACTION_PROMPTS = [
@@ -2405,29 +2343,14 @@ export const REACTION_PROMPTS = [
   { value: 'favorite', label: 'They really liked it, with two yellow arrows — double points' },
 ];
 
-const MAX_NOTE = 280;
-
 // Pure. Mirrors the Worker's own validation so a contributor is told what is
 // wrong before a request is spent -- the Worker still re-checks everything,
 // because a browser check is a courtesy, not a control.
-export function buildReportPayload({ character, gift, reaction, points, note, turnstileToken } = {}) {
+export function buildReportPayload({ character, gift, reaction, turnstileToken } = {}) {
   const errors = [];
   if (!character) errors.push('Pick which character received the gift.');
   if (!gift) errors.push('Pick which gift you gave.');
   if (!REACTIONS.includes(reaction)) errors.push('Pick what the game showed you.');
-
-  let parsedPoints = null;
-  if (points !== '' && points !== null && points !== undefined) {
-    const value = Number(points);
-    if (!Number.isInteger(value) || value < 0 || value > MAX_POINTS) {
-      errors.push(`Support points must be a whole number from 0 to ${MAX_POINTS}, or left blank.`);
-    } else {
-      parsedPoints = value;
-    }
-  }
-
-  const trimmedNote = typeof note === 'string' ? note.trim() : '';
-  if (trimmedNote.length > MAX_NOTE) errors.push(`Keep the note under ${MAX_NOTE} characters.`);
 
   if (!turnstileToken) errors.push('Complete the “I’m human” check first.');
 
@@ -2436,8 +2359,6 @@ export function buildReportPayload({ character, gift, reaction, points, note, tu
     errors,
     payload: {
       character, gift, reaction,
-      points: parsedPoints,
-      note: trimmedNote === '' ? null : trimmedNote,
       turnstileToken,
     },
   };
@@ -2473,7 +2394,7 @@ function fillReactions(fieldset) {
 // Wires the dialog. `elements` is every node the form needs, passed in rather
 // than looked up, so this module keeps no top-level DOM access.
 export function createReportForm({ elements, index, api, turnstile, onSubmitted = () => {} }) {
-  const { dialog, form, character, gift, reactions, points, note, status, cancel, submit } = elements;
+  const { dialog, form, character, gift, reactions, status, cancel, submit } = elements;
 
   fillSelect(character, index.characters.filter((c) => c.giftable), 'Choose a character…');
   fillSelect(gift, index.gifts, 'Choose a gift…');
@@ -2487,8 +2408,6 @@ export function createReportForm({ elements, index, api, turnstile, onSubmitted 
       character: character.value,
       gift: gift.value,
       reaction: reactions.querySelector('input[name="reaction"]:checked')?.value ?? '',
-      points: points.value,
-      note: note.value,
       turnstileToken: turnstile.token(),
     };
 
@@ -2521,8 +2440,8 @@ export function createReportForm({ elements, index, api, turnstile, onSubmitted 
   return {
     async open(characterId = '', giftId = '') {
       // Reset first, then pre-fill. This covers Cancel, Escape and every other
-      // close path at once -- otherwise a cancelled report's reaction and note
-      // survive into the next pair the contributor opens, and they submit one
+      // close path at once -- otherwise a cancelled report's reaction survives
+      // into the next pair the contributor opens, and they submit one
       // pair's result against another. The `.value` assignments must follow the
       // reset, since reset returns each select to its blank placeholder.
       form.reset();
@@ -2608,13 +2527,6 @@ And add, just before the closing `</body>`:
         <legend>What did the game show?</legend>
       </fieldset>
 
-      <label for="report-points">Support points gained (optional)</label>
-      <input id="report-points" type="number" min="0" max="999" inputmode="numeric">
-
-      <label for="report-note">Anything unusual worth noting? (optional)</label>
-      <input id="report-note" type="text" maxlength="280">
-      <p class="field-note">Reports are published. Don’t put anything personal in here.</p>
-
       <div id="report-turnstile"></div>
       <p id="report-status" class="dialog-status" role="status" aria-live="polite"></p>
 
@@ -2661,8 +2573,6 @@ At the end of `main()`, after the first `render()`:
       character: document.getElementById('report-character'),
       gift: document.getElementById('report-gift'),
       reactions: document.getElementById('report-reactions'),
-      points: document.getElementById('report-points'),
-      note: document.getElementById('report-note'),
       status: document.getElementById('report-status'),
       cancel: document.getElementById('report-cancel'),
       submit: document.getElementById('report-submit'),
@@ -2741,12 +2651,6 @@ dialog input[type="text"] {
   margin: 6px 0;
 }
 
-.field-note {
-  margin: 4px 0 0;
-  font-size: 0.8rem;
-  color: var(--color-muted);
-}
-
 .dialog-intro {
   color: var(--color-muted);
   font-size: 0.9rem;
@@ -2786,7 +2690,7 @@ dialog input[type="text"] {
 - [ ] **Step 10: Run the tests**
 
 Run: `node --test test/report-form.test.mjs`
-Expected: PASS, 12 tests.
+Expected: PASS, 9 tests.
 
 Run: `npm test && npm run validate`
 Expected: PASS.
@@ -3167,7 +3071,7 @@ git commit -m "Let visitors vote on pending reports, as a private maintainer sig
 - Produces:
   - `TOKEN_KEY = 'fefw-gifts-admin-token'`
   - `humanAge(milliseconds) -> string`
-  - `reviewRowModel(row, now) -> { id, pair, reaction, points, note, score, votes, age }`
+  - `reviewRowModel(row, now) -> { id, pair, reaction, score, votes, age }`
   - `mountReview({ elements, storage, createClient })` — the page's wiring.
 
 Vote counts **are** shown here. This is the one place they belong: the page is
@@ -3185,7 +3089,7 @@ import { reviewRowModel, humanAge, TOKEN_KEY } from '../assets/js/review.js';
 const NOW = Date.parse('2026-09-20T12:00:00.000Z');
 const ROW = {
   id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved',
-  points: 40, note: 'rides an ornius', upvotes: 5, downvotes: 2,
+  upvotes: 5, downvotes: 2,
   created_at: '2026-09-20T09:00:00.000Z',
 };
 
@@ -3194,19 +3098,15 @@ test('a row becomes something a maintainer can scan', () => {
   assert.equal(model.id, 'r1');
   assert.equal(model.pair, 'nydine · grooming-kit');
   assert.equal(model.reaction, 'loved');
-  assert.equal(model.points, 40);
-  assert.equal(model.note, 'rides an ornius');
   assert.equal(model.score, 3);
   assert.equal(model.votes, '5 up / 2 down');
   assert.equal(model.age, '3 hours ago');
 });
 
-test('missing counters, points and notes do not produce NaN or "undefined"', () => {
+test('missing counters do not produce NaN or "undefined"', () => {
   const model = reviewRowModel({ id: 'r2', character: 'a', gift: 'b', reaction: 'none', created_at: '2026-09-20T12:00:00.000Z' }, NOW);
   assert.equal(model.score, 0);
   assert.equal(model.votes, '0 up / 0 down');
-  assert.equal(model.points, null);
-  assert.equal(model.note, null);
 });
 
 test('an unparseable timestamp degrades to a readable placeholder', () => {
@@ -3267,8 +3167,6 @@ export function reviewRowModel(row, now = Date.now()) {
     id: row.id,
     pair: `${row.character} · ${row.gift}`,
     reaction: row.reaction,
-    points: row.points ?? null,
-    note: row.note ?? null,
     score: upvotes - downvotes,
     votes: `${upvotes} up / ${downvotes} down`,
     age: Number.isNaN(created) ? 'unknown age' : humanAge(now - created),
@@ -3296,11 +3194,9 @@ function renderRow(model, onDecide) {
   item.append(el('p', 'review-pair', model.pair));
   item.append(el('p', 'review-meta', [
     model.reaction,
-    model.points === null ? null : `${model.points} pts`,
     model.votes,
     model.age,
   ].filter(Boolean).join(' · ')));
-  if (model.note) item.append(el('p', 'review-note', model.note));
 
   const actions = el('div', 'review-actions');
   for (const [decision, label] of [['approve', 'Approve'], ['reject', 'Reject']]) {
@@ -3481,11 +3377,6 @@ export function mountReview({ elements, storage, createClient = createApi, now =
   font-size: 0.85rem;
 }
 
-.review-note {
-  margin: 6px 0 0;
-  font-style: italic;
-}
-
 .review-actions {
   display: flex;
   gap: 8px;
@@ -3544,14 +3435,15 @@ git commit -m "Add the private review page for approving pending reports"
 - Consumes: `POST /ingest -> { reports: [...] }` (Task 5); `validate` and
   `loadDataset` from `scripts/validate.mjs`.
 - Produces:
-  - `toObservation(row) -> { id, gift, character, reaction, points, date }`
+  - `toObservation(row) -> { id, gift, character, reaction, date }`
   - `mergeObservations(existing, rows) -> { observations, added }`
 
-**The note is deliberately dropped.** `data/observations.json` has no field for
-it, and a note is free text from an anonymous contributor that would otherwise
-be committed to a public repository unread. The maintainer reads notes on the
-review page, and the pull request body repeats them, so anything worth keeping
-can be added by hand.
+**There is no `points` or `note` field anywhere in this pipeline.** The game
+never displays a numeric support-point value, so `points` never existed as
+real data. `note` is dropped for a different reason: `data/observations.json`
+has no field for it, and it is free text from an anonymous contributor that
+would otherwise be committed to a public repository unread. The maintainer
+reads notes on the review page.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -3565,7 +3457,7 @@ import { toObservation, mergeObservations } from '../scripts/ingest.mjs';
 const ROW = {
   id: '9f1c2f7a-0000-4000-8000-000000000001',
   character: 'nydine', gift: 'grooming-kit', reaction: 'loved',
-  points: 40, note: 'rides an ornius', created_at: '2026-09-20T09:30:00.000Z',
+  created_at: '2026-09-20T09:30:00.000Z',
 };
 
 test('a report becomes an observation in the documented shape', () => {
@@ -3574,7 +3466,6 @@ test('a report becomes an observation in the documented shape', () => {
     gift: 'grooming-kit',
     character: 'nydine',
     reaction: 'loved',
-    points: 40,
     date: '2026-09-20',
   });
 });
@@ -3582,15 +3473,9 @@ test('a report becomes an observation in the documented shape', () => {
 // The privacy rule, asserted rather than trusted.
 test('nothing identifying and no free text survives the conversion', () => {
   const observation = toObservation({ ...ROW, reporter: 'someone', ip: '1.2.3.4', email: 'a@b.test' });
-  for (const field of ['note', 'reporter', 'ip', 'email', 'user', 'author', 'submitter', 'upvotes', 'downvotes', 'status']) {
+  for (const field of ['note', 'points', 'reporter', 'ip', 'email', 'user', 'author', 'submitter', 'upvotes', 'downvotes', 'status']) {
     assert.ok(!(field in observation), `${field} must not survive ingest`);
   }
-});
-
-test('a missing points value becomes null, not undefined', () => {
-  const observation = toObservation({ ...ROW, points: undefined });
-  assert.equal(observation.points, null);
-  assert.ok('points' in observation);
 });
 
 test('rows are appended and the added ones are reported', () => {
@@ -3633,18 +3518,12 @@ import path from 'node:path';
 import { loadDataset, validate } from './validate.mjs';
 
 // The observation shape from the spec's data model, and nothing else.
-//
-// The submitted note is deliberately left behind: observations.json has no
-// field for it, and it is free text from an anonymous contributor that would
-// otherwise be committed unread. The maintainer sees notes on the review page,
-// and this script puts them in the pull request body instead.
 export function toObservation(row) {
   return {
     id: row.id,
     gift: row.gift,
     character: row.character,
     reaction: row.reaction,
-    points: row.points ?? null,
     date: String(row.created_at ?? '').slice(0, 10),
   };
 }
@@ -3691,7 +3570,7 @@ async function main() {
 
   if (added.length === 0) {
     console.log('nothing to ingest');
-    await report(0, []);
+    await report(0);
     return;
   }
 
@@ -3707,35 +3586,14 @@ async function main() {
 
   await writeFile(observationsPath, `${JSON.stringify(observations, null, 2)}\n`);
   console.log(`ingested ${added.length} observation(s)`);
-  await report(added.length, rows);
+  await report(added.length);
 }
 
-// Pure, so the newline-stripping and delimiter-collision behaviour is testable:
-// this string is written into $GITHUB_OUTPUT, where a stray newline or a line
-// matching the heredoc delimiter would let contributor text inject workflow
-// outputs. The `- character / gift: ` prefix is load-bearing -- it is what makes
-// a bare delimiter line impossible.
-export function formatNotes(rows) {
-  return rows
-    .filter((row) => row.note)
-    .map((row) => `- ${row.character} / ${row.gift}: ${String(row.note).replace(/\s+/g, ' ')}`)
-    .join('\n');
-}
-
-// Hands the count and the notes to the workflow. Writing to GITHUB_OUTPUT is a
-// no-op locally, so the script behaves the same either way.
-async function report(count, rows) {
-  const notes = formatNotes(rows);
-
+// Hands the count to the workflow. Writing to GITHUB_OUTPUT is a no-op
+// locally, so the script behaves the same either way.
+async function report(count) {
   if (!process.env.GITHUB_OUTPUT) return;
-  // A random delimiter per write. With a static one, a note containing a line
-  // equal to it would end the value early and the rest would parse as new
-  // workflow outputs -- including `added`, which gates the validate and
-  // pull-request steps. formatNotes's line prefix makes that impossible today,
-  // but that is a formatting choice, not a guarantee.
-  const delimiter = `NOTES_${crypto.randomUUID()}`;
   await appendFile(process.env.GITHUB_OUTPUT, `added=${count}\n`);
-  await appendFile(process.env.GITHUB_OUTPUT, `notes<<${delimiter}\n${notes}\n${delimiter}\n`);
 }
 
 // CLI entry point: `npm run ingest`. Importing this file runs nothing.
@@ -3805,7 +3663,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ADDED: ${{ steps.ingest.outputs.added }}
-          NOTES: ${{ steps.ingest.outputs.notes }}
         run: |
           BRANCH="reports/$(date -u +%Y-%m-%d-%H%M)"
           git config user.name "github-actions[bot]"
@@ -3814,10 +3671,8 @@ jobs:
           git add data/observations.json
           git commit -m "Add ${ADDED} approved player report(s)"
           git push origin "$BRANCH"
-          printf '%s\n\n%s\n\n%s\n' \
+          printf '%s\n' \
             "${ADDED} approved report(s) from the submission Worker." \
-            "Notes left by contributors (not committed — add anything worth keeping by hand):" \
-            "${NOTES:-none}" \
             | gh pr create --base master --head "$BRANCH" \
                 --title "Add ${ADDED} approved player report(s)" --body-file -
 ```
@@ -3839,8 +3694,8 @@ email, not an IP address, not a session identifier. There is no credit
 mechanism, by choice.
 
 A report appears on the site straight away marked **awaiting review**, which is
-not the same as confirmed: it contributes no points and settles nothing until a
-maintainer approves it and it is merged into `data/observations.json`.
+not the same as confirmed: it contributes no reaction and settles nothing until
+a maintainer approves it and it is merged into `data/observations.json`.
 
 While it is waiting, other visitors can say whether it matches what they have
 seen. Those responses are private: they help the maintainer decide what to check
@@ -3860,7 +3715,7 @@ structural changes. Add a short "How a report becomes data" list:
 1. A player submits a result on the site. It is stored as **pending** in a
    Cloudflare Worker, never in this repository.
 2. The site shows it as *awaiting review*. It is not a confirmation: it
-   contributes no points and produces no verdict.
+   contributes no reaction and produces no verdict.
 3. Other visitors can privately agree or disagree, which orders the
    maintainer's queue and nothing else.
 4. The maintainer approves it on a private review page.
@@ -3882,8 +3737,8 @@ Add these bullets:
   it. A visible tally would read as confirmation and manufacture confidence out
   of guesswork — see the spec's "Peer validation by voting".
 - **A pending report is not a confirmation.** It may not flip a pair to
-  `CONFIRMED` or `FAVORITE`, contribute points, count toward a tally, or produce
-  a negative verdict. Only an approved observation merged into `data/` may.
+  `CONFIRMED` or `FAVORITE`, contribute a reaction, count toward a tally, or
+  produce a negative verdict. Only an approved observation merged into `data/` may.
 - **The Worker collects no personal data.** No name, email, IP, hashed IP,
   session id or fingerprint, in the D1 schema, the Worker or the client.
   Turnstile is called without `remoteip`. Adding any of these is a design
@@ -3901,7 +3756,7 @@ Add these bullets:
 - [ ] **Step 9: Run the tests**
 
 Run: `node --test test/ingest.test.mjs`
-Expected: PASS, 7 tests.
+Expected: PASS, 6 tests.
 
 Run: `npm test && npm run validate`
 Expected: PASS.
@@ -3950,11 +3805,13 @@ implementation; raise them if you disagree.
   character or gift page. If the matrix is later made cell-clickable, the button
   belongs there.
 - **Vote controls are on character and gift rows only, for the same reason.**
-- **The submitted `note` is not committed.** `data/observations.json` has no
-  field for it and the spec's data model does not define one. Dropping it keeps
-  anonymous free text out of a public repository; the maintainer reads notes in
-  the review page and in the sync pull request body, and adds anything worth
-  keeping by hand. See Task 11.
+- **There is no `points` field anywhere in this design.** The game never
+  displays a numeric support-point value, only the five named tiers — see the
+  spec's "How gifts work in this game". **The submitted `note` is not
+  committed either.** `data/observations.json` has no field for it and the
+  spec's data model does not define one. Dropping it keeps anonymous free text
+  out of a public repository; the maintainer reads notes in the review page.
+  See Task 11.
 
 ## Known limitations, accepted
 

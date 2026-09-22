@@ -72,7 +72,7 @@ rarity, a fixed trait) and as a fallback when the form is unavailable. See
 1. A player submits a result on the site. It is stored as **pending** in a
    Cloudflare Worker, never in this repository.
 2. The site shows it as *awaiting review*. It is not a confirmation: it
-   contributes no points and produces no verdict.
+   contributes no reaction and produces no verdict.
 3. Other visitors can privately agree or disagree, which orders the
    maintainer's queue and nothing else.
 4. The maintainer approves it on a private review page.

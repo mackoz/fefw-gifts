@@ -44,7 +44,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ADDED: ${{ steps.ingest.outputs.added }}
-          NOTES: ${{ steps.ingest.outputs.notes }}
         run: |
           BRANCH="reports/$(date -u +%Y-%m-%d-%H%M)"
           git config user.name "github-actions[bot]"
@@ -53,9 +52,7 @@ jobs:
           git add data/observations.json
           git commit -m "Add ${ADDED} approved player report(s)"
           git push origin "$BRANCH"
-          printf '%s\n\n%s\n\n%s\n' \
+          printf '%s\n' \
             "${ADDED} approved report(s) from the submission Worker." \
-            "Notes left by contributors (not committed — add anything worth keeping by hand):" \
-            "${NOTES:-none}" \
             | gh pr create --base master --head "$BRANCH" \
                 --title "Add ${ADDED} approved player report(s)" --body-file -

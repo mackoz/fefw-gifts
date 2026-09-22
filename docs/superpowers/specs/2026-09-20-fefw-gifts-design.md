@@ -37,8 +37,8 @@ icon shading and a sparkle marker.
 prefer uncommon or rare items regardless of category. This is a trait of the
 character, not a property of the gift.
 
-**Reactions come in five objective tiers.** The game displays a banner and the
-support points gained:
+**Reactions come in five objective tiers.** The game displays only a one-line
+banner naming the tier:
 
 | Tier | Banner | Effect |
 |---|---|---|
@@ -49,7 +49,8 @@ support points gained:
 | `favorite` | they really liked it, two yellow arrows | **double points** |
 
 Because the game names the tier, reporting it is objective rather than a
-judgment call. Reporters can also read the exact points gained.
+judgment call. The game never displays a numeric support-point value, so no
+points field exists anywhere in this design.
 
 **Every character has at least one favorite item.** The double-points tier is
 reserved for it. No published guide has found them all — rare gifts are
@@ -106,8 +107,7 @@ Each link between a character and a category records where it came from:
 For any (character, gift item) pair the site derives one of:
 
 - **FAVORITE** — an observation reported the double-points tier
-- **CONFIRMED** — an observation exists for this exact item, showing its tier and
-  points
+- **CONFIRMED** — an observation exists for this exact item, showing its tier
 - **EXCEPTION** — an observation contradicts the prediction, with a `reason` where
   one is known
 - **PREDICTED** — no observation for this item, but a character-to-category link
@@ -116,7 +116,7 @@ For any (character, gift item) pair the site derives one of:
 - **CONTESTED** — observations for this pair disagree. Surfaced for review.
 - **PENDING** — a report exists but a maintainer has not approved it yet. Ranked
   between CONFIRMED and PREDICTED, labelled as awaiting review, and explicitly
-  **not** a confirmation: it contributes no points, no tally and no negative
+  **not** a confirmation: it contributes no reaction, no tally and no negative
   verdict. Lives only in the Worker overlay, never in the repo.
 - **UNTESTED** — no link, no observation
 
@@ -155,11 +155,10 @@ data/categories.json
 data/observations.json
   { id, gift, character,
     reaction: "none" | "slight" | "liked" | "loved" | "favorite",
-    points: number | null,
     date }                                           // no reporter: anonymous
 
 D1 `reports` table (Worker-side, never committed)
-  { id, character, gift, reaction, points, note,
+  { id, character, gift, reaction,
     status: "pending" | "approved" | "rejected" | "ingested",
     upvotes, downvotes, created_at }
   // Carries no voter or submitter identifier of any kind.
@@ -193,8 +192,8 @@ Four views, one search box:
 
 **By Character.** Profile traits, with flavor traits greyed and labeled as such.
 Rarity preference if known. Gift items sorted FAVORITE, CONFIRMED, PREDICTED,
-UNTESTED, each showing its state and, where confirmed, its reaction tier and
-points. A "help wanted" line naming the untested items in categories they like.
+UNTESTED, each showing its state and, where confirmed, its reaction tier.
+A "help wanted" line naming the untested items in categories they like.
 
 **By Gift.** The item's category and rarity, and every character, in the same
 tiers.
@@ -229,7 +228,7 @@ A **Report a result** button on every character and gift row opens an in-page
 form, pre-filled with the character and item; the matrix view has no button of
 its own, since 80 rows by 53 columns would mean over four thousand of them and
 a matrix cell is far too small to tap on a phone. The contributor picks a
-reaction tier, optionally enters the points gained, and submits.
+reaction tier and submits.
 
 The submission posts to a Cloudflare Worker backed by D1 and is stored with
 status `pending`. The site fetches pending rows and overlays them on the
@@ -245,7 +244,7 @@ A pending report renders in its own state, `PENDING`, ranked between `CONFIRMED`
 and `PREDICTED` and labelled plainly as awaiting review. It **must not**:
 
 - flip a pair to `CONFIRMED` or `FAVORITE`
-- contribute `points`
+- contribute a `reaction`
 - count toward a confirmed-report tally
 - produce a negative verdict on a pair
 
@@ -297,7 +296,7 @@ pastes the admin token once; the browser retains it. Without a token the page
 shows nothing, because every row comes from an admin-gated endpoint.
 
 It lists pending reports ordered by vote score, each showing the character, gift,
-reaction, points, age and score, with approve and reject actions. It must be
+reaction, age and score, with approve and reject actions. It must be
 usable on a phone — reports are read right after playing.
 
 **Known limitation, accepted deliberately:** the admin token sits in

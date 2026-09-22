@@ -23,7 +23,7 @@ const post = (path, body) => new Request(`https://api.test${path}`, {
   body: JSON.stringify(body),
 });
 
-const REPORT = { character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: 40, turnstileToken: 'tok' };
+const REPORT = { character: 'nydine', gift: 'grooming-kit', reaction: 'loved', turnstileToken: 'tok' };
 
 test('a verified report is stored as pending and its id comes back', async () => {
   const db = fakeD1();
@@ -74,7 +74,7 @@ test('an oversized body with no Content-Length header is still refused', async (
   const request = new Request('https://api.test/report', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Origin: ORIGIN },
-    body: JSON.stringify({ ...REPORT, note: 'x'.repeat(9000) }),
+    body: JSON.stringify({ ...REPORT, padding: 'x'.repeat(9000) }),
   });
   const res = await handle(request, env(db), deps());
   assert.equal(res.status, 413);
@@ -86,7 +86,7 @@ test('an oversized body with a non-numeric Content-Length is still refused', asy
   const request = new Request('https://api.test/report', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Origin: ORIGIN, 'Content-Length': 'banana' },
-    body: JSON.stringify({ ...REPORT, note: 'x'.repeat(9000) }),
+    body: JSON.stringify({ ...REPORT, padding: 'x'.repeat(9000) }),
   });
   const res = await handle(request, env(db), deps());
   assert.equal(res.status, 413);
@@ -98,7 +98,7 @@ test('a body that lies by understating its Content-Length is still refused', asy
   const request = new Request('https://api.test/report', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Origin: ORIGIN, 'Content-Length': '10' },
-    body: JSON.stringify({ ...REPORT, note: 'x'.repeat(9000) }),
+    body: JSON.stringify({ ...REPORT, padding: 'x'.repeat(9000) }),
   });
   const res = await handle(request, env(db), deps());
   assert.equal(res.status, 413);
@@ -132,9 +132,7 @@ test('an unverified vote is refused', async () => {
 });
 
 test('the public pending feed carries no vote information at all', async () => {
-  // No `note` in the fixture: listPending never selects it, so a row it
-  // returns never carries one -- see worker/src/reports.js.
-  const rows = [{ id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: 40, created_at: '2026-09-20T00:00:00.000Z' }];
+  const rows = [{ id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved', created_at: '2026-09-20T00:00:00.000Z' }];
   const db = fakeD1([{ results: rows }]);
   const request = new Request('https://api.test/pending', { headers: { Origin: ORIGIN } });
   const res = await handle(request, env(db), deps());
@@ -142,7 +140,6 @@ test('the public pending feed carries no vote information at all', async () => {
   const body = await res.text();
   assert.deepEqual(JSON.parse(body), { pending: rows });
   assert.doesNotMatch(body, /upvotes|downvotes/);
-  assert.doesNotMatch(body, /"note"/);
   assert.match(res.headers.get('Cache-Control'), /max-age=60/);
 });
 

@@ -112,8 +112,6 @@ async function main() {
       character: document.getElementById('report-character'),
       gift: document.getElementById('report-gift'),
       reactions: document.getElementById('report-reactions'),
-      points: document.getElementById('report-points'),
-      note: document.getElementById('report-note'),
       status: document.getElementById('report-status'),
       cancel: document.getElementById('report-cancel'),
       submit: document.getElementById('report-submit'),

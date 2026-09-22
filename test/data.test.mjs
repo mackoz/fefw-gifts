@@ -7,7 +7,7 @@ const dataset = {
   categories: [{ id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] }],
   gifts: [{ id: 'g1', name: 'Book', category: 'books', rarity: 'common', description: '', sources: [] }],
   characters: [{ id: 'c1', name: 'C', giftable: true, spoiler: false, traits: [], categories: { books: { state: 'profile', source: null } }, rarityPreference: null, favorites: [], notes: null }],
-  observations: [{ id: 'o1', gift: 'g1', character: 'c1', reaction: 'loved', points: 30, date: '2026-09-20' }],
+  observations: [{ id: 'o1', gift: 'g1', character: 'c1', reaction: 'loved', date: '2026-09-20' }],
   sources: [],
 };
 
@@ -29,7 +29,6 @@ test('confidenceFor wires the pair through deriveConfidence', () => {
   const c = idx.confidenceFor('c1', 'g1');
   assert.equal(c.state, 'CONFIRMED');
   assert.equal(c.reaction, 'loved');
-  assert.equal(c.points, 30);
 });
 
 test('the real committed dataset builds and derives without throwing', async () => {

@@ -7,5 +7,5 @@
 // data exactly as it did before this feature existed, which is the graceful
 // degradation the spec requires -- so this file is safe to leave as it is until
 // the Worker is actually deployed. See worker/README.md.
-export const WORKER_URL = null;
-export const TURNSTILE_SITE_KEY = null;
+export const WORKER_URL = 'https://fefw-gifts-api.willyumlu.workers.dev';
+export const TURNSTILE_SITE_KEY = '0x4AAAAAAE9t1-uGQr2v9sjz';

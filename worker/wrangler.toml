@@ -2,14 +2,27 @@ name = "fefw-gifts-api"
 main = "src/index.js"
 compatibility_date = "2026-09-01"
 
+# Both are Wrangler defaults; stated explicitly so a deploy is never surprised
+# by a change of default, and so the intent is on the record.
+# workers_dev: this Worker IS addressed by its workers.dev URL -- that URL is
+# what assets/js/config.js points at.
+# preview_urls: off. Every version would otherwise get its own public URL
+# carrying the same secrets and the same D1 binding. The admin token is the
+# gate rather than the URL, so this is tidiness, not a hole being closed -- but
+# a solo project gains nothing from per-version URLs.
+workers_dev = true
+preview_urls = false
+
 # ALLOWED_ORIGINS is a plain variable, not a secret: it is the list of sites a
 # browser may call this Worker from, and it is public by nature. The real
 # secrets -- TURNSTILE_SECRET and ADMIN_TOKEN -- are set with
 # `npx wrangler secret put` and never appear in this file or in git.
 [vars]
-ALLOWED_ORIGINS = "https://mackoz.github.io"
+# TEMPORARY: 127.0.0.1 is here only for the one-off end-to-end write test.
+# Strip it and redeploy once that passes -- see worker/README.md.
+ALLOWED_ORIGINS = "https://mackoz.github.io,http://127.0.0.1:8000"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "fefw-gifts"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "61eca5a2-2b9b-4eb5-b58c-62b23efb97b9"

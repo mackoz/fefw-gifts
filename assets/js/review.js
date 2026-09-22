@@ -26,8 +26,6 @@ export function reviewRowModel(row, now = Date.now()) {
     id: row.id,
     pair: `${row.character} · ${row.gift}`,
     reaction: row.reaction,
-    points: row.points ?? null,
-    note: row.note ?? null,
     score: upvotes - downvotes,
     votes: `${upvotes} up / ${downvotes} down`,
     age: Number.isNaN(created) ? 'unknown age' : humanAge(now - created),
@@ -52,11 +50,9 @@ function renderRow(model, onDecide) {
   item.append(el('p', 'review-pair', model.pair));
   item.append(el('p', 'review-meta', [
     model.reaction,
-    model.points === null ? null : `${model.points} pts`,
     model.votes,
     model.age,
   ].filter(Boolean).join(' · ')));
-  if (model.note) item.append(el('p', 'review-note', model.note));
 
   const actions = el('div', 'review-actions');
   for (const [decision, label] of [['approve', 'Approve'], ['reject', 'Reject']]) {

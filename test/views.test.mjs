@@ -21,7 +21,7 @@ const dataset = {
     categories: { books: { state: 'profile', source: null } },
     rarityPreference: null, favorites: [], notes: null,
   }],
-  observations: [{ id: 'o1', gift: 'brew', character: 'c1', reaction: 'favorite', points: 60, date: '2026-09-20' }],
+  observations: [{ id: 'o1', gift: 'brew', character: 'c1', reaction: 'favorite', date: '2026-09-20' }],
   sources: [],
 };
 
@@ -203,7 +203,7 @@ const OVERLAY_DATASET = {
 };
 
 test('a pending report reaches confidenceFor through the index', () => {
-  const idx = buildIndex(OVERLAY_DATASET, [{ id: 'r1', character: 'c1', gift: 'book', reaction: 'loved', points: 40 }]);
+  const idx = buildIndex(OVERLAY_DATASET, [{ id: 'r1', character: 'c1', gift: 'book', reaction: 'loved' }]);
   assert.equal(idx.confidenceFor('c1', 'book').state, 'PENDING');
   assert.deepEqual(idx.pendingFor('c1', 'book').map((r) => r.id), ['r1']);
   assert.deepEqual(idx.pendingFor('c1', 'nothing'), []);
@@ -216,7 +216,7 @@ test('an index built without an overlay behaves exactly as before', () => {
 });
 
 test('a pending favourite report does not close a favourites-hunt slot', () => {
-  const idx = buildIndex(OVERLAY_DATASET, [{ id: 'r1', character: 'c1', gift: 'book', reaction: 'favorite', points: 80 }]);
+  const idx = buildIndex(OVERLAY_DATASET, [{ id: 'r1', character: 'c1', gift: 'book', reaction: 'favorite' }]);
   const { found, unknown } = favoritesModel(idx, DEFAULT_FILTERS);
   assert.equal(found.length, 0);
   assert.equal(unknown.length, 1);

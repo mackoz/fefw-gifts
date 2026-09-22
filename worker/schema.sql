@@ -13,8 +13,6 @@ CREATE TABLE IF NOT EXISTS reports (
   "character" TEXT NOT NULL,
   gift        TEXT NOT NULL,
   reaction    TEXT NOT NULL,
-  points      INTEGER,
-  note        TEXT,
   status      TEXT NOT NULL DEFAULT 'pending',
   upvotes     INTEGER NOT NULL DEFAULT 0,
   downvotes   INTEGER NOT NULL DEFAULT 0,

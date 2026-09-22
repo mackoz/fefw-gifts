@@ -5,7 +5,7 @@ import { reviewRowModel, humanAge, TOKEN_KEY, mountReview } from '../assets/js/r
 const NOW = Date.parse('2026-09-20T12:00:00.000Z');
 const ROW = {
   id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved',
-  points: 40, note: 'rides an ornius', upvotes: 5, downvotes: 2,
+  upvotes: 5, downvotes: 2,
   created_at: '2026-09-20T09:00:00.000Z',
 };
 
@@ -14,19 +14,15 @@ test('a row becomes something a maintainer can scan', () => {
   assert.equal(model.id, 'r1');
   assert.equal(model.pair, 'nydine · grooming-kit');
   assert.equal(model.reaction, 'loved');
-  assert.equal(model.points, 40);
-  assert.equal(model.note, 'rides an ornius');
   assert.equal(model.score, 3);
   assert.equal(model.votes, '5 up / 2 down');
   assert.equal(model.age, '3 hours ago');
 });
 
-test('missing counters, points and notes do not produce NaN or "undefined"', () => {
+test('missing counters do not produce NaN or "undefined"', () => {
   const model = reviewRowModel({ id: 'r2', character: 'a', gift: 'b', reaction: 'none', created_at: '2026-09-20T12:00:00.000Z' }, NOW);
   assert.equal(model.score, 0);
   assert.equal(model.votes, '0 up / 0 down');
-  assert.equal(model.points, null);
-  assert.equal(model.note, null);
 });
 
 test('an unparseable timestamp degrades to a readable placeholder', () => {

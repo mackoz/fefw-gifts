@@ -63,7 +63,7 @@ export function render(container, index, state) {
   const table = el('table', 'gift-table');
   const head = el('thead');
   const headRow = el('tr');
-  const headers = ['Character', 'Status', 'Points'];
+  const headers = ['Character', 'Status'];
   if (state.submissionsEnabled) headers.push('Report');
   for (const h of headers) {
     const th = el('th', null, h);
@@ -86,7 +86,7 @@ export function render(container, index, state) {
         statusCell.append(voteControl(voteControlModel(report, state.storage)));
       }
     }
-    row.append(nameCell, statusCell, el('td', null, confidence.points === null ? '' : `${confidence.points} pts`));
+    row.append(nameCell, statusCell);
     if (state.submissionsEnabled) {
       const actionCell = el('td');
       actionCell.append(reportButton(character.id, gift.id));

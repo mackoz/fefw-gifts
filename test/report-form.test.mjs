@@ -4,7 +4,7 @@ import { buildReportPayload, REACTION_PROMPTS } from '../assets/js/report-form.j
 import { createTurnstile } from '../assets/js/turnstile.js';
 import { REACTIONS } from '../assets/js/confidence.js';
 
-const FIELDS = { character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: '40', note: ' rides an ornius ', turnstileToken: 'tok' };
+const FIELDS = { character: 'nydine', gift: 'grooming-kit', reaction: 'loved', turnstileToken: 'tok' };
 
 test('the form offers exactly the five in-game tiers, in order', () => {
   assert.deepEqual(REACTION_PROMPTS.map((p) => p.value), REACTIONS);
@@ -16,14 +16,8 @@ test('a complete form produces the Worker payload', () => {
   assert.deepEqual(errors, []);
   assert.deepEqual(payload, {
     character: 'nydine', gift: 'grooming-kit', reaction: 'loved',
-    points: 40, note: 'rides an ornius', turnstileToken: 'tok',
+    turnstileToken: 'tok',
   });
-});
-
-test('points and note are optional and come through as null', () => {
-  const { payload } = buildReportPayload({ ...FIELDS, points: '', note: '' });
-  assert.equal(payload.points, null);
-  assert.equal(payload.note, null);
 });
 
 test('each missing field produces its own plain-language message', () => {
@@ -31,16 +25,6 @@ test('each missing field produces its own plain-language message', () => {
   assert.match(buildReportPayload({ ...FIELDS, gift: '' }).errors[0], /gift/i);
   assert.match(buildReportPayload({ ...FIELDS, reaction: '' }).errors[0], /game showed/i);
   assert.match(buildReportPayload({ ...FIELDS, turnstileToken: '' }).errors[0], /human/i);
-});
-
-test('points outside the game’s range are refused', () => {
-  for (const points of ['-1', '1000', '2.5', 'lots']) {
-    assert.ok(buildReportPayload({ ...FIELDS, points }).errors.length > 0, points);
-  }
-});
-
-test('an over-long note is refused rather than silently cut', () => {
-  assert.match(buildReportPayload({ ...FIELDS, note: 'x'.repeat(281) }).errors[0], /280/);
 });
 
 test('a failed build yields no payload at all', () => {

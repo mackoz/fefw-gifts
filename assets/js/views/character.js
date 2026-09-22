@@ -137,7 +137,6 @@ export function render(container, index, state) {
       }
     }
     row.append(statusCell);
-    row.append(el('td', null, confidence.points === null ? '' : `${confidence.points} pts`));
     if (state.submissionsEnabled) {
       const actionCell = el('td');
       actionCell.append(reportButton(character.id, gift.id));
@@ -147,7 +146,7 @@ export function render(container, index, state) {
   }
   const head = el('thead');
   const headRow = el('tr');
-  const headers = ['Gift', 'Category', 'Rarity', 'Status', 'Points'];
+  const headers = ['Gift', 'Category', 'Rarity', 'Status'];
   if (state.submissionsEnabled) headers.push('Report');
   for (const h of headers) {
     const th = el('th', null, h);

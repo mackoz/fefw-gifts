@@ -11,8 +11,8 @@ email, not an IP address, not a session identifier. There is no credit
 mechanism, by choice.
 
 A report appears on the site straight away marked **awaiting review**, which is
-not the same as confirmed: it contributes no points and settles nothing until a
-maintainer approves it and it is merged into `data/observations.json`.
+not the same as confirmed: it contributes no reaction and settles nothing until
+a maintainer approves it and it is merged into `data/observations.json`.
 
 While it is waiting, other visitors can say whether it matches what they have
 seen. Those responses are private: they help the maintainer decide what to check
@@ -23,9 +23,9 @@ If the site's form is unavailable, the GitHub issue form below still works.
 **Report one now:** open a
 [gift result issue](https://github.com/mackoz/fefw-gifts/issues/new?template=report-result.yml).
 The form asks for the character, the item, and the reaction the game showed,
-plus the exact support points and any notes if you have them. Please don't add
-your name or anything else identifying — reports are anonymous by design, and
-the validator rejects identifying fields in `data/observations.json`.
+plus any notes worth keeping if you have them. Please don't add your name or
+anything else identifying — reports are anonymous by design, and the
+validator rejects identifying fields in `data/observations.json`.
 
 ## Structural changes
 

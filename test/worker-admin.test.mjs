@@ -31,7 +31,7 @@ test('an unconfigured Worker refuses rather than letting everyone in', async () 
 });
 
 test('the review queue comes back with its vote counts, uncached', async () => {
-  const rows = [{ id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved', points: 40, note: null, upvotes: 3, downvotes: 1, created_at: '2026-09-20T00:00:00.000Z' }];
+  const rows = [{ id: 'r1', character: 'nydine', gift: 'grooming-kit', reaction: 'loved', upvotes: 3, downvotes: 1, created_at: '2026-09-20T00:00:00.000Z' }];
   const res = await handle(authed('GET', '/review'), env(fakeD1([{ results: rows }])), deps);
   assert.equal(res.status, 200);
   assert.deepEqual(await res.json(), { reports: rows });

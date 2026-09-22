@@ -25,7 +25,6 @@ export function deriveConfidence({ character, gift, observations, pending = [] }
   const result = {
     state: 'UNTESTED',
     reaction: null,
-    points: null,
     predicted,
     provenance: link?.state ?? null,
     source: link?.source ?? null,
@@ -37,8 +36,8 @@ export function deriveConfidence({ character, gift, observations, pending = [] }
 
   if (observations.length === 0) {
     // A pending report is a real player's result, so it outranks a guide's
-    // guess -- but it is not a confirmation. `reaction` and `points` stay null
-    // deliberately: an unreviewed report contributes neither. Only an approved
+    // guess -- but it is not a confirmation. `reaction` stays null
+    // deliberately: an unreviewed report contributes nothing. Only an approved
     // observation merged into the repository may do that.
     if (pending.length > 0) {
       result.state = 'PENDING';
@@ -57,10 +56,8 @@ export function deriveConfidence({ character, gift, observations, pending = [] }
   }
 
   const [reaction] = reactions;
-  const withPoints = observations.find((o) => o.points !== null && o.points !== undefined);
 
   result.reaction = reaction;
-  result.points = withPoints?.points ?? null;
   result.state = reaction === 'favorite' ? 'FAVORITE' : 'CONFIRMED';
   result.isException = predicted !== null && polarityOf(reaction) !== predicted;
 

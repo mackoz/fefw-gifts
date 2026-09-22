@@ -1,6 +1,4 @@
 export const REACTIONS = ['none', 'slight', 'liked', 'loved', 'favorite'];
-export const MAX_NOTE = 280;
-export const MAX_POINTS = 999;
 
 // The same shape the data files use. The Worker holds no copy of the dataset,
 // so it cannot check that an id exists -- only that it could. An id that names
@@ -18,46 +16,23 @@ export function validateReport(input) {
   if (!ID_PATTERN.test(gift)) errors.push('gift must be a gift-guide id');
   if (!REACTIONS.includes(reaction)) errors.push(`reaction must be one of: ${REACTIONS.join(', ')}`);
 
-  let points = null;
-  const rawPoints = input?.points;
-  if (rawPoints !== null && rawPoints !== undefined && rawPoints !== '') {
-    const parsed = typeof rawPoints === 'number' ? rawPoints : Number(rawPoints);
-    if (!Number.isInteger(parsed) || parsed < 0 || parsed > MAX_POINTS) {
-      errors.push(`points must be a whole number between 0 and ${MAX_POINTS}`);
-    } else {
-      points = parsed;
-    }
-  }
-
-  // A note is truncated rather than rejected: losing the tail of a long note is
-  // a far better outcome than losing the report it came with.
-  let note = null;
-  if (typeof input?.note === 'string' && input.note.trim() !== '') {
-    note = input.note.trim().slice(0, MAX_NOTE);
-  }
-
-  return { errors, value: errors.length ? null : { character, gift, reaction, points, note } };
+  return { errors, value: errors.length ? null : { character, gift, reaction } };
 }
 
-export async function insertReport(db, { id, character, gift, reaction, points, note, createdAt }) {
+export async function insertReport(db, { id, character, gift, reaction, createdAt }) {
   await db.prepare(
-    `INSERT INTO reports (id, "character", gift, reaction, points, note, status, upvotes, downvotes, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, 'pending', 0, 0, ?)`,
-  ).bind(id, character, gift, reaction, points, note, createdAt).run();
+    `INSERT INTO reports (id, "character", gift, reaction, status, upvotes, downvotes, created_at)
+     VALUES (?, ?, ?, ?, 'pending', 0, 0, ?)`,
+  ).bind(id, character, gift, reaction, createdAt).run();
 }
 
 // The public overlay shape. The vote columns are not merely omitted from the
 // response -- they are never selected. That is what makes "votes never reach
 // the published site" true at the API boundary rather than a habit the UI is
-// trusted to keep. `note` is excluded for the same reason, for a different
-// danger: it is unmoderated free text from an anonymous, unauthenticated
-// submitter, and no client code reads it from a pending row (only `id`,
-// `character` and `gift` are used). Selecting it here would publish it on a
-// cached public endpoint before any maintainer has read it. The maintainer
-// reads notes on the admin-gated review page instead -- see listForReview.
+// trusted to keep.
 export async function listPending(db, limit = 500) {
   const { results } = await db.prepare(
-    `SELECT id, "character" AS character, gift, reaction, points, created_at
+    `SELECT id, "character" AS character, gift, reaction, created_at
        FROM reports
       WHERE status = 'pending'
       ORDER BY created_at DESC
@@ -69,7 +44,7 @@ export async function listPending(db, limit = 500) {
 // The maintainer's view, and the only place a tally is ever produced.
 export async function listForReview(db, limit = 200) {
   const { results } = await db.prepare(
-    `SELECT id, "character" AS character, gift, reaction, points, note,
+    `SELECT id, "character" AS character, gift, reaction,
             upvotes, downvotes, created_at
        FROM reports
       WHERE status = 'pending'
@@ -107,7 +82,7 @@ export async function setStatus(db, id, status) {
 // re-entered by hand. `worker/README.md` records that.
 export async function takeApproved(db, limit = 200) {
   const { results } = await db.prepare(
-    `SELECT id, "character" AS character, gift, reaction, points, note, created_at
+    `SELECT id, "character" AS character, gift, reaction, created_at
        FROM reports
       WHERE status = 'approved'
       ORDER BY created_at ASC
