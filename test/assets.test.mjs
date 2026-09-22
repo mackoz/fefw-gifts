@@ -132,6 +132,21 @@ test('each view gets a class so the matrix can lift the column limit', () => {
   assert.match(renderBody, /className = `view-\$\{route\.view\}`/, 'render() must set a per-view class on #view');
 });
 
+// The search wiring is DOM-level and app.js has no behavioural test, so this
+// source guard is the only thing standing between a refactor and a silent
+// performance regression: deleting the debounce(...) wrapper leaves the
+// search box re-rendering the whole view -- 4,240 matrix cells on the matrix
+// route -- on every keystroke, and nothing else in the suite would notice.
+test('the search input is wired through debounce', () => {
+  const app = sourceOf('app.js');
+  assert.match(app, /import \{ debounce \} from '\.\/debounce\.js'/, 'app.js must import debounce from debounce.js');
+  assert.match(
+    app,
+    /getElementById\('search'\)\.addEventListener\('input',\s*debounce\(/,
+    'the search input listener must be wrapped in debounce(...)',
+  );
+});
+
 // A stray closing brace does not fail loudly: CSS error recovery silently
 // discards the NEXT rule, so one extra `}` after a block deletion cost the
 // whole .chip rule -- radius, border and background -- with no error anywhere.
