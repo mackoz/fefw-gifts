@@ -143,12 +143,36 @@ test('a character whose traits is not an array is rejected', () => {
   const d = base();
   d.characters.push(character({ traits: 'x' }));
   const { errors } = validate(d);
-  // The redundant `?? []` at :77 is deliberately left in place (see the fix
-  // brief), so a non-array, non-nullish `traits` like a string still gets
-  // iterated character-by-character and may add further errors of its own.
-  // What matters here is that the new check still fires.
-  assert.ok(errors.includes('character c1: traits must be an array'));
+  // Exactly one error: the bad value is reported and then not iterated. A
+  // string used to be walked character-by-character, inventing further errors
+  // about traits that were never in the data.
+  assert.deepEqual(errors, ['character c1: traits must be an array']);
 });
+
+// A wrong-typed list field must be REPORTED, not fatal. `?? []` guards only
+// null and undefined, so an object reached for...of and threw a TypeError:
+// the validator died with a stack trace and printed none of the errors it had
+// already collected. CI still failed, so nothing invalid could deploy, but
+// whoever had to fix the data got a crash instead of the reason.
+for (const [label, value] of [['an object', {}], ['a number', 7], ['null', null]]) {
+  test(`a character whose traits is ${label} is reported, not fatal`, () => {
+    const d = base();
+    d.characters.push(character({ traits: value }));
+    assert.deepEqual(validate(d).errors, ['character c1: traits must be an array']);
+  });
+
+  test(`a character whose favorites is ${label} is reported, not fatal`, () => {
+    const d = base();
+    d.characters.push(character({ favorites: value }));
+    assert.deepEqual(validate(d).errors, ['character c1: favorites must be an array']);
+  });
+
+  test(`a gift whose sources is ${label} is reported, not fatal`, () => {
+    const d = base();
+    d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: null, description: '', sources: value });
+    assert.deepEqual(validate(d).errors, ['gift g1: sources must be an array']);
+  });
+}
 
 test('an invalid rarityPreference is rejected', () => {
   const d = base();

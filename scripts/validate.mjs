@@ -14,6 +14,15 @@ export async function loadDataset(dir) {
   return Object.fromEntries(entries);
 }
 
+// `?? []` guards null and undefined only. A wrong-typed value -- an object
+// where an array belongs -- is not nullish, so it reached for...of and threw a
+// TypeError, killing the validator with a stack trace instead of printing the
+// error it had already recorded. Every list field is both type-checked and
+// iterated through this, so bad data is always reported and never fatal.
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
 function checkDuplicates(items, kind, errors) {
   const seen = new Set();
   for (const item of items) {
@@ -47,7 +56,8 @@ export function validate(dataset) {
     if (g.rarity !== null && !RARITIES.has(g.rarity)) {
       errors.push(`gift ${g.id}: invalid rarity: ${g.rarity}`);
     }
-    for (const s of g.sources ?? []) {
+    if (!Array.isArray(g.sources)) errors.push(`gift ${g.id}: sources must be an array`);
+    for (const s of asArray(g.sources)) {
       if (!sourceIds.has(s)) errors.push(`gift ${g.id}: unknown source: ${s}`);
     }
   }
@@ -75,13 +85,14 @@ export function validate(dataset) {
       }
     }
 
-    for (const t of ch.traits ?? []) {
+    for (const t of asArray(ch.traits)) {
       if (t.category !== null && !categoryIds.has(t.category)) {
         errors.push(`character ${ch.id}: trait "${t.text}" names unknown category: ${t.category}`);
       }
     }
 
-    for (const f of ch.favorites ?? []) {
+    if (!Array.isArray(ch.favorites)) errors.push(`character ${ch.id}: favorites must be an array`);
+    for (const f of asArray(ch.favorites)) {
       if (!giftIds.has(f)) errors.push(`character ${ch.id}: unknown favorite gift: ${f}`);
     }
 
