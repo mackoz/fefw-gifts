@@ -93,6 +93,9 @@ test('search narrows the gift rows', () => {
 });
 
 import { favoritesModel } from '../assets/js/views/favorites.js';
+import * as characterView from '../assets/js/views/character.js';
+import * as giftView from '../assets/js/views/gift.js';
+import * as favoritesView from '../assets/js/views/favorites.js';
 
 test('a character with a confirmed favourite is listed as found', () => {
   const idx = buildIndex(dataset);
@@ -387,8 +390,17 @@ test('characterIndexModel carries the category chips for each character', () => 
   assert.deepEqual(entry.categories.map((c) => c.label), ['Books']);
 });
 
-test('signalHeading only claims "worth trying" while every row is a positive guess', () => {
+test('signalHeading never claims knowledge over a table of pure guesswork', () => {
   assert.equal(signalHeading([{ confidence: { state: 'PREDICTED', predicted: 'positive' } }]), 'Worth trying');
+  // All guesses, but one says the gift will NOT land: not "worth trying", and
+  // emphatically not something we know.
+  assert.equal(
+    signalHeading([
+      { confidence: { state: 'PREDICTED', predicted: 'positive' } },
+      { confidence: { state: 'PREDICTED', predicted: 'negative' } },
+    ]),
+    'Predictions',
+  );
   assert.equal(
     signalHeading([
       { confidence: { state: 'PREDICTED', predicted: 'positive' } },
@@ -399,21 +411,45 @@ test('signalHeading only claims "worth trying" while every row is a positive gue
   assert.equal(signalHeading([{ confidence: { state: 'PENDING' } }]), 'What we know');
 });
 
-// A refuted-category prediction is a guess the gift will NOT land. Counting
-// it toward "Worth trying" would invite players to spend gifts on items a
-// guide says will not work -- the inverse of this project's core rule.
+// A refuted-category prediction is a guess the gift will NOT land. Counting it
+// toward "Worth trying" would invite players to spend gifts on items a guide
+// says will not work -- the inverse of this project's core rule. But the
+// answer is not "What we know" either: these rows are still pure guesswork,
+// and that heading may only appear over something somebody observed.
 test('signalHeading does not call a refuted-category prediction "worth trying"', () => {
   assert.equal(
     signalHeading([{ confidence: { state: 'PREDICTED', predicted: 'negative' } }]),
-    'What we know',
+    'Predictions',
   );
   assert.equal(
     signalHeading([
       { confidence: { state: 'PREDICTED', predicted: 'positive' } },
       { confidence: { state: 'PREDICTED', predicted: 'negative' } },
     ]),
-    'What we know',
+    'Predictions',
   );
+});
+
+// Both mean somebody HAS tested this character, so neither may fall through to
+// "nothing tested yet" -- and neither may read as a confirmation.
+test('characterSummary reports contested and pending results rather than silence', () => {
+  const bare = {
+    ...dataset,
+    gifts: [{ id: 'b1', name: 'B1', category: null, rarity: null, description: '', sources: [] }],
+    characters: [{ ...dataset.characters[0], categories: {}, favorites: [] }],
+    observations: [],
+  };
+  const pending = buildIndex(bare, [{ id: 'p1', character: 'c1', gift: 'b1', reaction: 'loved', created_at: '2026-09-22' }]);
+  assert.equal(characterSummary(pending, pending.byCharacterId.get('c1')), '1 awaiting review');
+
+  const contested = buildIndex({ ...bare, observations: [
+    { id: 'o1', character: 'c1', gift: 'b1', reaction: 'loved', date: '2026-09-22' },
+    { id: 'o2', character: 'c1', gift: 'b1', reaction: 'none', date: '2026-09-22' },
+  ] });
+  assert.equal(characterSummary(contested, contested.byCharacterId.get('c1')), '1 contested');
+
+  const nothing = buildIndex(bare);
+  assert.equal(characterSummary(nothing, nothing.byCharacterId.get('c1')), 'nothing tested yet');
 });
 
 test('giftIndexModel groups by category, alphabetically', () => {
@@ -470,4 +506,41 @@ test('every matrix row carries the same number of cells as the header', () => {
   assert.equal(header, characters + 2, 'header should be corner + gutter + one cell per character');
   assert.equal(collect(table, (n) => n.className === 'lead-in').length, rows.length,
     'exactly one gutter cell per row, header included');
+});
+
+// The load-bearing degradation rule from CLAUDE.md: with the Worker
+// unconfigured the committed data must still render and every report control
+// must become a plain link. It spans three view modules that each build their
+// own chips, so it is exactly the kind of rule that rots in one file while the
+// other two stay right. Asserting it here beats discovering it in production.
+test('with submissions off, no view renders a report control', () => {
+  const idx = buildIndex(dataset);
+  const off = { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, storage: undefined };
+
+  for (const [name, render, state] of [
+    ['characters index', characterView.render, off],
+    ['character detail', characterView.render, { ...off, id: 'c1' }],
+    ['gifts index', giftView.render, off],
+    ['gift detail', giftView.render, { ...off, id: 'book' }],
+    ['favourites', favoritesView.render, off],
+  ]) {
+    const container = fakeElement('div');
+    render(container, idx, state);
+    const triggers = collect(container, (n) => (n.className ?? '').includes('report-button'));
+    assert.equal(triggers.length, 0, `${name} rendered ${triggers.length} report controls with submissions off`);
+    const buttons = collect(container, (n) => n.tagName === 'BUTTON');
+    assert.equal(buttons.length, 0, `${name} rendered a bare button with submissions off`);
+  }
+});
+
+test('with submissions on, the detail views do render report controls', () => {
+  const idx = buildIndex(dataset);
+  const on = { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: true, storage: undefined, id: 'c1' };
+  const container = fakeElement('div');
+  characterView.render(container, idx, on);
+  const triggers = collect(container, (n) => (n.className ?? '').includes('report-button'));
+  assert.ok(triggers.length > 0, 'the previous test would pass vacuously if nothing ever renders one');
+  for (const t of triggers) {
+    assert.ok(t.dataset.character && t.dataset.gift, 'every report control carries both ids app.js reads');
+  }
 });

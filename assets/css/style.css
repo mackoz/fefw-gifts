@@ -46,6 +46,8 @@ main#view,
 :where(summary):focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+  /* On the element, not the outline -- an outline follows the border radius,
+     so this is how the focus ring gets rounded corners. */
   border-radius: 2px;
 }
 
@@ -208,8 +210,13 @@ noscript {
   font-size: var(--text-table);
 }
 
+/* Shrinkable, not fixed: the disclosure's note is capped at 66ch, and with
+   flex-shrink 0 that max-content width became the item's floor -- opening
+   Filters on a phone pushed the note off-screen where nothing could scroll to
+   it. min-width: 0 lets a flex item shrink below max-content at all. */
 .filters {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .filters > summary {
@@ -241,6 +248,12 @@ noscript {
   padding: 12px;
   border: 1px solid var(--rule);
   background: var(--raised);
+}
+
+.filter-toggle input {
+  /* Otherwise these render Chrome's default blue on an ember-and-sepia page --
+     the one colour on screen that belongs to no token. */
+  accent-color: var(--favorite);
 }
 
 .filter-toggle {
@@ -304,7 +317,11 @@ main#view > p,
   border-radius: 999px;
   font-size: var(--step--1);
   border: 1px solid transparent;
-  white-space: nowrap;
+  /* Deliberately NOT nowrap. "Predicted -- not yet confirmed" is 208px on one
+     line, which set the gift table's min-content width to 449px -- wider than
+     any phone -- and because the page hides horizontal overflow the Report
+     column was clipped off-screen with no way to scroll to it. The pill reads
+     fine over two lines. */
 }
 
 .state-favorite {
@@ -369,12 +386,8 @@ main#view > p,
   font-style: italic;
 }
 
-.provenance-profile {
-  opacity: 1;
-}
 
 .provenance-discovered {
-  opacity: 1;
   font-weight: 600;
 }
 
@@ -582,6 +595,19 @@ dialog input[type="text"] {
 
 .review-approve { color: var(--confirmed); }
 .review-reject  { color: var(--warning); }
+
+/* The maintainer review page's token form still carries this class; the main
+   page uses .toolbar-inner. Without it that form loses its row and its rule. */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  max-width: var(--col);
+  margin-inline: auto;
+  padding: 0 var(--gutter) 16px;
+  border-bottom: 1px solid var(--rule);
+}
 
 /* --- Plain page header ---
    Used by review/index.html, which is maintainer-only and deliberately does

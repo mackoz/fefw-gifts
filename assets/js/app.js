@@ -20,7 +20,7 @@ const VIEW_MODULES = {
 
 const api = createApi();
 
-// The weave strip's model depends only on state.filters and state.index --
+// The masthead counts depend only on state.filters and state.index --
 // never on state.search -- so these track what it last rendered from. Without
 // this guard, render() (which runs on every keystroke in the search box) would
 // rebuild the strip's DOM on every keystroke too, restarting its one-time

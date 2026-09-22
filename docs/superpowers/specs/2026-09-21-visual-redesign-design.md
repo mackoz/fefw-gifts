@@ -107,10 +107,13 @@ failures hid behind the difference. Quote what the component paints.
 | control edge | `#8c6e58` | ground | 3.92 | `#8c7259` | ground | 4.04 |
 | focus ring | `#e8b75c` | ground | 9.92 | `#8a5a00` | ground | 5.32 |
 
-Every text token clears 4.5:1 and every control border and focus ring clears
-3:1, in both modes, as rendered. Decorative hairlines are a separate token
-(`--rule`) and deliberately sub-3:1 — they divide content and are not control
-boundaries. No component may reintroduce an `opacity` multiplier on text.
+Every text token clears 4.5:1, and every focus ring and every *interactive*
+control border clears 3:1, in both modes, as rendered. `--rule` is deliberately
+sub-3:1 and is for hairlines that divide content. Note `.chip` also draws its
+resting border in `--rule`: a link chip is a text link that needs no boundary
+to be perceivable, so that is not a 1.4.11 failure — but a chip that *acts*
+(`.chip-action`) takes `--edge` instead, and any new control must do the same.
+No component may reintroduce an `opacity` multiplier on text.
 
 `pending` is the highest-contrast token in both modes by intent: a fresh
 unreviewed player report is the most alive item on the site.
@@ -233,9 +236,17 @@ and a status line. Cells are divided by rules — no shadows, no per-cell
 borders, no border-radius.
 
 The status line states the strongest thing true of that character, in this
-order: favourite found, then confirmed count, then predictions, then nothing.
-It never implies a negative result. With today's data every character reads
-"5 worth trying".
+order: favourite found, confirmed, contested, awaiting review, positive
+predictions, then nothing. It never implies a negative result.
+
+`CONTESTED` and `PENDING` must appear in that chain rather than falling
+through to "nothing tested yet": both mean somebody *has* tested this
+character, and omitting them made the index assert nothing had been tested
+while approved observations sat in `data/`. Neither may read as a
+confirmation. Only *positive* predictions count toward "worth trying" — a
+refuted-category prediction is a guess that the gift will not land.
+
+With today's data every character reads "N worth trying".
 
 ### Character detail
 
@@ -280,7 +291,7 @@ the run-on comma-separated lines.
 **Modified**
 - `index.html` — masthead, tab bar, filters disclosure, footer line
 - `assets/js/app.js` — mount the counts line
-- `assets/js/views/shared.js` — add `chip`, `groupRowsByState`,
+- `assets/js/views/shared.js` — add `chip`, `reportChip`, `partitionRows`,
   `categoryChips`
 - `test/views.test.mjs` — tests for the new pure functions
 

@@ -111,19 +111,25 @@ test('every page that loads the stylesheet also loads the tokens', () => {
   }
 });
 
+// Comments are stripped first: an earlier version of this matched /weave/i
+// against render()'s body and passed on the explanatory comment alone, so
+// deleting the call it guards would have left it green.
+const sourceOf = (file) => read(`../assets/js/${file}`).replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '');
+
 test('the counts line is mounted and kept in step with the filters', () => {
-  const app = read('../assets/js/app.js');
+  const app = sourceOf('app.js');
   assert.match(app, /from '\.\/views\/weave\.js'/, 'app.js must import the weave view');
-  assert.match(app, /getElementById\('weave'\)/, 'app.js must mount the strip into #weave');
-  // The strip's counts depend on the filters, so it has to re-render with the
-  // view -- a stale count in the masthead is worse than no count.
+  assert.match(app, /getElementById\('weave'\)/, 'app.js must mount it into #weave');
+  // The counts depend on the filters, so they must re-render with the view --
+  // a stale count in the masthead is worse than no count.
   const renderBody = app.slice(app.indexOf('function render('), app.indexOf('async function refreshPending'));
-  assert.match(renderBody, /weave/i, 'render() must refresh the strip');
+  assert.match(renderBody, /weaveView\.render\(/, 'render() must call weaveView.render()');
 });
 
 test('each view gets a class so the matrix can lift the column limit', () => {
-  const app = read('../assets/js/app.js');
-  assert.match(app, /view-\$\{route\.view\}|`view-/, 'render() must set a per-view class on #view');
+  const app = sourceOf('app.js');
+  const renderBody = app.slice(app.indexOf('function render('), app.indexOf('async function refreshPending'));
+  assert.match(renderBody, /className = `view-\$\{route\.view\}`/, 'render() must set a per-view class on #view');
 });
 
 // A stray closing brace does not fail loudly: CSS error recovery silently

@@ -31,12 +31,16 @@ export function characterSummary(index, character) {
     (character.favorites ?? []).map((id) => index.byGiftId.get(id)).filter(Boolean).map((g) => g.id),
   );
   let confirmed = 0;
+  let contested = 0;
+  let pending = 0;
   let predicted = 0;
 
   for (const gift of index.gifts) {
     const confidence = index.confidenceFor(character.id, gift.id);
     if (confidence.state === 'FAVORITE') favourites.add(gift.id);
     else if (confidence.state === 'CONFIRMED') confirmed += 1;
+    else if (confidence.state === 'CONTESTED') contested += 1;
+    else if (confidence.state === 'PENDING') pending += 1;
     // A refuted-category prediction is a guess that the gift will NOT land --
     // it is not something "worth trying", so only a positive prediction
     // counts here. See suggestionsFor in favorites.js, which this mirrors.
@@ -45,6 +49,15 @@ export function characterSummary(index, character) {
 
   if (favourites.size > 0) return `${favourites.size} favourite${favourites.size === 1 ? '' : 's'} found`;
   if (confirmed > 0) return `${confirmed} confirmed`;
+  // CONTESTED and PENDING sit between confirmed and predicted, and they are
+  // the reason this chain cannot simply fall through to "nothing tested yet":
+  // both mean somebody HAS tested this character. Omitting them made the index
+  // say nothing had been tested while approved, contradicting observations sat
+  // in data/ -- untrue the moment the site gets its first real report.
+  // Neither is stated as a confirmation: contested reports disagree, and a
+  // pending one is unreviewed.
+  if (contested > 0) return `${contested} contested`;
+  if (pending > 0) return `${pending} awaiting review`;
   if (predicted > 0) return `${predicted} worth trying`;
   return 'nothing tested yet';
 }
@@ -61,18 +74,18 @@ export function characterIndexModel(index, filters, search) {
     }));
 }
 
-// "Worth trying" is only true while every row is still a guess that the gift
-// will land. A negative prediction (a refuted-category guess) present in the
-// rows means the section is reporting a mix, including at least one item a
-// guide says NOT to bother with -- so it is no longer purely suggestions.
+// Three cases, because two was an overclaim. "What we know" may only appear
+// over rows that contain something somebody actually observed; a table of
+// nothing but guide guesses is not knowledge whatever their polarity. And
+// "Worth trying" may only appear when every guess is that the gift WILL land,
+// since a refuted-category prediction is a guess that it will not.
 export function signalHeading(rows) {
-  return rows.every((row) => row.confidence.state === 'PREDICTED' && row.confidence.predicted === 'positive')
-    ? 'Worth trying'
-    : 'What we know';
+  if (!rows.every((row) => row.confidence.state === 'PREDICTED')) return 'What we know';
+  return rows.every((row) => row.confidence.predicted === 'positive') ? 'Worth trying' : 'Predictions';
 }
 
-function chipList(entries, className) {
-  const list = el('ul', ['chip-list', className].filter(Boolean).join(' '));
+function chipList(entries) {
+  const list = el('ul', 'chip-list');
   for (const entry of entries) {
     const item = el('li');
     item.append(chip(entry.label, { className: `provenance-${entry.state}` }));
