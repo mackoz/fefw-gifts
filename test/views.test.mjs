@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildIndex } from '../assets/js/data.js';
 import { characterRows, characterIndexModel, characterSummary, signalHeading } from '../assets/js/views/character.js';
-import { sortByConfidence, stateLabel, partitionRows, categoryChips, chip, reportChip } from '../assets/js/views/shared.js';
+import { sortByConfidence, stateLabel, partitionRows, categoryChips, chip, reportButton, reportChip } from '../assets/js/views/shared.js';
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
 import { giftRows, giftIndexModel } from '../assets/js/views/gift.js';
 
@@ -42,10 +42,23 @@ test('hideUntested drops the uncategorised gift', () => {
   assert.deepEqual(rows.map((r) => r.gift.id), ['brew', 'book']);
 });
 
+// `predicted` has to be supplied, and it has to include 'negative'. A refuted
+// category link is a guide's guess that the gift will NOT land, and
+// stateLabel's PREDICTED + predicted: 'negative' arm is the only branch in the
+// function that could ever word a pair negatively. The fixture used to leave
+// `predicted` undefined, so that arm never ran: swapping its production string
+// for "Dislikes this" left this guard green. It is the one branch this test
+// exists for.
 test('state labels never describe an untested pair as disliked', () => {
   for (const state of ['UNTESTED', 'PREDICTED', 'CONFIRMED', 'FAVORITE', 'CONTESTED']) {
-    assert.doesNotMatch(stateLabel({ state, reaction: null }), /dislike|hates|bad gift/i);
+    for (const predicted of ['negative', 'positive', null]) {
+      const label = stateLabel({ state, reaction: null, predicted });
+      assert.doesNotMatch(label, /dislike|hates|bad gift/i, `${state} with a ${predicted} prediction`);
+    }
   }
+  // Pins the branch itself, so it cannot be deleted and leave the loop above
+  // scanning a string nobody renders.
+  assert.equal(stateLabel({ state: 'PREDICTED', reaction: null, predicted: 'negative' }), 'Predicted: probably no gain');
 });
 
 test('sortByConfidence is stable for equal states', () => {
@@ -70,7 +83,7 @@ test('giftRows lists giftable characters ranked by confidence', () => {
   assert.equal(rows[0].confidence.state, 'PREDICTED');
 });
 
-import { matrixModel, SYMBOL, render as renderMatrix } from '../assets/js/views/matrix.js';
+import { matrixModel, SYMBOL, cellState, cellLabel, render as renderMatrix } from '../assets/js/views/matrix.js';
 
 test('the matrix excludes non-giftable characters and keeps every gift by default', () => {
   const idx = buildIndex(dataset);
@@ -562,9 +575,35 @@ test('every matrix row carries the same number of cells as the header', () => {
 // must become a plain link. It spans three view modules that each build their
 // own chips, so it is exactly the kind of rule that rots in one file while the
 // other two stay right. Asserting it here beats discovering it in production.
+// The fixture has to reach the branches this guards. `dataset` alone has one
+// character who already owns a favourite, so favorites.js's suggestionChips
+// never runs (nothing is unknown) and gift.js's untestedBlock never runs (its
+// only row is PREDICTED, not UNTESTED) -- the two branches most likely to leak
+// a report control were not executed at all. c2 has a category link but no
+// favourite and no observation, which puts a suggestion chip in the hunt and
+// an untested chip on the gift page.
+const degradedDataset = {
+  ...dataset,
+  characters: [
+    dataset.characters[0],
+    {
+      id: 'c2', name: 'D', giftable: true, spoiler: false, traits: [],
+      categories: { coffee: { state: 'profile', source: null } },
+      rarityPreference: null, favorites: [], notes: null,
+    },
+  ],
+};
+
 test('with submissions off, no view renders a report control', () => {
-  const idx = buildIndex(dataset);
+  const idx = buildIndex(degradedDataset);
   const off = { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, storage: undefined };
+
+  // Guards against the fixture silently drifting back to one that never
+  // reaches suggestionChips or untestedBlock.
+  const hunt = favoritesModel(idx, DEFAULT_FILTERS);
+  assert.ok(hunt.unknown.some((u) => u.suggestions.length > 0), 'fixture must reach favorites.js suggestionChips');
+  assert.ok(partitionRows(giftRows(idx, 'book', DEFAULT_FILTERS)).untested.length > 0,
+    'fixture must reach gift.js untestedBlock');
 
   for (const [name, render, state] of [
     ['characters index', characterView.render, off],
@@ -583,14 +622,23 @@ test('with submissions off, no view renders a report control', () => {
 });
 
 test('with submissions on, the detail views do render report controls', () => {
-  const idx = buildIndex(dataset);
-  const on = { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: true, storage: undefined, id: 'c1' };
-  const container = fakeElement('div');
-  characterView.render(container, idx, on);
-  const triggers = collect(container, (n) => (n.className ?? '').includes('report-button'));
-  assert.ok(triggers.length > 0, 'the previous test would pass vacuously if nothing ever renders one');
-  for (const t of triggers) {
-    assert.ok(t.dataset.character && t.dataset.gift, 'every report control carries both ids app.js reads');
+  const idx = buildIndex(degradedDataset);
+  const on = { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: true, storage: undefined };
+
+  // Every view the degradation test above sweeps that can render a control has
+  // to render one here, or the assertion over there passes vacuously.
+  for (const [name, render, state] of [
+    ['character detail', characterView.render, { ...on, id: 'c1' }],
+    ['gift detail', giftView.render, { ...on, id: 'book' }],
+    ['favourites', favoritesView.render, on],
+  ]) {
+    const container = fakeElement('div');
+    render(container, idx, state);
+    const triggers = collect(container, (n) => (n.className ?? '').includes('report-button'));
+    assert.ok(triggers.length > 0, `${name} renders no report control with submissions on`);
+    for (const t of triggers) {
+      assert.ok(t.dataset.character && t.dataset.gift, `${name}: every report control carries both ids app.js reads`);
+    }
   }
 });
 
@@ -613,4 +661,98 @@ test('the character and gift detail tables are wrapped in a .table-scroll', () =
     const table = collect(scroller, (n) => (n.className ?? '').includes('gift-table'));
     assert.equal(table.length, 1, `${name}'s .gift-table should be inside its .table-scroll wrapper`);
   }
+});
+
+// A cross-module contract, not a formatting test. app.js's one delegated
+// listener finds a trigger with closest('.report-button') and reads
+// dataset.character / dataset.gift. Both builders in shared.js must emit that
+// exact class: renaming the literal in reportButton() left every per-row
+// Report button inert with the whole suite still green, because nothing
+// pinned the string.
+test('reportButton and reportChip both emit the .report-button class app.js closes on', () => {
+  for (const [name, node] of [
+    ['reportButton', reportButton('nydine', 'grooming-kit')],
+    ['reportChip', reportChip('nydine', 'grooming-kit', 'Grooming kit')],
+  ]) {
+    assert.match(node.className, /\breport-button\b/, `${name} must carry the class app.js looks for`);
+    assert.equal(node.tagName, 'BUTTON', `${name} must be a button`);
+    assert.equal(node.dataset.character, 'nydine', `${name} must carry the character id`);
+    assert.equal(node.dataset.gift, 'grooming-kit', `${name} must carry the gift id`);
+  }
+});
+
+// A2: a CONFIRMED pair whose reaction is not positive means a player tested
+// this and it did nothing. Drawing it as the confirmed ✔ under a legend
+// reading "confirmed" claims the gift works -- the opposite of the report.
+test('cellState separates a no-gain confirmation from a confirmed one', () => {
+  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'none' }), 'TESTED');
+  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'liked' }), 'CONFIRMED');
+  assert.equal(cellState({ state: 'FAVORITE', reaction: 'favorite' }), 'FAVORITE');
+  assert.equal(cellState({ state: 'UNTESTED', reaction: null }), 'UNTESTED');
+  assert.equal(cellState({ state: 'PENDING', reaction: null }), 'PENDING');
+  assert.notEqual(SYMBOL.TESTED, SYMBOL.CONFIRMED, 'the pseudo-state needs its own symbol or the split is invisible');
+  // The tooltip must not swing the other way and deny the report it marks.
+  assert.doesNotMatch(cellLabel({ state: 'CONFIRMED', reaction: 'none' }), /not tested/i);
+});
+
+test('the matrix renders a no-gain confirmation with neither the confirmed tick nor its tint', () => {
+  const idx = buildIndex({
+    ...dataset,
+    observations: [{ id: 'o1', gift: 'book', character: 'c1', reaction: 'none', date: '2026-09-20' }],
+  });
+  const container = fakeElement('div');
+  renderMatrix(container, idx, { filters: DEFAULT_FILTERS, search: 'book', submissionsEnabled: false });
+
+  const cells = collect(container, (n) => n.tagName === 'TD' && (n.className ?? '').startsWith('cell-'));
+  assert.equal(cells.length, 1, 'the search should narrow this to one gift row and one character column');
+  assert.match(cells[0].className, /\bcell-tested\b/);
+  assert.doesNotMatch(cells[0].className, /\bcell-confirmed\b/);
+  assert.equal(cells[0].textContent, SYMBOL.TESTED);
+  assert.doesNotMatch(cells[0].title, /^.*: Confirmed: reported$/);
+
+  // The key has to explain the symbol the grid just drew.
+  const swatch = findFirst(container, (n) => (n.className ?? '').includes('cell-tested') && (n.className ?? '').includes('legend-swatch'));
+  assert.ok(swatch, 'the legend needs a row for the tested pseudo-state');
+});
+
+// A3: both hunt sections render a name followed by a chip list, so with the
+// Worker unconfigured the chips are bare gift links in both. Without a label
+// per row a prediction reads as a known favourite.
+test('the favourites hunt labels a suggestion "worth trying" and a solved row a known favourite', () => {
+  const idx = buildIndex(degradedDataset);
+  const container = fakeElement('div');
+  favoritesView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, storage: undefined });
+  const hints = collect(container, (n) => n.className === 'hunt-hint').map((n) => n.textContent);
+  // Unknown section first, then Found: c2 is a prediction, c1 has a favourite.
+  assert.deepEqual(hints, ['worth trying', 'known favourite']);
+});
+
+test('a row with more than one known favourite says favourites', () => {
+  const idx = buildIndex({
+    ...dataset,
+    characters: [{ ...dataset.characters[0], favorites: ['book'] }],
+  });
+  const container = fakeElement('div');
+  favoritesView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, storage: undefined });
+  const hints = collect(container, (n) => n.className === 'hunt-hint').map((n) => n.textContent);
+  assert.deepEqual(hints, ['known favourites']);
+});
+
+// C1: Safari/VoiceOver drops the implicit list role once list-style: none
+// meets display: grid/flex, which is exactly what .matrix-legend and
+// .hunt-list do.
+test('every list the stylesheet un-lists keeps an explicit list role', () => {
+  const idx = buildIndex(degradedDataset);
+  const state = { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, storage: undefined };
+
+  const matrix = fakeElement('div');
+  renderMatrix(matrix, idx, state);
+  const legend = findFirst(matrix, (n) => n.className === 'matrix-legend');
+  assert.equal(legend.getAttribute('role'), 'list', 'the matrix legend needs role="list"');
+
+  const hunt = fakeElement('div');
+  favoritesView.render(hunt, idx, state);
+  const lists = collect(hunt, (n) => n.className === 'hunt-list');
+  assert.equal(lists.length, 2, 'the hunt renders an unknown list and a found list');
+  for (const list of lists) assert.equal(list.getAttribute('role'), 'list', 'every .hunt-list needs role="list"');
 });

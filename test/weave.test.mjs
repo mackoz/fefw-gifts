@@ -75,3 +75,30 @@ test('the summary switches to counts once something is confirmed', () => {
   const summary = weaveSummary(weaveModel(buildIndex(clone({ observations })), DEFAULT_FILTERS));
   assert.match(summary, /^1 of 2 pairs confirmed\./);
 });
+
+// A CONFIRMED pair whose reaction is not positive means a player tested this
+// and it did nothing. Counting it under "N of M pairs confirmed" would make
+// the masthead claim N gifts that work, and would contradict the character
+// tile on the same page, which already says "tested". See characterSummary.
+test('a no-gain confirmation is counted as tested, never as confirmed', () => {
+  const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'none', date: '2026-09-21' }];
+  const model = weaveModel(buildIndex(clone({ observations })), DEFAULT_FILTERS);
+  assert.equal(model.confirmed, 0, 'a reported no support gain is not a confirmation that the gift works');
+  assert.equal(model.tested, 1);
+});
+
+test('a positive confirmation still counts as confirmed and not as tested', () => {
+  const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'liked', date: '2026-09-21' }];
+  const model = weaveModel(buildIndex(clone({ observations })), DEFAULT_FILTERS);
+  assert.equal(model.confirmed, 1);
+  assert.equal(model.tested, 0);
+});
+
+test('the summary gains its third sentence only when something was tested with no gain', () => {
+  const quiet = weaveSummary(weaveModel(buildIndex(dataset), DEFAULT_FILTERS));
+  assert.doesNotMatch(quiet, /no support gain/, 'nothing tested yet, so there is nothing to say');
+
+  const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'none', date: '2026-09-21' }];
+  const summary = weaveSummary(weaveModel(buildIndex(clone({ observations })), DEFAULT_FILTERS));
+  assert.equal(summary, 'No pair confirmed yet, out of 2. 1 favourite still unfound. 1 tested with no support gain.');
+});

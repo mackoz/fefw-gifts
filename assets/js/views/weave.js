@@ -8,6 +8,7 @@
 // `marks` survives on the model because it costs nothing and describes the
 // data honestly, but nothing renders it today.
 import { el } from './shared.js';
+import { POSITIVE_REACTIONS } from '../confidence.js';
 
 // Every state that carries a signal. UNTESTED is deliberately absent: it is
 // the ground itself, and drawing it would cost thousands of nodes to say
@@ -32,14 +33,26 @@ export function weaveModel(index, filters) {
 
   const marks = [];
   let confirmed = 0;
+  let tested = 0;
   let favouritesFound = 0;
 
   characters.forEach((character, y) => {
     gifts.forEach((gift, x) => {
-      const { state } = index.confidenceFor(character.id, gift.id);
+      const { state, reaction } = index.confidenceFor(character.id, gift.id);
       // A pending report is a real player's result but not a confirmation, so
       // it is drawn and not counted.
-      if (state === 'FAVORITE' || state === 'CONFIRMED') confirmed += 1;
+      //
+      // A CONFIRMED pair only counts as confirmed when the reaction is
+      // positive. A CONFIRMED "none" is a real player report -- somebody
+      // tested this and it did nothing -- so it is counted, but counting it
+      // under "pairs confirmed" would claim the opposite of what happened.
+      // A FAVORITE is positive by definition. Mirrors characterSummary in
+      // character.js, which this masthead must never contradict.
+      if (state === 'FAVORITE') confirmed += 1;
+      else if (state === 'CONFIRMED') {
+        if (POSITIVE_REACTIONS.includes(reaction)) confirmed += 1;
+        else tested += 1;
+      }
       if (MARKED.has(state)) marks.push({ x, y, state });
     });
     if (hasFavourite(index, character, gifts)) favouritesFound += 1;
@@ -50,6 +63,7 @@ export function weaveModel(index, filters) {
     rows: characters.length,
     pairs: characters.length * gifts.length,
     confirmed,
+    tested,
     favouritesFound,
     favouritesTotal: characters.length,
     marks,
@@ -66,6 +80,11 @@ export function weaveSummary(model) {
   const favourites = model.favouritesFound === 0
     ? `${n(model.favouritesTotal)} favourite${model.favouritesTotal === 1 ? '' : 's'} still unfound.`
     : `${n(model.favouritesFound)} of ${n(model.favouritesTotal)} favourite${model.favouritesTotal === 1 ? '' : 's'} found.`;
+  // A third sentence only when there is something to say. A no-gain result is
+  // a real player report and is counted here, but it is not a confirmation
+  // that the gift works -- so it gets its own sentence rather than being
+  // folded into the confirmed total.
+  if (model.tested > 0) return `${pairs} ${favourites} ${n(model.tested)} tested with no support gain.`;
   return `${pairs} ${favourites}`;
 }
 

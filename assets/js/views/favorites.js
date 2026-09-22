@@ -79,6 +79,9 @@ export function render(container, index, state) {
     container.append(emptyState('Nothing left to hunt — every character here has a known favourite.'));
   } else {
     const list = el('ul', 'hunt-list');
+    // Safari/VoiceOver drops role="list" implicit in <ul> once list-style:
+    // none meets display: grid/flex, so it has to be set back explicitly.
+    list.setAttribute('role', 'list');
     for (const { character, suggestions } of unknown) {
       const item = el('li', 'hunt-row');
       const link = el('a', 'hunt-name', character.name);
@@ -87,6 +90,10 @@ export function render(container, index, state) {
       if (suggestions.length === 0) {
         item.append(el('p', 'hunt-note', 'No predicted likes to suggest — anything untested is worth a try.'));
       } else {
+        // Both hunt sections render a name followed by chips, so without this
+        // label a predicted suggestion is indistinguishable from a confirmed
+        // favourite -- the row would read as this character's favourites.
+        item.append(el('span', 'hunt-hint', 'worth trying'));
         item.append(suggestionChips(character, suggestions, state));
       }
       list.append(item);
@@ -98,11 +105,15 @@ export function render(container, index, state) {
 
   container.append(el('h3', null, `Found (${found.length})`));
   const foundList = el('ul', 'hunt-list');
+  foundList.setAttribute('role', 'list');
   for (const { character, gifts } of found) {
     const item = el('li', 'hunt-row');
     const link = el('a', 'hunt-name', character.name);
     link.href = `#/character/${character.id}`;
     item.append(link);
+    // The counterpart to the unknown section's "worth trying": these chips are
+    // the ones somebody actually knows about.
+    item.append(el('span', 'hunt-hint', gifts.length === 1 ? 'known favourite' : 'known favourites'));
     const chips = el('ul', 'chip-list');
     chips.setAttribute('role', 'list');
     for (const gift of gifts) {

@@ -1,4 +1,5 @@
 import { passesFilters } from '../filters.js';
+import { POSITIVE_REACTIONS } from '../confidence.js';
 import { cellClasses, stateLabel, el, emptyState } from './shared.js';
 
 export function matrixModel(index, filters, search) {
@@ -24,7 +25,27 @@ export function matrixModel(index, filters, search) {
   return { characters, gifts, cellAt: (giftId, characterId) => cells.get(key(giftId, characterId)) };
 }
 
-export const SYMBOL = { FAVORITE: '★', CONFIRMED: '✔', CONTESTED: '?', PENDING: '•', PREDICTED: '~', UNTESTED: '' };
+export const SYMBOL = { FAVORITE: '★', CONFIRMED: '✔', CONTESTED: '?', PENDING: '•', PREDICTED: '~', UNTESTED: '', TESTED: '–' };
+
+// TESTED is a render-only pseudo-state: a CONFIRMED pair whose reaction is not
+// positive means a player tested this and it did nothing. Drawing that as ✔
+// under a legend reading "confirmed" claims the gift works, the opposite of
+// what was reported. It is deliberately NOT part of the confidence state
+// machine in confidence.js -- nothing derives from it but this view's symbol,
+// tint and title. Mirrors characterSummary in character.js.
+export function cellState(confidence) {
+  if (confidence.state === 'CONFIRMED' && !POSITIVE_REACTIONS.includes(confidence.reaction)) return 'TESTED';
+  return confidence.state;
+}
+
+// stateLabel is keyed on the real states, so handing it the pseudo-state would
+// come back "Not tested yet" -- a denial of the very report this marks. The
+// pseudo-state gets its own label, in the same words as its legend row.
+const CELL_LABEL = { TESTED: 'Confirmed: no support gain' };
+
+export function cellLabel(confidence) {
+  return CELL_LABEL[cellState(confidence)] ?? stateLabel(confidence);
+}
 
 // The matrix can empty out three ways, and each one needs a different way back.
 export function emptyMatrixMessage(state) {
@@ -41,6 +62,7 @@ export function emptyMatrixMessage(state) {
 const LEGEND = [
   ['FAVORITE', 'favourite'],
   ['CONFIRMED', 'confirmed'],
+  ['TESTED', 'tested, no support gain'],
   ['CONTESTED', 'reports disagree'],
   ['PENDING', 'reported, awaiting review'],
   ['PREDICTED', 'predicted, unconfirmed'],
@@ -49,6 +71,9 @@ const LEGEND = [
 
 function legend() {
   const list = el('ul', 'matrix-legend');
+  // Safari/VoiceOver drops role="list" implicit in <ul> once list-style:
+  // none meets display: grid/flex, so it has to be set back explicitly.
+  list.setAttribute('role', 'list');
   for (const [state, label] of LEGEND) {
     const item = el('li');
     item.append(el('span', `legend-swatch cell-${state.toLowerCase()}`, SYMBOL[state]));
@@ -112,10 +137,14 @@ export function render(container, index, state) {
     row.append(el('td', 'lead-in'));
     for (const character of model.characters) {
       const confidence = model.cellAt(gift.id, character.id);
+      // Class, symbol and title all go through cellState: leaving any one of
+      // them on confidence.state would draw a ✔, a confirmed tint or a
+      // "Confirmed" tooltip over a no-gain result.
+      const shown = { ...confidence, state: cellState(confidence) };
       // cellClasses, not stateClasses: a badge's inline-flex and ::before symbol
       // would break the table grid and duplicate the symbol already set here.
-      const cell = el('td', cellClasses(confidence), SYMBOL[confidence.state]);
-      cell.title = `${character.name} and ${gift.name}: ${stateLabel(confidence)}`;
+      const cell = el('td', cellClasses(shown), SYMBOL[shown.state]);
+      cell.title = `${character.name} and ${gift.name}: ${cellLabel(confidence)}`;
       row.append(cell);
     }
     body.append(row);

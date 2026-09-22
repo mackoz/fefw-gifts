@@ -119,7 +119,7 @@ function characterTable(index, gift, rows, state) {
 function untestedBlock(gift, rows, state) {
   const details = el('details', 'untested-block');
   details.append(el('summary', null, `Not tested yet (${rows.length})`));
-  details.append(el('p', 'untested-note', `Nobody has given ${gift.name} to any of these characters. Any one of them is worth a report.`));
+  details.append(el('p', 'untested-note', `Nobody has reported giving ${gift.name} to any of these characters. Any one of them is worth a report.`));
 
   const grid = el('ul', 'chip-list');
   grid.setAttribute('role', 'list');

@@ -33,7 +33,7 @@ body {
 .masthead-inner,
 .tabbar-inner,
 .toolbar-inner,
-main#view,
+main,
 .site-footer {
   max-width: var(--col);
   margin-inline: auto;
@@ -150,6 +150,11 @@ noscript {
   display: flex;
   align-items: stretch;
   gap: 2px;
+  /* Not decoration: the tabs are exactly this container's content height, and
+     overflow-x: auto clips anything painted outside it. Without this padding
+     the 2px focus ring at 2px offset is sliced off top and bottom, so a
+     keyboard user cannot see where they are in the primary navigation. */
+  padding-block: 4px;
   overflow-x: auto;
   scrollbar-width: thin;
 }
@@ -618,15 +623,18 @@ dialog input[type="text"] {
    container and threw the whole toolbar row out of alignment with the rest
    of the page. The maintainer review page's token form is the only element
    these declarations are for; without them that form loses its row and its
-   rule. */
+   rule.
+
+   It carries no column of its own. Its <main> now takes the shared column
+   rule at the top of this file, so repeating max-width/margin-inline/
+   padding-inline here would inset this form one gutter further than the
+   status line and the list directly beneath it. */
 #token-form {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-  max-width: var(--col);
-  margin-inline: auto;
-  padding: 0 var(--gutter) 16px;
+  padding-bottom: 16px;
   border-bottom: 1px solid var(--rule);
 }
 
@@ -714,7 +722,12 @@ a.chip:hover {
 
 .tessera-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  /* min() keeps a track from ever exceeding the container. It matters here
+     because html/body set overflow-x: hidden and this grid has no scroller of
+     its own, so at a 320px viewport and a large root font the overflow is
+     clipped unreachably rather than scrolled to. Unchanged whenever 15rem
+     fits. */
+  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
   gap: 1px;
   margin: 14px 0 0;
   padding: 0;
@@ -1026,6 +1039,11 @@ main#view.view-matrix {
 .legend-swatch.cell-pending   { background: var(--pending-bg);   color: var(--pending); }
 .matrix td.cell-predicted,
 .legend-swatch.cell-predicted { background: var(--predicted-bg); color: var(--predicted); }
+/* A confirmed report of "no support gain" is a real result, so the cell is
+   marked -- but it is not a success, so it must not borrow the confirmed tint.
+   Neutral ground with muted ink: we looked, and nothing happened. */
+.matrix td.cell-tested,
+.legend-swatch.cell-tested    { background: transparent; color: var(--muted); }
 .matrix td.cell-untested      { background: transparent; }
 /* Matches the cell: an untested pair renders as no box, so the legend key for
    it must not show one either. The swatch's own border still marks the slot. */
@@ -1073,6 +1091,16 @@ main#view.view-matrix {
   margin: 6px 0 0;
   color: var(--muted);
   font-size: var(--step--1);
+}
+
+/* Both hunt sections render a name followed by chips. Without this label a
+   predicted suggestion is indistinguishable from a confirmed favourite. The
+   inline margin keeps it off the name it follows; .hunt-row is a plain block,
+   so the label stays on the name's line and wraps with it at 320px. */
+.hunt-hint {
+  margin-inline-start: 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .chip-favourite {
