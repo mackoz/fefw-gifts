@@ -4,7 +4,7 @@ import { buildIndex } from '../assets/js/data.js';
 import { characterRows, characterIndexModel, characterSummary, signalHeading } from '../assets/js/views/character.js';
 import { sortByConfidence, stateLabel, partitionRows, categoryChips } from '../assets/js/views/shared.js';
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
-import { giftRows } from '../assets/js/views/gift.js';
+import { giftRows, giftIndexModel } from '../assets/js/views/gift.js';
 
 const dataset = {
   categories: [
@@ -322,4 +322,31 @@ test('signalHeading only claims "worth trying" while every row is a guess', () =
     'What we know',
   );
   assert.equal(signalHeading([{ confidence: { state: 'PENDING' } }]), 'What we know');
+});
+
+test('giftIndexModel groups by category, alphabetically', () => {
+  const idx = buildIndex(dataset);
+  const groups = giftIndexModel(idx, '');
+  assert.deepEqual(groups.map((g) => g.label), ['Books', 'Coffee', 'Category not recorded yet']);
+  assert.deepEqual(groups[0].gifts.map((g) => g.id), ['book']);
+});
+
+test('the uncategorised group sorts last and is identified by a null id', () => {
+  const idx = buildIndex(dataset);
+  const groups = giftIndexModel(idx, '');
+  const last = groups.at(-1);
+  assert.equal(last.id, null);
+  assert.deepEqual(last.gifts.map((g) => g.id), ['rock']);
+});
+
+test('giftIndexModel filters by search and drops groups that empty out', () => {
+  const idx = buildIndex(dataset);
+  const groups = giftIndexModel(idx, 'roc');
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].id, null);
+});
+
+test('giftIndexModel returns nothing when the search matches nothing', () => {
+  const idx = buildIndex(dataset);
+  assert.deepEqual(giftIndexModel(idx, 'zzzz'), []);
 });

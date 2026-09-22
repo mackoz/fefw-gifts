@@ -800,3 +800,22 @@ a.chip:hover {
   color: var(--muted);
   font-size: var(--step--1);
 }
+
+/* --- Gift index groups --- */
+
+.meta,
+.descriptor,
+.help-wanted {
+  max-width: var(--measure);
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+.descriptor {
+  font-style: italic;
+}
+
+main#view > .chip-list {
+  margin-bottom: 4px;
+}
