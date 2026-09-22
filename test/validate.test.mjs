@@ -90,6 +90,20 @@ test('a character category link with an unknown category is rejected', () => {
   assert.match(errors[0], /character c1: unknown category: nope/);
 });
 
+// catId is a string key, so checking it can never throw regardless of the
+// link's own shape -- both errors must surface in one run rather than the
+// unknown category staying hidden behind the shape error until someone fixes
+// the link and reruns CI.
+test('an unknown category with a malformed link reports both problems', () => {
+  const d = base();
+  d.characters.push(character({ categories: { nope: null } }));
+  const { errors } = validate(d);
+  assert.deepEqual(errors, [
+    'character c1: unknown category: nope',
+    'character c1: category nope link must be an object',
+  ]);
+});
+
 test('a guide-state link without a source is rejected', () => {
   const d = base();
   d.characters.push(character({ categories: { books: { state: 'guide', source: null } } }));
@@ -115,6 +129,26 @@ for (const [label, value] of [['a number', 7], ['a boolean', true], ['an array',
     assert.deepEqual(errors, ['character c1: categories must be an object']);
   });
 }
+
+// The loop above (a number, a boolean, an array) cannot distinguish asObject()
+// from the `value ?? {}` idiom it replaces: none of those values can throw or
+// yield entries from Object.entries, so a mutation back to `?? {}` would leave
+// them all green. What discriminates is a value Object.entries CAN walk: a
+// string (each character becomes an ['index', char] entry) or a non-empty
+// array (each element becomes an ['index', element] entry).
+test('a character whose categories is a string is rejected, not walked character by character', () => {
+  const d = base();
+  d.characters.push(character({ categories: 'ab' }));
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['character c1: categories must be an object']);
+});
+
+test('a character whose categories is a non-empty array is rejected, not walked element by element', () => {
+  const d = base();
+  d.characters.push(character({ categories: [{ state: 'guide', source: 's1' }] }));
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['character c1: categories must be an object']);
+});
 
 test('a character with no categories key is rejected', () => {
   const d = base();
@@ -152,6 +186,17 @@ test('a trait naming an unknown category is rejected', () => {
   assert.match(errors[0], /character c1: trait "x" names unknown category: nope/);
 });
 
+// A trait that omits `category` entirely -- not even an explicit null -- used
+// to fall into the unknown-category branch because `undefined !== null`,
+// producing a second, unfixable error alongside the real one about missing
+// text. One malformed entry must report only what is actually wrong with it.
+test('a trait with no category key reports only the missing text, not a phantom unknown category', () => {
+  const d = base();
+  d.characters.push(character({ traits: [{}] }));
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['character c1: trait text must be a non-empty string']);
+});
+
 test('a null trait entry is reported, not fatal', () => {
   const d = base();
   d.characters.push(character({ traits: [null] }));
@@ -172,15 +217,27 @@ test('a trait with no text is rejected', () => {
   const d = base();
   d.characters.push(character({ traits: [{ category: null }] }));
   const { errors } = validate(d);
-  assert.deepEqual(errors, ['character c1: trait is missing text']);
+  assert.deepEqual(errors, ['character c1: trait text must be a non-empty string']);
 });
 
 test('a trait with empty text is rejected', () => {
   const d = base();
   d.characters.push(character({ traits: [{ text: '', category: null }] }));
   const { errors } = validate(d);
-  assert.deepEqual(errors, ['character c1: trait is missing text']);
+  assert.deepEqual(errors, ['character c1: trait text must be a non-empty string']);
 });
+
+// A value that is truthy but not a string is what discriminates `typeof
+// t.text !== 'string'` from a weaker `!t.text` check -- both `42` and `{}`
+// are truthy, so `!t.text` would let them through the gate.
+for (const [label, value] of [['a number', 42], ['an object', {}]]) {
+  test(`a trait whose text is ${label} is rejected`, () => {
+    const d = base();
+    d.characters.push(character({ traits: [{ text: value, category: null }] }));
+    const { errors } = validate(d);
+    assert.deepEqual(errors, ['character c1: trait text must be a non-empty string']);
+  });
+}
 
 test('a favorite referencing an unknown gift is rejected', () => {
   const d = base();

@@ -17,8 +17,11 @@ export async function loadDataset(dir) {
 // `?? []` guards null and undefined only. A wrong-typed value -- an object
 // where an array belongs -- is not nullish, so it reached for...of and threw a
 // TypeError, killing the validator with a stack trace instead of printing the
-// error it had already recorded. Every list field is both type-checked and
-// iterated through this, so bad data is always reported and never fatal.
+// error it had already recorded. This covers the list fields inside a
+// character or gift; the five top-level arrays (characters, gifts,
+// observations, categories, sources) are not guarded this way, so a `[null]`
+// among them still throws. Either way the gate holds -- the exit code is 1 --
+// what a top-level throw costs is the diagnostic, not the protection.
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -86,13 +89,18 @@ export function validate(dataset) {
     }
 
     for (const [catId, link] of Object.entries(asObject(ch.categories))) {
+      // catId is always a plain object key -- a string -- so this can never
+      // throw whatever the link turns out to be. Check it before the link's
+      // shape so an unknown category surfaces even when the link is also
+      // malformed, instead of being hidden behind the shape error until
+      // someone fixes the link and runs CI again.
+      if (!categoryIds.has(catId)) errors.push(`character ${ch.id}: unknown category: ${catId}`);
       // A null or non-object link would otherwise reach link.state below and
       // throw; report it and move on so one bad entry doesn't mask the rest.
       if (link === null || typeof link !== 'object' || Array.isArray(link)) {
         errors.push(`character ${ch.id}: category ${catId} link must be an object`);
         continue;
       }
-      if (!categoryIds.has(catId)) errors.push(`character ${ch.id}: unknown category: ${catId}`);
       if (!STATES.has(link.state)) errors.push(`character ${ch.id}: invalid state for ${catId}: ${link.state}`);
       // Guide-derived links must always be attributable, so they can be audited or removed wholesale.
       if (link.state === 'guide' && !link.source) {
@@ -111,9 +119,11 @@ export function validate(dataset) {
         continue;
       }
       if (typeof t.text !== 'string' || t.text.length === 0) {
-        errors.push(`character ${ch.id}: trait is missing text`);
+        errors.push(`character ${ch.id}: trait text must be a non-empty string`);
       }
-      if (t.category !== null && !categoryIds.has(t.category)) {
+      // Absent and explicit-null both mean "not recorded", so a trait that
+      // omits the key reports only what is actually wrong with it.
+      if (t.category !== null && t.category !== undefined && !categoryIds.has(t.category)) {
         errors.push(`character ${ch.id}: trait "${t.text}" names unknown category: ${t.category}`);
       }
     }
