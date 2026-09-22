@@ -408,7 +408,10 @@ test('signalHeading never claims knowledge over a table of pure guesswork', () =
     ]),
     'What we know',
   );
-  assert.equal(signalHeading([{ confidence: { state: 'PENDING' } }]), 'What we know');
+  // A pending report is a real player's result, but nobody has reviewed it
+  // yet, so it is not "What we know" either -- see I2 in the fix brief: this
+  // assertion used to expect 'What we know' here, which was the bug.
+  assert.equal(signalHeading([{ confidence: { state: 'PENDING' } }]), 'Awaiting review');
 });
 
 // A refuted-category prediction is a guess the gift will NOT land. Counting it
@@ -427,6 +430,28 @@ test('signalHeading does not call a refuted-category prediction "worth trying"',
       { confidence: { state: 'PREDICTED', predicted: 'negative' } },
     ]),
     'Predictions',
+  );
+});
+
+// A single pending report is a real player's result, but nobody has reviewed
+// it yet -- so a character page with nothing else must not print "What we
+// know" over a row whose own badge says "awaiting review". See I2 in the fix
+// brief.
+test('signalHeading returns "Awaiting review" for a pending-only table, but "What we know" once something is observed', () => {
+  assert.equal(signalHeading([{ confidence: { state: 'PENDING' } }]), 'Awaiting review');
+  assert.equal(
+    signalHeading([
+      { confidence: { state: 'PENDING' } },
+      { confidence: { state: 'CONFIRMED' } },
+    ]),
+    'What we know',
+  );
+  assert.equal(
+    signalHeading([
+      { confidence: { state: 'PENDING' } },
+      { confidence: { state: 'CONTESTED' } },
+    ]),
+    'What we know',
   );
 });
 
@@ -450,6 +475,30 @@ test('characterSummary reports contested and pending results rather than silence
 
   const nothing = buildIndex(bare);
   assert.equal(characterSummary(nothing, nothing.byCharacterId.get('c1')), 'nothing tested yet');
+});
+
+// A CONFIRMED row is a real observation, but only a positive reaction means
+// the gift worked. The report form's first option is "They didn't like it",
+// so a CONFIRMED "none" reaction is common, and counting it toward "N
+// confirmed" would read as N gifts that work. See I3 in the fix brief.
+test('characterSummary reports a neutral-reaction confirmation as "tested", not "confirmed"', () => {
+  const base = {
+    ...dataset,
+    gifts: [{ id: 'b1', name: 'B1', category: null, rarity: null, description: '', sources: [] }],
+    characters: [{ ...dataset.characters[0], categories: {}, favorites: [] }],
+  };
+
+  const tested = buildIndex({
+    ...base,
+    observations: [{ id: 'o1', character: 'c1', gift: 'b1', reaction: 'none', date: '2026-09-22' }],
+  });
+  assert.equal(characterSummary(tested, tested.byCharacterId.get('c1')), '1 tested');
+
+  const confirmed = buildIndex({
+    ...base,
+    observations: [{ id: 'o1', character: 'c1', gift: 'b1', reaction: 'liked', date: '2026-09-22' }],
+  });
+  assert.equal(characterSummary(confirmed, confirmed.byCharacterId.get('c1')), '1 confirmed');
 });
 
 test('giftIndexModel groups by category, alphabetically', () => {
@@ -542,5 +591,26 @@ test('with submissions on, the detail views do render report controls', () => {
   assert.ok(triggers.length > 0, 'the previous test would pass vacuously if nothing ever renders one');
   for (const t of triggers) {
     assert.ok(t.dataset.character && t.dataset.gift, 'every report control carries both ids app.js reads');
+  }
+});
+
+// C2 in the fix brief: the page hides horizontal overflow, so an overflowing
+// gift/character table needs its own scroller or the Report column is
+// unreachable on a phone. Both giftTable() (character.js) and
+// characterTable() (gift.js) must wrap their <table> in a .table-scroll div.
+test('the character and gift detail tables are wrapped in a .table-scroll', () => {
+  const idx = buildIndex(dataset);
+  const on = { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: true, storage: undefined };
+
+  for (const [name, render, state] of [
+    ['character detail', characterView.render, { ...on, id: 'c1' }],
+    ['gift detail', giftView.render, { ...on, id: 'book' }],
+  ]) {
+    const container = fakeElement('div');
+    render(container, idx, state);
+    const scroller = findFirst(container, (n) => (n.className ?? '').includes('table-scroll'));
+    assert.ok(scroller, `${name} should render a .table-scroll wrapper`);
+    const table = collect(scroller, (n) => (n.className ?? '').includes('gift-table'));
+    assert.equal(table.length, 1, `${name}'s .gift-table should be inside its .table-scroll wrapper`);
   }
 });

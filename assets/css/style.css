@@ -43,7 +43,8 @@ main#view,
 :where(a):focus-visible,
 :where(button):focus-visible,
 :where(input):focus-visible,
-:where(summary):focus-visible {
+:where(summary):focus-visible,
+:where(.matrix-scroll):focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
   /* On the element, not the outline -- an outline follows the border radius,
@@ -210,6 +211,13 @@ noscript {
   font-size: var(--text-table);
 }
 
+#search::placeholder {
+  /* The field's only visible label, so it needs label contrast, not hint
+     contrast. Chrome's default is 3.68:1 on --raised in dark mode. */
+  color: var(--muted);
+  opacity: 1;
+}
+
 /* Shrinkable, not fixed: the disclosure's note is capped at 66ch, and with
    flex-shrink 0 that max-content width became the item's floor -- opening
    Filters on a phone pushed the note off-screen where nothing could scroll to
@@ -317,11 +325,12 @@ main#view > p,
   border-radius: 999px;
   font-size: var(--step--1);
   border: 1px solid transparent;
-  /* Deliberately NOT nowrap. "Predicted -- not yet confirmed" is 208px on one
-     line, which set the gift table's min-content width to 449px -- wider than
-     any phone -- and because the page hides horizontal overflow the Report
-     column was clipped off-screen with no way to scroll to it. The pill reads
-     fine over two lines. */
+  /* Nowrap: the pill stays on one line. It used to wrap to keep the gift
+     table's min-content width down, but .table-scroll now lets that table go
+     wide and scroll instead, so a three-line lozenge is no longer the
+     trade-off -- see the .table-scroll rule under "Gift and character
+     tables". */
+  white-space: nowrap;
 }
 
 .state-favorite {
@@ -408,6 +417,13 @@ main#view > p,
   content: " (below their reported preference)";
   font-size: 0.8em;
   color: var(--warning);
+}
+
+/* A pair that is both an exception and a rarity mismatch would otherwise lose
+   the exception note entirely -- the more meaningful of the two -- because
+   only one ::after can win. Name both conditions instead of picking one. */
+.is-exception.rarity-mismatch::after {
+  content: " (unexpected result, and below their reported preference)";
 }
 
 .empty-state {
@@ -596,9 +612,14 @@ dialog input[type="text"] {
 .review-approve { color: var(--confirmed); }
 .review-reject  { color: var(--warning); }
 
-/* The maintainer review page's token form still carries this class; the main
-   page uses .toolbar-inner. Without it that form loses its row and its rule. */
-.toolbar {
+/* Scoped to #token-form, not .toolbar: the main page's div.toolbar is only a
+   full-bleed band wrapper around .toolbar-inner and must stay unstyled --
+   matching it here turned that wrapper into a centred, max-content-width flex
+   container and threw the whole toolbar row out of alignment with the rest
+   of the page. The maintainer review page's token form is the only element
+   these declarations are for; without them that form loses its row and its
+   rule. */
+#token-form {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -698,15 +719,22 @@ a.chip:hover {
   margin: 14px 0 0;
   padding: 0;
   list-style: none;
-  background: var(--rule);
-  border: 1px solid var(--rule);
 }
 
+/* The hairline is drawn per cell, as a box-shadow rather than a border: a
+   border would double up where two cells meet (2px instead of 1px, and it
+   would not line up with the 1px gap at all). A box-shadow paints outside the
+   box without taking layout space, so adjacent cells' rings meet exactly in
+   the gap and read as one shared hairline. Drawing the hairline through the
+   grid's own background (the previous approach) painted a solid --rule slab
+   over the trailing empty tracks of the last row -- there is no cell there to
+   cover it back up. */
 .tessera {
   display: flex;
   flex-direction: column;
   padding: 14px 16px;
   background: var(--ground);
+  box-shadow: 0 0 0 1px var(--rule);
 }
 
 .tessera-name {
@@ -753,6 +781,17 @@ a.chip:hover {
 
 .gift-table tbody tr:hover td {
   background: var(--raised);
+}
+
+/* The gift and character tables carry up to five columns and a status pill.
+   The page hides horizontal overflow, so without this an overflowing table is
+   clipped with no way to reach the Report column -- which is the site's
+   primary contribution control. Measured at 320px it lost 29px, and it loses
+   the whole column the moment any gift gets a recorded rarity and the table
+   grows a fifth column. Scroll it rather than clip it. */
+.table-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 
 /* --- The untested block --- */

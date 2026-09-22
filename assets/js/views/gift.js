@@ -52,6 +52,9 @@ function renderPicker(container, index, state) {
       container.append(el('p', 'untested-note', 'Nobody has recorded what kind of item these are, so they have no predictions yet.'));
     }
     const list = el('ul', 'chip-list');
+    // Safari/VoiceOver drops role="list" implicit in <ul> once list-style:
+    // none meets display: grid/flex, so it has to be set back explicitly.
+    list.setAttribute('role', 'list');
     for (const gift of group.gifts) {
       const item = el('li');
       // Rarity rides on the chip where it is recorded. No gift has one today,
@@ -105,7 +108,9 @@ function characterTable(index, gift, rows, state) {
 
   const table = el('table', 'gift-table');
   table.append(head, body);
-  return table;
+  const scroll = el('div', 'table-scroll');
+  scroll.append(table);
+  return scroll;
 }
 
 // The same treatment the character page gives its 75 untested gifts: a dense
@@ -117,6 +122,7 @@ function untestedBlock(gift, rows, state) {
   details.append(el('p', 'untested-note', `Nobody has given ${gift.name} to any of these characters. Any one of them is worth a report.`));
 
   const grid = el('ul', 'chip-list');
+  grid.setAttribute('role', 'list');
   for (const { character } of rows) {
     const item = el('li');
     if (state.submissionsEnabled) {

@@ -39,6 +39,9 @@ export function favoritesModel(index, filters) {
 // app.js listens for, and degrades to a link when submissions are off.
 function suggestionChips(character, suggestions, state) {
   const list = el('ul', 'chip-list');
+  // Safari/VoiceOver drops role="list" implicit in <ul> once list-style:
+  // none meets display: grid/flex, so it has to be set back explicitly.
+  list.setAttribute('role', 'list');
   for (const gift of suggestions.slice(0, 6)) {
     const item = el('li');
     if (state.submissionsEnabled) {
@@ -82,7 +85,7 @@ export function render(container, index, state) {
       link.href = `#/character/${character.id}`;
       item.append(link);
       if (suggestions.length === 0) {
-        item.append(el('p', 'hunt-note', 'Nothing untested left to suggest — try anything not yet reported.'));
+        item.append(el('p', 'hunt-note', 'No predicted likes to suggest — anything untested is worth a try.'));
       } else {
         item.append(suggestionChips(character, suggestions, state));
       }
@@ -101,6 +104,7 @@ export function render(container, index, state) {
     link.href = `#/character/${character.id}`;
     item.append(link);
     const chips = el('ul', 'chip-list');
+    chips.setAttribute('role', 'list');
     for (const gift of gifts) {
       const li = el('li');
       li.append(chip(gift.name, { href: `#/gift/${gift.id}`, className: 'chip-favourite' }));

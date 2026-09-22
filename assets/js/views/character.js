@@ -3,6 +3,7 @@ import {
   sortByConfidence, badge, el, emptyState, sourceName, reportButton, reportChip,
   partitionRows, categoryChips, chip,
 } from './shared.js';
+import { POSITIVE_REACTIONS } from '../confidence.js';
 import { voteControl, voteControlModel } from '../vote-control.js';
 
 export function characterRows(index, characterId, filters) {
@@ -31,6 +32,7 @@ export function characterSummary(index, character) {
     (character.favorites ?? []).map((id) => index.byGiftId.get(id)).filter(Boolean).map((g) => g.id),
   );
   let confirmed = 0;
+  let tested = 0;
   let contested = 0;
   let pending = 0;
   let predicted = 0;
@@ -38,7 +40,14 @@ export function characterSummary(index, character) {
   for (const gift of index.gifts) {
     const confidence = index.confidenceFor(character.id, gift.id);
     if (confidence.state === 'FAVORITE') favourites.add(gift.id);
-    else if (confidence.state === 'CONFIRMED') confirmed += 1;
+    // A CONFIRMED row is only a "confirmed" gift when the reaction is
+    // positive. The report form's first option is "They didn't like it", so
+    // a CONFIRMED "none" reaction is common -- and reporting it as one of "N
+    // confirmed" would read as N gifts that work, the opposite of what
+    // happened. "Tested" is deliberately neutral: it neither claims the gift
+    // worked nor implies the character dislikes things (see CLAUDE.md).
+    else if (confidence.state === 'CONFIRMED' && POSITIVE_REACTIONS.includes(confidence.reaction)) confirmed += 1;
+    else if (confidence.state === 'CONFIRMED') tested += 1;
     else if (confidence.state === 'CONTESTED') contested += 1;
     else if (confidence.state === 'PENDING') pending += 1;
     // A refuted-category prediction is a guess that the gift will NOT land --
@@ -49,6 +58,7 @@ export function characterSummary(index, character) {
 
   if (favourites.size > 0) return `${favourites.size} favourite${favourites.size === 1 ? '' : 's'} found`;
   if (confirmed > 0) return `${confirmed} confirmed`;
+  if (tested > 0) return `${tested} tested`;
   // CONTESTED and PENDING sit between confirmed and predicted, and they are
   // the reason this chain cannot simply fall through to "nothing tested yet":
   // both mean somebody HAS tested this character. Omitting them made the index
@@ -74,18 +84,27 @@ export function characterIndexModel(index, filters, search) {
     }));
 }
 
-// Three cases, because two was an overclaim. "What we know" may only appear
-// over rows that contain something somebody actually observed; a table of
-// nothing but guide guesses is not knowledge whatever their polarity. And
-// "Worth trying" may only appear when every guess is that the gift WILL land,
-// since a refuted-category prediction is a guess that it will not.
+const OBSERVED = new Set(['FAVORITE', 'CONFIRMED', 'CONTESTED']);
+
+// Four cases, because three was still an overclaim. "What we know" may only
+// appear over rows that contain something somebody actually OBSERVED and had
+// reviewed; a pending report is a real player's result, but nobody has
+// reviewed it yet, so it is not knowledge either -- it gets its own heading
+// rather than falling into "What we know" or all the way through to
+// "Predictions". "Worth trying" may only appear when every guess is that the
+// gift WILL land, since a refuted-category prediction is a guess that it
+// will not.
 export function signalHeading(rows) {
-  if (!rows.every((row) => row.confidence.state === 'PREDICTED')) return 'What we know';
+  if (rows.some((row) => OBSERVED.has(row.confidence.state))) return 'What we know';
+  if (rows.some((row) => row.confidence.state === 'PENDING')) return 'Awaiting review';
   return rows.every((row) => row.confidence.predicted === 'positive') ? 'Worth trying' : 'Predictions';
 }
 
 function chipList(entries) {
   const list = el('ul', 'chip-list');
+  // Safari/VoiceOver drops role="list" implicit in <ul> once list-style: none
+  // meets display: grid/flex, so it has to be set back explicitly.
+  list.setAttribute('role', 'list');
   for (const entry of entries) {
     const item = el('li');
     item.append(chip(entry.label, { className: `provenance-${entry.state}` }));
@@ -106,6 +125,7 @@ function renderPicker(container, index, state) {
   }
 
   const grid = el('ul', 'tessera-grid');
+  grid.setAttribute('role', 'list');
   for (const entry of entries) {
     const item = el('li', 'tessera');
     const link = el('a', 'tessera-name', entry.character.name);
@@ -196,7 +216,9 @@ function giftTable(index, character, rows, state) {
 
   const table = el('table', 'gift-table');
   table.append(head, body);
-  return table;
+  const scroll = el('div', 'table-scroll');
+  scroll.append(table);
+  return scroll;
 }
 
 // 75 of a character's 80 rows are untested. As a table that buries everything
