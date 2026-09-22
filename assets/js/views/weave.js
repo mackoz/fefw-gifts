@@ -1,10 +1,13 @@
-// The weave strip: the whole character x gift grid at a few pixels per cell.
-// Almost all of it is bare, and that emptiness is the point -- so the bare
-// ground is one background rect rather than thousands of empty elements, and
-// the DOM grows with what the community knows rather than with the dataset.
+// The masthead's state-of-knowledge line: how much of the character x gift
+// grid anyone has actually confirmed.
+//
+// This used to also draw the whole grid as an SVG strip. It was cut: squeezing
+// 80x53 cells into a full-width band stretched each one to roughly 21px by
+// 1.3px, and at a 16:1 distortion it stopped reading as a grid and started
+// reading as scan lines. The sentence says the same thing and can be read.
+// `marks` survives on the model because it costs nothing and describes the
+// data honestly, but nothing renders it today.
 import { el } from './shared.js';
-
-const NS = 'http://www.w3.org/2000/svg';
 
 // Every state that carries a signal. UNTESTED is deliberately absent: it is
 // the ground itself, and drawing it would cost thousands of nodes to say
@@ -66,49 +69,10 @@ export function weaveSummary(model) {
   return `${pairs} ${favourites}`;
 }
 
-function rect(attrs) {
-  const node = document.createElementNS(NS, 'rect');
-  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
-  return node;
-}
-
 export function render(container, index, state) {
   const model = weaveModel(index, state.filters);
   container.replaceChildren();
-  // Every character filtered out. Render nothing rather than an empty box,
-  // which would read as breakage.
+  // Every character filtered out. Render nothing rather than a stray line.
   if (model.rows === 0 || model.columns === 0) return;
-
-  const summary = weaveSummary(model);
-
-  const link = el('a', 'weave');
-  link.href = '#/matrix';
-  link.setAttribute('aria-label', `${summary} Open the full matrix.`);
-
-  const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('class', 'weave-svg');
-  svg.setAttribute('viewBox', `0 0 ${model.columns} ${model.rows}`);
-  svg.setAttribute('preserveAspectRatio', 'none');
-  // The summary sentence beside it already carries everything the picture
-  // says, so the picture itself is decorative to a screen reader.
-  svg.setAttribute('aria-hidden', 'true');
-  svg.setAttribute('focusable', 'false');
-
-  svg.append(rect({ class: 'weave-ground', width: model.columns, height: model.rows }));
-
-  const marks = document.createElementNS(NS, 'g');
-  marks.setAttribute('class', 'weave-marks');
-  for (const mark of model.marks) {
-    marks.append(rect({
-      class: `weave-mark weave-${mark.state.toLowerCase()}`,
-      x: mark.x,
-      y: mark.y,
-      width: 1,
-      height: 1,
-    }));
-  }
-  svg.append(marks);
-
-  link.append(svg);
-  container.append(link, el('p', 'weave-summary', summary));
+  container.append(el('p', 'weave-summary', weaveSummary(model)));
 }

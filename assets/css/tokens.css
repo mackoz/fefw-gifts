@@ -86,14 +86,6 @@
      indicator. This is 10.76:1 in both modes. */
   --masthead-focus: #efc15a;
 
-  /* The weave strip lives in the masthead, so it uses the dark state colours
-     whatever the page mode is. */
-  --weave-ground: #221b3d;
-  --weave-favorite: #efc15a;
-  --weave-confirmed: #45c9b0;
-  --weave-contested: #e3628f;
-  --weave-pending: #e8e0f2;
-  --weave-predicted: #8b7ad9;
 
   --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
   --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

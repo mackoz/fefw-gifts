@@ -33,8 +33,6 @@ test('the masthead palette does not depend on the colour mode', () => {
   const MASTHEAD_TOKENS = [
     '--masthead-ground', '--masthead-raised', '--masthead-ink', '--masthead-muted',
     '--masthead-rule', '--masthead-edge', '--masthead-focus',
-    '--weave-ground', '--weave-favorite', '--weave-confirmed', '--weave-contested',
-    '--weave-pending', '--weave-predicted',
   ];
   for (const token of MASTHEAD_TOKENS) {
     assert.doesNotMatch(dark, new RegExp(`${token}:`), `${token} must not be redefined for dark mode`);

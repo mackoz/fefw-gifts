@@ -135,8 +135,7 @@ the font files fail to load.
 ## Masthead
 
 The masthead is a **dark violet band in both colour modes**. This lets one
-logo asset serve both, gives the weave strip a single treatment, and echoes
-the game's own dark translucent UI panels.
+logo asset serve both and echoes the game's own dark translucent UI panels.
 
 Because the band is dark in light mode too, the masthead and the weave strip
 resolve their colours from the **dark token set regardless of
@@ -164,27 +163,37 @@ The accessible name resolves to "Fire Emblem: Fortune's Weave Gift Guide",
 identical to the current heading. `<title>` is unchanged. If the image fails
 to load the alt text renders and the heading still reads correctly.
 
-## The weave strip
+## The masthead's state-of-knowledge line
 
 A new view module, `assets/js/views/weave.js`, following the same shape as
 every other view: a pure model plus a DOM render, Node-importable, no
 top-level DOM access.
 
 - `weaveModel(index, filters)` returns
-  `{ pairs, confirmed, favouritesFound, favouritesTotal, marks }` where
-  `marks` contains only non-`UNTESTED` cells as `{ x, y, state }`.
-- `render()` emits one inline `<svg viewBox="0 0 80 53"
-  preserveAspectRatio="none">`: a ground rect plus one `<rect>` per mark.
-  That is 349 elements today. The bare warp is a background fill, never
-  4,240 elements.
+  `{ pairs, confirmed, favouritesFound, favouritesTotal, marks }`.
+- `weaveSummary(model)` turns that into two sentences, not a `·`-joined
+  string. With today's data: `No pair confirmed yet, out of 4,240. 53
+  favourites still unfound.`
 - All counts are computed from the index. No count is hardcoded.
-- The strip is a single link to `#/matrix`, with an accessible label carrying
-  the counts. Individual marks are **not** interactive: at 80×53 in a
-  full-width strip a cell is roughly 4px × 0.8px, and a control that cannot
-  be hit must not be presented as one.
-- Marks fade in once on first load. `prefers-reduced-motion: reduce` disables
-  it. This is the page's only non-user-triggered motion.
-- The counts line is a sentence, not a `·`-joined string.
+- `render()` appends the sentence to the masthead and nothing else.
+
+**What this section used to specify, and why it changed.** The original design
+drew the whole 80x53 grid beside this sentence as an inline SVG strip, one
+`<rect>` per signal-bearing cell on a single background rect — 349 elements
+rather than 4,240 — so that the emptiness of the dataset was visible at a
+glance. It was built, shipped to local review, and cut there.
+
+The failure was geometric and should have been caught at design time. Stretched
+across the full content column with `preserveAspectRatio="none"`, each cell
+rendered at roughly 21px by 1.3px. At that 16:1 distortion the image stops
+reading as a grid and reads as scan lines or a corrupted texture, and it sat
+above every view rather than only where a grid has context. The sentence
+already carries the fact, legibly, in one line.
+
+`marks` remains on the model — it is honest about the data and costs nothing —
+but nothing renders it. The `--weave-*` token set and the `weave-in` animation
+were removed with the graphic, so the page now has **no non-user-triggered
+motion at all**.
 
 ## View structure
 
