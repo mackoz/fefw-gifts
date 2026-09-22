@@ -104,6 +104,41 @@ test('an invalid link state is rejected', () => {
   assert.match(errors[0], /character c1: invalid state for books: maybe/);
 });
 
+// `categories` is a map, not a list: Array.isArray would accept `[]` here,
+// which is wrong-shaped for a map of category id to link, so the check must
+// reject arrays too, not just non-objects.
+for (const [label, value] of [['a number', 7], ['a boolean', true], ['an array', []]]) {
+  test(`a character whose categories is ${label} is rejected`, () => {
+    const d = base();
+    d.characters.push(character({ categories: value }));
+    const { errors } = validate(d);
+    assert.deepEqual(errors, ['character c1: categories must be an object']);
+  });
+}
+
+test('a character with no categories key is rejected', () => {
+  const d = base();
+  const c = character();
+  delete c.categories;
+  d.characters.push(c);
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['character c1: categories must be an object']);
+});
+
+test('a null category link is reported, not fatal', () => {
+  const d = base();
+  d.characters.push(character({ categories: { books: null } }));
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['character c1: category books link must be an object']);
+});
+
+test('a non-object category link is reported, not fatal', () => {
+  const d = base();
+  d.characters.push(character({ categories: { books: 'not a link' } }));
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['character c1: category books link must be an object']);
+});
+
 test('a trait may name a valid category or be explicitly null', () => {
   const d = base();
   d.characters.push(character({ traits: [{ text: 'poetry', category: 'books' }, { text: 'his little sister', category: null }] }));
@@ -115,6 +150,36 @@ test('a trait naming an unknown category is rejected', () => {
   d.characters.push(character({ traits: [{ text: 'x', category: 'nope' }] }));
   const { errors } = validate(d);
   assert.match(errors[0], /character c1: trait "x" names unknown category: nope/);
+});
+
+test('a null trait entry is reported, not fatal', () => {
+  const d = base();
+  d.characters.push(character({ traits: [null] }));
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['character c1: trait entries must be objects']);
+});
+
+test('a non-object trait entry is reported, not fatal', () => {
+  const d = base();
+  d.characters.push(character({ traits: ['x'] }));
+  const { errors } = validate(d);
+  // Before the shape check this reported `trait "undefined" names unknown
+  // category: undefined`, which named neither the entry nor a fixable cause.
+  assert.deepEqual(errors, ['character c1: trait entries must be objects']);
+});
+
+test('a trait with no text is rejected', () => {
+  const d = base();
+  d.characters.push(character({ traits: [{ category: null }] }));
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['character c1: trait is missing text']);
+});
+
+test('a trait with empty text is rejected', () => {
+  const d = base();
+  d.characters.push(character({ traits: [{ text: '', category: null }] }));
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['character c1: trait is missing text']);
 });
 
 test('a favorite referencing an unknown gift is rejected', () => {
@@ -150,11 +215,14 @@ test('a character whose traits is not an array is rejected', () => {
 });
 
 // A wrong-typed list field must be REPORTED, not fatal. `?? []` guards only
-// null and undefined, so an object reached for...of and threw a TypeError:
-// the validator died with a stack trace and printed none of the errors it had
-// already collected. CI still failed, so nothing invalid could deploy, but
-// whoever had to fix the data got a crash instead of the reason.
-for (const [label, value] of [['an object', {}], ['a number', 7], ['null', null]]) {
+// null and undefined, so an object or a number is not nullish and reached
+// for...of, throwing a TypeError: the validator died with a stack trace and
+// printed none of the errors it had already collected. CI still failed, so
+// nothing invalid could deploy, but whoever had to fix the data got a crash
+// instead of the reason. `{}` and `7` are the values that actually exercise
+// that difference -- asArray(x) reports them without crashing where
+// `x ?? []` would have died.
+for (const [label, value] of [['an object', {}], ['a number', 7]]) {
   test(`a character whose traits is ${label} is reported, not fatal`, () => {
     const d = base();
     d.characters.push(character({ traits: value }));
@@ -170,6 +238,41 @@ for (const [label, value] of [['an object', {}], ['a number', 7], ['null', null]
   test(`a gift whose sources is ${label} is reported, not fatal`, () => {
     const d = base();
     d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: null, description: '', sources: value });
+    assert.deepEqual(validate(d).errors, ['gift g1: sources must be an array']);
+  });
+}
+
+// `null` and a missing key are already nullish, so `x ?? []` handles them
+// exactly as asArray(x) does -- reverting the fix to `x ?? []` would leave
+// these three green too. They cannot distinguish the two implementations, so
+// unlike the loop above they only prove the value is reported, not that
+// dropping asArray() would be caught. Keep them split from that loop; folding
+// them back together would quietly lose the "not fatal" coverage above.
+for (const [label, apply] of [
+  ['null', (obj, key) => { obj[key] = null; }],
+  ['a missing key', (obj, key) => { delete obj[key]; }],
+]) {
+  test(`a character whose traits is ${label} is reported`, () => {
+    const d = base();
+    const c = character();
+    apply(c, 'traits');
+    d.characters.push(c);
+    assert.deepEqual(validate(d).errors, ['character c1: traits must be an array']);
+  });
+
+  test(`a character whose favorites is ${label} is reported`, () => {
+    const d = base();
+    const c = character();
+    apply(c, 'favorites');
+    d.characters.push(c);
+    assert.deepEqual(validate(d).errors, ['character c1: favorites must be an array']);
+  });
+
+  test(`a gift whose sources is ${label} is reported`, () => {
+    const d = base();
+    const g = { id: 'g1', name: 'G', category: 'books', rarity: null, description: '', sources: [] };
+    apply(g, 'sources');
+    d.gifts.push(g);
     assert.deepEqual(validate(d).errors, ['gift g1: sources must be an array']);
   });
 }

@@ -23,6 +23,15 @@ function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+// Same idea as asArray(), one level up: `ch.categories` is a map, not a list,
+// so the wrong-typed guard here is "is it a plain object" rather than
+// Array.isArray. A number, a boolean or an array all fail that test and fall
+// back to {}, so Object.entries() sees zero entries and the loop below is
+// simply a no-op instead of a crash.
+function asObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
 function checkDuplicates(items, kind, errors) {
   const seen = new Set();
   for (const item of items) {
@@ -72,8 +81,17 @@ export function validate(dataset) {
   for (const ch of dataset.characters) {
     if (!ch.name) errors.push(`character ${ch.id}: missing name`);
     if (!Array.isArray(ch.traits)) errors.push(`character ${ch.id}: traits must be an array`);
+    if (ch.categories === null || typeof ch.categories !== 'object' || Array.isArray(ch.categories)) {
+      errors.push(`character ${ch.id}: categories must be an object`);
+    }
 
-    for (const [catId, link] of Object.entries(ch.categories ?? {})) {
+    for (const [catId, link] of Object.entries(asObject(ch.categories))) {
+      // A null or non-object link would otherwise reach link.state below and
+      // throw; report it and move on so one bad entry doesn't mask the rest.
+      if (link === null || typeof link !== 'object' || Array.isArray(link)) {
+        errors.push(`character ${ch.id}: category ${catId} link must be an object`);
+        continue;
+      }
       if (!categoryIds.has(catId)) errors.push(`character ${ch.id}: unknown category: ${catId}`);
       if (!STATES.has(link.state)) errors.push(`character ${ch.id}: invalid state for ${catId}: ${link.state}`);
       // Guide-derived links must always be attributable, so they can be audited or removed wholesale.
@@ -86,6 +104,15 @@ export function validate(dataset) {
     }
 
     for (const t of asArray(ch.traits)) {
+      // Same reasoning as the category link above: a null or non-object entry
+      // would otherwise reach t.category and throw.
+      if (t === null || typeof t !== 'object' || Array.isArray(t)) {
+        errors.push(`character ${ch.id}: trait entries must be objects`);
+        continue;
+      }
+      if (typeof t.text !== 'string' || t.text.length === 0) {
+        errors.push(`character ${ch.id}: trait is missing text`);
+      }
       if (t.category !== null && !categoryIds.has(t.category)) {
         errors.push(`character ${ch.id}: trait "${t.text}" names unknown category: ${t.category}`);
       }
