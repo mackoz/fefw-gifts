@@ -1,0 +1,138 @@
+/* Design tokens for the Fortune's Weave gift guide.
+   Read off the game's key art: a golden-haze sky, deep violet-indigo hair,
+   magenta-rose cloaks, a teal garment panel, gold trim, and an ivory focal
+   figure. The Japanese title means "a scene of blooming multicoloured
+   flowers", which is why this is a polychrome set rather than one accent.
+
+   Semantic rule: predictions sit in the ground's own hue so guesses recede,
+   and player evidence is the only thing that glows. Every text token clears
+   4.5:1 against its ground and every control border clears 3:1 -- the ratios
+   are recorded in the spec and are reproducible from these values. */
+
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url('../fonts/fraunces-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url('../fonts/fraunces-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('../fonts/plex-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('../fonts/plex-sans-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  color-scheme: light dark;
+
+  /* Light mode is the base declaration; the dark block below overrides it. */
+  --ground: #f6f3fa;
+  --raised: #ffffff;
+  --ink: #241c38;
+  --muted: #5a5076;
+  --rule: #ded6ec;
+  --edge: #7e6ea4;
+  --focus: #54449e;
+
+  --favorite: #7a5600;
+  --favorite-bg: #f8efd6;
+  --confirmed: #0b6c5e;
+  --confirmed-bg: #dcf1ed;
+  --contested: #a82453;
+  --contested-bg: #fbe4ec;
+  --pending: #2e2545;
+  --pending-bg: #e6e0f4;
+  --predicted: #54449e;
+  --predicted-bg: #e9e4f8;
+  --untested: #645a80;
+  --untested-bg: #efecf5;
+  --warning: #b3341f;
+
+  /* The masthead is a dark band in BOTH colour modes, so it carries its own
+     palette and is never redefined under the dark-mode query. Redefining it
+     there would put an ivory wordmark on a pale band in light mode. */
+  --masthead-ground: #17122a;
+  --masthead-raised: #201a38;
+  --masthead-ink: #ede6f5;
+  --masthead-muted: #a99cc4;
+  --masthead-rule: #332b52;
+  --masthead-edge: #7768ab;
+
+  /* The weave strip lives in the masthead, so it uses the dark state colours
+     whatever the page mode is. */
+  --weave-ground: #221b3d;
+  --weave-favorite: #efc15a;
+  --weave-confirmed: #45c9b0;
+  --weave-contested: #e3628f;
+  --weave-pending: #e8e0f2;
+  --weave-predicted: #8b7ad9;
+
+  --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --step--1: 0.8125rem;
+  --step-0: 1rem;
+  --step-1: 1.15rem;
+  --step-2: 1.75rem;
+  --step-3: clamp(2rem, 1.4rem + 2.6vw, 3.25rem);
+  --text-table: 0.9375rem;
+
+  --col: 72rem;
+  --measure: 66ch;
+  --gutter: 16px;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #17122a;
+    --raised: #201a38;
+    --ink: #ede6f5;
+    --muted: #a99cc4;
+    --rule: #332b52;
+    --edge: #7768ab;
+    --focus: #efc15a;
+
+    --favorite: #efc15a;
+    --favorite-bg: #3a2e10;
+    --confirmed: #45c9b0;
+    --confirmed-bg: #0e3a34;
+    --contested: #e3628f;
+    --contested-bg: #3d1428;
+    --pending: #e8e0f2;
+    --pending-bg: #2e2748;
+    --predicted: #8b7ad9;
+    --predicted-bg: #241e42;
+    --untested: #9488b2;
+    --untested-bg: #1f1a33;
+    --warning: #ff8a6b;
+  }
+}
