@@ -1,8 +1,15 @@
 /* Design tokens for the Fortune's Weave gift guide.
-   Read off the game's key art: a golden-haze sky, deep violet-indigo hair,
-   magenta-rose cloaks, a teal garment panel, gold trim, and an ivory focal
-   figure. The Japanese title means "a scene of blooming multicoloured
-   flowers", which is why this is a polychrome set rather than one accent.
+
+   "Ember and sepia": the warm brown-sepia ground the figures stand on in the
+   game's key art, lit by the gold of its wordmark and trim. An earlier draft
+   built the page on the violet-indigo of the characters' hair and robes; it
+   was rejected on review as too cold for the subject. Two other Fortune's
+   Weave fan projects independently landed on gold-and-vellum schemes -- a
+   pine-green wiki and a parchment companion -- which is the genre's own
+   heraldic language; this set stays in that family without copying either.
+
+   The wordmark's own ivory-to-gold gradient was drawn for a dark warm ground,
+   which is why it sits on this one without a halo.
 
    Semantic rule: predictions sit in the ground's own hue so guesses recede,
    and player evidence is the only thing that glows. Every text token clears
@@ -49,42 +56,38 @@
   color-scheme: light dark;
 
   /* Light mode is the base declaration; the dark block below overrides it. */
-  --ground: #f6f3fa;
-  --raised: #ffffff;
-  --ink: #241c38;
-  --muted: #5a5076;
-  --rule: #ded6ec;
-  --edge: #7e6ea4;
-  --focus: #54449e;
+  --ground: #f7f2ea;
+  --raised: #fffdf8;
+  --ink: #241a14;
+  --muted: #5f5145;
+  --rule: #e2d8cb;
+  --edge: #8c7259;
+  --focus: #8a5a00;
 
-  --favorite: #7a5600;
-  --favorite-bg: #f8efd6;
-  --confirmed: #0b6c5e;
-  --confirmed-bg: #dcf1ed;
-  --contested: #a82453;
-  --contested-bg: #fbe4ec;
-  --pending: #2e2545;
-  --pending-bg: #e6e0f4;
-  --predicted: #54449e;
-  --predicted-bg: #e9e4f8;
-  --untested: #645a80;
-  --untested-bg: #efecf5;
-  --warning: #b3341f;
+  --favorite: #8a5a00;
+  --favorite-bg: #f8eed6;
+  --confirmed: #0d6a52;
+  --confirmed-bg: #dcf0e8;
+  --contested: #a83a50;
+  --contested-bg: #fae4e8;
+  --pending: #241a14;
+  --pending-bg: #efe7da;
+  --predicted: #6b5540;
+  --predicted-bg: #f0e9de;
+  --untested: #6b5f52;
+  --untested-bg: #efeae2;
+  --warning: #a8391f;
 
   /* The masthead is a dark band in BOTH colour modes, so it carries its own
      palette and is never redefined under the dark-mode query. Redefining it
      there would put an ivory wordmark on a pale band in light mode. */
-  --masthead-ground: #17122a;
-  --masthead-raised: #201a38;
-  --masthead-ink: #ede6f5;
-  --masthead-muted: #a99cc4;
-  --masthead-rule: #332b52;
-  --masthead-edge: #7768ab;
-  /* --focus is not in this token set, so a focus ring inside the masthead
-     would otherwise resolve to the page's --focus, which is 2.33:1 on the
-     masthead ground in light mode -- below the 3:1 WCAG requires for a focus
-     indicator. This is 10.76:1 in both modes. */
-  --masthead-focus: #efc15a;
+  --masthead-ground: #120d0a;
+  --masthead-raised: #241a16;
+  --masthead-ink: #f2e7d8;
+  --masthead-muted: #b3a08c;
+  --masthead-rule: #3a2a22;
+  --masthead-edge: #8c6e58;
+  --masthead-focus: #e8b75c;
 
 
   --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
@@ -110,26 +113,26 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ground: #17122a;
-    --raised: #201a38;
-    --ink: #ede6f5;
-    --muted: #a99cc4;
-    --rule: #332b52;
-    --edge: #7768ab;
-    --focus: #efc15a;
+    --ground: #1a1310;
+    --raised: #241a16;
+    --ink: #f2e7d8;
+    --muted: #b3a08c;
+    --rule: #3a2a22;
+    --edge: #8c6e58;
+    --focus: #e8b75c;
 
-    --favorite: #efc15a;
-    --favorite-bg: #3a2e10;
-    --confirmed: #45c9b0;
-    --confirmed-bg: #0e3a34;
-    --contested: #e3628f;
-    --contested-bg: #3d1428;
-    --pending: #e8e0f2;
-    --pending-bg: #2e2748;
-    --predicted: #9384dd;
-    --predicted-bg: #241e42;
-    --untested: #9488b2;
-    --untested-bg: #1f1a33;
+    --favorite: #e8b75c;
+    --favorite-bg: #3a2a12;
+    --confirmed: #5fc9a0;
+    --confirmed-bg: #0e3228;
+    --contested: #e8889c;
+    --contested-bg: #3a1a22;
+    --pending: #fbf2e4;
+    --pending-bg: #2e2620;
+    --predicted: #bd9a78;
+    --predicted-bg: #2a1f18;
+    --untested: #a08d79;
+    --untested-bg: #231a15;
     --warning: #ff8a6b;
   }
 }

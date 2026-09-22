@@ -70,43 +70,54 @@ Rejected alternatives:
 
 ### Colour
 
-Derived by reading the game's North American key art and wordmark, not
-invented: a golden-haze sky, deep violet-indigo hair, magenta-rose cloaks, a
-teal garment panel, gold trim, and a pure-ivory central figure. The Japanese
-title, *banshisenkō* ("a scene of blooming multicoloured flowers"), supports
-a polychrome set rather than a single accent — which is what six confidence
-states require.
+**"Ember and sepia."** Taken from the warm brown-sepia ground the figures
+stand on in the game's key art, lit by the gold of its wordmark and trim.
 
-**Semantic rule:** predictions sit in the ground's own hue so guesses recede;
-player evidence is the only thing that glows. This is the epistemic rule of
-the parent spec expressed as colour.
+An earlier draft built the page on the violet-indigo of the characters' hair
+and robes. It was implemented, reviewed and rejected at local review as too
+cold for the subject. Two other Fortune's Weave fan projects had independently
+landed on gold-and-vellum schemes — a pine-green Astro wiki and a parchment
+companion — which is the genre's own heraldic language. This set stays in that
+family without copying either, and the wordmark's ivory-to-gold gradient was
+drawn for exactly this kind of ground.
 
-Ground: `#17122A` dark / `#F6F3FA` light. Raised surface: `#201A38` dark /
-`#FFFFFF` light. Contrast ratios are against the ground.
+**Semantic rule, unchanged:** predictions sit in the ground's own hue so
+guesses recede; player evidence is the only thing that glows. Here that makes
+`predicted` a warm tan rather than a colour of its own.
 
-| role | dark | ratio | light | ratio |
-|---|---|---|---|---|
-| ink | `#EDE6F5` | 14.9 | `#241C38` | 14.7 |
-| muted | `#A99CC4` | 7.1 | `#5A5076` | 6.7 |
-| favourite (★) | `#EFC15A` | 10.8 | `#7A5600` | 6.1 |
-| confirmed (✔) | `#45C9B0` | 8.9 | `#0B6C5E` | 5.8 |
-| contested (?) | `#E3628F` | 5.5 | `#A82453` | 6.3 |
-| pending (•) | `#E8E0F2` | 14.2 | `#2E2545` | 13.0 |
-| predicted (~) | `#8B7AD9` | 5.1 | `#54449E` | 7.1 |
-| untested (—) | `#9488B2` | 5.6 | `#645A80` | 5.8 |
-| warning | `#FF8A6B` | 7.9 | `#B3341F` | 5.6 |
-| control edge | `#7768AB` | 3.8 | `#7E6EA4` | 4.1 |
-| focus ring | `#EFC15A` | 10.8 | `#54449E` | 7.1 |
+Ground: `#1a1310` dark / `#f7f2ea` light. Raised: `#241a16` / `#fffdf8`.
+
+**The ratios below are as rendered** — each state's text against the tint it
+actually paints on, not against the page ground. That distinction matters: an
+earlier version of this table quoted ground ratios while the components
+painted on tints and multiplied by an `opacity: 0.65`, and three WCAG AA
+failures hid behind the difference. Quote what the component paints.
+
+| role | dark | on | ratio | light | on | ratio |
+|---|---|---|---|---|---|---|
+| ink | `#f2e7d8` | ground | 15.03 | `#241a14` | ground | 15.28 |
+| muted | `#b3a08c` | ground | 7.27 | `#5f5145` | ground | 6.85 |
+| favourite (★) | `#e8b75c` | `#3a2a12` | 7.47 | `#8a5a00` | `#f8eed6` | 5.13 |
+| confirmed (✔) | `#5fc9a0` | `#0e3228` | 6.87 | `#0d6a52` | `#dcf0e8` | 5.52 |
+| contested (?) | `#e8889c` | `#3a1a22` | 6.24 | `#a83a50` | `#fae4e8` | 5.12 |
+| pending (•) | `#fbf2e4` | `#2e2620` | 13.38 | `#241a14` | `#efe7da` | 13.88 |
+| predicted (~) | `#bd9a78` | `#2a1f18` | 6.16 | `#6b5540` | `#f0e9de` | 5.81 |
+| untested (—) | `#a08d79` | `#231a15` | 5.35 | `#6b5f52` | `#efeae2` | 5.18 |
+| warning | `#ff8a6b` | ground | — | `#a8391f` | ground | 5.76 |
+| control edge | `#8c6e58` | ground | 3.92 | `#8c7259` | ground | 4.04 |
+| focus ring | `#e8b75c` | ground | 9.92 | `#8a5a00` | ground | 5.32 |
 
 Every text token clears 4.5:1 and every control border and focus ring clears
-3:1, in both modes. Decorative hairlines are a **separate token** (`--rule`,
-`#332B52` dark / `#DED6EC` light) and are deliberately below 3:1: they divide
-content, they are not control boundaries, and a 3:1 grid in the matrix would
-be deafening.
+3:1, in both modes, as rendered. Decorative hairlines are a separate token
+(`--rule`) and deliberately sub-3:1 — they divide content and are not control
+boundaries. No component may reintroduce an `opacity` multiplier on text.
 
-`pending` is the highest-contrast token in both modes by intent. A fresh
-unreviewed player report is the most alive item on the site and must pull the
-eye harder than a confirmed result.
+`pending` is the highest-contrast token in both modes by intent: a fresh
+unreviewed player report is the most alive item on the site.
+
+The masthead carries its own always-dark set (`--masthead-*`, including
+`--masthead-focus`), never redefined under the dark-mode query, so the band
+and the wordmark render correctly in light mode.
 
 Links do not get their own colour. Character and gift names are the most
 repeated element on the page; colouring them would collide with six state
