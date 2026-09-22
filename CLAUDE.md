@@ -41,8 +41,11 @@
   Turnstile is called without `remoteip`. Adding any of these is a design
   change, not a fix.
 - **The site must work with the Worker unavailable or unconfigured.**
-  `assets/js/config.js` ships with `WORKER_URL = null`, which is a supported
-  state, not a bug.
+  `WORKER_URL` in `assets/js/config.js` may be null, and null is a supported
+  state rather than a bug: the committed data must still render from GitHub
+  Pages alone, and a failed or slow `/pending` must skip the overlay silently.
+  Do not assume the file's current value -- the invariant is about degrading
+  gracefully, not about what is checked in today.
 - **Worker modules stay Node-importable**, like the browser modules: no
   top-level `env` access and no Cloudflare-only globals at module scope, so
   `node:test` can import them directly.
