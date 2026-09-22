@@ -120,10 +120,6 @@ noscript {
   height: auto;
 }
 
-.masthead-title span {
-  color: var(--masthead-ink);
-}
-
 .masthead-tagline {
   max-width: var(--measure);
   margin: 14px 0 0;
@@ -782,12 +778,15 @@ a.chip:hover {
 }
 
 /* A chip that triggers a report rather than navigating. Dashed while the pair
-   is untested, solid on hover, so it reads as an invitation. */
+   is untested, solid on hover, so it reads as an invitation. Resting border
+   and text used --rule (1.28:1 / 1.39:1) and --untested, the dimmest token --
+   styling the site's primary contribution affordance to look disabled. */
 .chip-action {
   font: inherit;
   font-size: var(--step--1);
-  color: var(--untested);
+  color: var(--muted);
   border-style: dashed;
+  border-color: var(--edge);
   cursor: pointer;
 }
 
@@ -797,8 +796,15 @@ a.chip:hover {
   border-color: var(--edge);
 }
 
-.traits,
-.liked-categories {
+/* --- Detail page text ---
+   Small paragraphs and lists rendered above the gift table on a character's
+   page (character.js's renderProfile) or above the character table on a
+   gift's page (gift.js). .provenance-note, .rarity-pref, .notes, .descriptor
+   and .help-wanted already get max-width: var(--measure) from the shared rule
+   near the top of this file -- don't redeclare it here. .traits and .meta
+   are not in that list, so they keep their own. */
+
+.traits {
   max-width: var(--measure);
   margin: 8px 0 0;
   padding-left: 1.2em;
@@ -807,17 +813,19 @@ a.chip:hover {
 .provenance-note,
 .rarity-pref,
 .notes {
-  max-width: var(--measure);
   color: var(--muted);
   font-size: var(--step--1);
 }
 
-/* --- Gift index groups --- */
+.meta {
+  max-width: var(--measure);
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: var(--step--1);
+}
 
-.meta,
 .descriptor,
 .help-wanted {
-  max-width: var(--measure);
   margin: 6px 0 0;
   color: var(--muted);
   font-size: var(--step--1);
@@ -826,6 +834,8 @@ a.chip:hover {
 .descriptor {
   font-style: italic;
 }
+
+/* --- Gift index groups --- */
 
 main#view > .chip-list {
   margin-bottom: 4px;
@@ -957,18 +967,18 @@ main#view.view-matrix {
 .matrix td.cell-predicted,
 .legend-swatch.cell-predicted { background: var(--predicted-bg); color: var(--predicted); }
 .matrix td.cell-untested      { background: transparent; }
-.legend-swatch.cell-untested  { background: var(--untested-bg); }
+/* Matches the cell: an untested pair renders as no box, so the legend key for
+   it must not show one either. The swatch's own border still marks the slot. */
+.legend-swatch.cell-untested  { background: transparent; }
 .matrix td.cell-exception { outline: 2px dotted var(--warning); outline-offset: -2px; }
 .matrix td.cell-rarity-mismatch { border-bottom: 2px dashed var(--warning); }
 
 /* --- Favourites hunt --- */
 
-.intro,
+/* .intro already gets max-width: var(--measure) from the shared rule near the
+   top of this file. */
 .progress {
   max-width: var(--measure);
-}
-
-.progress {
   margin: 14px 0 0;
   font-family: var(--font-display);
   font-variation-settings: 'opsz' 24;

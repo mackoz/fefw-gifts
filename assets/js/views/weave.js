@@ -62,7 +62,7 @@ export function weaveSummary(model) {
     : `${n(model.confirmed)} of ${n(model.pairs)} pairs confirmed.`;
   const favourites = model.favouritesFound === 0
     ? `${n(model.favouritesTotal)} favourite${model.favouritesTotal === 1 ? '' : 's'} still unfound.`
-    : `${n(model.favouritesFound)} of ${n(model.favouritesTotal)} favourites found.`;
+    : `${n(model.favouritesFound)} of ${n(model.favouritesTotal)} favourite${model.favouritesTotal === 1 ? '' : 's'} found.`;
   return `${pairs} ${favourites}`;
 }
 

@@ -161,7 +161,7 @@ function giftTable(index, character, rows, state) {
     link.href = `#/gift/${gift.id}`;
     nameCell.append(link);
     row.append(nameCell);
-    row.append(el('td', null, gift.category ? index.byCategoryId.get(gift.category).label : '—'));
+    row.append(el('td', null, gift.category ? (index.byCategoryId.get(gift.category)?.label ?? gift.category) : '—'));
     if (showRarity) row.append(el('td', null, gift.rarity ?? '—'));
 
     const statusCell = el('td');

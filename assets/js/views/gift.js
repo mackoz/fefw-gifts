@@ -164,6 +164,10 @@ export function render(container, index, state) {
 
   const { signal, untested } = partitionRows(rows);
   if (signal.length > 0) {
+    // Deliberately the neutral noun, not signalHeading(): this page is scoped
+    // to one gift, and a heading here would have to characterise a mix of
+    // states across characters, which risks overclaiming. Do not change this
+    // to signalHeading().
     container.append(el('h3', null, 'Characters'));
     container.append(characterTable(index, gift, signal, state));
   }
