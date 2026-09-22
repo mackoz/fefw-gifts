@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildIndex } from '../assets/js/data.js';
 import { characterRows, characterIndexModel, characterSummary, signalHeading } from '../assets/js/views/character.js';
-import { sortByConfidence, stateLabel, partitionRows, categoryChips } from '../assets/js/views/shared.js';
+import { sortByConfidence, stateLabel, partitionRows, categoryChips, chip, reportChip } from '../assets/js/views/shared.js';
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
 import { giftRows, giftIndexModel } from '../assets/js/views/gift.js';
 
@@ -266,6 +266,50 @@ test('categoryChips falls back to the raw id rather than inventing a label', () 
 test('categoryChips tolerates a character with no categories key', () => {
   const idx = buildIndex(dataset);
   assert.deepEqual(categoryChips(idx, {}), []);
+});
+
+// chip() and reportChip() are the only DOM-touching exports under test here,
+// so `document` gets just enough of a stand-in to construct an element and
+// read back what el() sets on it -- no dependency, no real DOM.
+function fakeElement(tag) {
+  const attrs = {};
+  return {
+    tagName: tag.toUpperCase(),
+    className: '',
+    textContent: '',
+    dataset: {},
+    setAttribute(name, value) { attrs[name] = value; },
+    getAttribute(name) { return attrs[name] ?? null; },
+  };
+}
+globalThis.document = { createElement: (tag) => fakeElement(tag) };
+
+test('chip renders a link when given an href and a plain span otherwise', () => {
+  const link = chip('Books', { href: '#/gift/book' });
+  assert.equal(link.tagName, 'A');
+  assert.equal(link.href, '#/gift/book');
+  assert.match(link.className, /\bchip\b/);
+  assert.equal(link.textContent, 'Books');
+
+  const label = chip('Books');
+  assert.equal(label.tagName, 'SPAN');
+  assert.equal(label.href, undefined, 'a non-link chip must not look clickable');
+});
+
+// This is the contract character.js, gift.js and favorites.js all rely on:
+// app.js's delegated click listener finds `.report-button` and reads these
+// two dataset keys. Renaming the class or dropping a key makes every chip
+// built from reportChip() go inert with no error and no test catching it.
+test('reportChip carries the report-button class and both dataset ids', () => {
+  const button = reportChip('nydine', 'grooming-kit', 'Grooming kit', {
+    ariaLabel: 'Report a result for Grooming kit',
+  });
+  assert.match(button.className, /\bchip\b/);
+  assert.match(button.className, /\bchip-action\b/);
+  assert.match(button.className, /\breport-button\b/);
+  assert.equal(button.dataset.character, 'nydine');
+  assert.equal(button.dataset.gift, 'grooming-kit');
+  assert.equal(button.getAttribute('aria-label'), 'Report a result for Grooming kit');
 });
 
 test('characterSummary reports the strongest true thing, never a negative', () => {

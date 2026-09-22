@@ -1,6 +1,6 @@
 import { passesFilters } from '../filters.js';
 import {
-  sortByConfidence, badge, el, emptyState, sourceName, reportButton,
+  sortByConfidence, badge, el, emptyState, sourceName, reportButton, reportChip,
   partitionRows, categoryChips, chip,
 } from './shared.js';
 import { voteControl, voteControlModel } from '../vote-control.js';
@@ -199,12 +199,7 @@ function untestedBlock(character, rows, state) {
   for (const { gift } of rows) {
     const item = el('li');
     if (state.submissionsEnabled) {
-      const button = el('button', 'chip chip-action report-button', gift.name);
-      button.type = 'button';
-      button.dataset.character = character.id;
-      button.dataset.gift = gift.id;
-      button.setAttribute('aria-label', `Report a result for ${gift.name}`);
-      item.append(button);
+      item.append(reportChip(character.id, gift.id, gift.name, { ariaLabel: `Report a result for ${gift.name}` }));
     } else {
       item.append(chip(gift.name, { href: `#/gift/${gift.id}` }));
     }

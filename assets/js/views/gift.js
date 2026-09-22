@@ -1,5 +1,5 @@
 import { passesFilters } from '../filters.js';
-import { sortByConfidence, badge, el, emptyState, reportButton, partitionRows, chip } from './shared.js';
+import { sortByConfidence, badge, el, emptyState, reportButton, reportChip, partitionRows, chip } from './shared.js';
 import { voteControl, voteControlModel } from '../vote-control.js';
 
 export function giftRows(index, giftId, filters) {
@@ -120,12 +120,7 @@ function untestedBlock(gift, rows, state) {
   for (const { character } of rows) {
     const item = el('li');
     if (state.submissionsEnabled) {
-      const button = el('button', 'chip chip-action report-button', character.name);
-      button.type = 'button';
-      button.dataset.character = character.id;
-      button.dataset.gift = gift.id;
-      button.setAttribute('aria-label', `Report a result for ${character.name}`);
-      item.append(button);
+      item.append(reportChip(character.id, gift.id, character.name, { ariaLabel: `Report a result for ${character.name}` }));
     } else {
       item.append(chip(character.name, { href: `#/character/${character.id}` }));
     }

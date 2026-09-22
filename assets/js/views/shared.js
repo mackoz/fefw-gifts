@@ -91,6 +91,21 @@ export function reportButton(characterId, giftId) {
   return button;
 }
 
+// A per-pair report trigger styled as a chip, for the dense untested/suggestion
+// grids. Like reportButton, what matters is not the markup but the contract
+// with app.js's delegated listener: the class must be exactly `report-button`
+// and the ids must land in `dataset.character`/`dataset.gift`. Each call site
+// keeps choosing its own label and aria-label -- see character.js, gift.js and
+// favorites.js, which deliberately differ on the aria-label's wording.
+export function reportChip(characterId, giftId, label, { ariaLabel } = {}) {
+  const button = el('button', 'chip chip-action report-button', label);
+  button.type = 'button';
+  button.dataset.character = characterId;
+  button.dataset.gift = giftId;
+  if (ariaLabel) button.setAttribute('aria-label', ariaLabel);
+  return button;
+}
+
 // Splits confidence-sorted rows into the half that carries a signal and the
 // half nobody has tried. The caller renders them differently: a table for what
 // is known, a dense chip grid for what is not. Input order is preserved, so a

@@ -1,5 +1,5 @@
 import { RARITY_ORDER } from '../confidence.js';
-import { el, emptyState, chip } from './shared.js';
+import { el, emptyState, chip, reportChip } from './shared.js';
 
 function suggestionsFor(index, character) {
   return index.gifts
@@ -42,12 +42,13 @@ function suggestionChips(character, suggestions, state) {
   for (const gift of suggestions.slice(0, 6)) {
     const item = el('li');
     if (state.submissionsEnabled) {
-      const button = el('button', 'chip chip-action report-button', gift.name);
-      button.type = 'button';
-      button.dataset.character = character.id;
-      button.dataset.gift = gift.id;
-      button.setAttribute('aria-label', `Report a result for ${gift.name} on ${character.name}`);
-      item.append(button);
+      // Names BOTH the gift and the character, unlike character.js/gift.js's
+      // chips: this view lists many characters on one screen, so the other
+      // entity can't be left to page context the way it can on a page already
+      // scoped to one character or one gift.
+      item.append(reportChip(character.id, gift.id, gift.name, {
+        ariaLabel: `Report a result for ${gift.name} on ${character.name}`,
+      }));
     } else {
       item.append(chip(gift.name, { href: `#/gift/${gift.id}` }));
     }
