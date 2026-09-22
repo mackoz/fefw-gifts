@@ -82,13 +82,10 @@
      palette and is never redefined under the dark-mode query. Redefining it
      there would put an ivory wordmark on a pale band in light mode. */
   --masthead-ground: #120d0a;
-  --masthead-raised: #241a16;
   --masthead-ink: #f2e7d8;
   --masthead-muted: #b3a08c;
   --masthead-rule: #3a2a22;
-  --masthead-edge: #8c6e58;
   --masthead-focus: #e8b75c;
-
 
   --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
   --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

@@ -103,7 +103,7 @@ failures hid behind the difference. Quote what the component paints.
 | pending (•) | `#fbf2e4` | `#2e2620` | 13.38 | `#241a14` | `#efe7da` | 13.88 |
 | predicted (~) | `#bd9a78` | `#2a1f18` | 6.16 | `#6b5540` | `#f0e9de` | 5.81 |
 | untested (—) | `#a08d79` | `#231a15` | 5.35 | `#6b5f52` | `#efeae2` | 5.18 |
-| warning | `#ff8a6b` | ground | — | `#a8391f` | ground | 5.76 |
+| warning | `#ff8a6b` | ground | 7.95 | `#a8391f` | ground | 5.76 |
 | control edge | `#8c6e58` | ground | 3.92 | `#8c7259` | ground | 4.04 |
 | focus ring | `#e8b75c` | ground | 9.92 | `#8a5a00` | ground | 5.32 |
 
@@ -145,14 +145,16 @@ the font files fail to load.
 
 ## Masthead
 
-The masthead is a **dark violet band in both colour modes**. This lets one
-logo asset serve both and echoes the game's own dark translucent UI panels.
+The masthead is a **dark band in both colour modes** — `--masthead-ground`,
+`#120d0a`, the deepest tone in the ember-and-sepia set. This lets one logo
+asset serve both modes and echoes the game's own dark translucent UI panels.
 
-Because the band is dark in light mode too, the masthead and the weave strip
-resolve their colours from the **dark token set regardless of
-`prefers-color-scheme`**. The stylesheet must scope the dark values to the
-masthead rather than relying on the mode, or the wordmark and strip become
-unreadable in light mode.
+Because the band is dark in light mode too, the masthead resolves its colours
+from a **dedicated `--masthead-*` set that is never redefined under the
+dark-mode query** — including `--masthead-focus`, whose omission was itself a
+contrast bug. Scoping those values to the masthead rather than relying on the
+mode is what keeps the wordmark legible in light mode; a guard in
+`test/assets.test.mjs` asserts none of them appears inside the dark block.
 
 The wordmark is `assets/img/fefw-logo.png` — the white variant, downscaled to
 900×186 and quantised to 29 KB, its ivory-to-gold gradient intact. It is
@@ -267,7 +269,7 @@ the run-on comma-separated lines.
 ## File structure
 
 **New**
-- `assets/js/views/weave.js` — weave strip model and render
+- `assets/js/views/weave.js` — the masthead's counts model and its one line
 - `assets/fonts/{fraunces,plex-sans}-{latin,latin-ext}.woff2` + OFL licences
 - `assets/img/fefw-logo.png`
 
@@ -277,7 +279,7 @@ the run-on comma-separated lines.
 
 **Modified**
 - `index.html` — masthead, tab bar, filters disclosure, footer line
-- `assets/js/app.js` — mount the weave strip
+- `assets/js/app.js` — mount the counts line
 - `assets/js/views/shared.js` — add `chip`, `groupRowsByState`,
   `categoryChips`
 - `test/views.test.mjs` — tests for the new pure functions

@@ -70,7 +70,7 @@ test('giftRows lists giftable characters ranked by confidence', () => {
   assert.equal(rows[0].confidence.state, 'PREDICTED');
 });
 
-import { matrixModel, SYMBOL } from '../assets/js/views/matrix.js';
+import { matrixModel, SYMBOL, render as renderMatrix } from '../assets/js/views/matrix.js';
 
 test('the matrix excludes non-giftable characters and keeps every gift by default', () => {
   const idx = buildIndex(dataset);
@@ -278,11 +278,27 @@ function fakeElement(tag) {
     className: '',
     textContent: '',
     dataset: {},
+    children: [],
     setAttribute(name, value) { attrs[name] = value; },
     getAttribute(name) { return attrs[name] ?? null; },
+    append(...nodes) { this.children.push(...nodes); },
+    replaceChildren(...nodes) { this.children = [...nodes]; },
   };
 }
 globalThis.document = { createElement: (tag) => fakeElement(tag) };
+
+// Walk the stub tree. Only the matrix test needs these; everything else here
+// asserts on pure models.
+function collect(node, match, found = []) {
+  for (const child of node.children ?? []) {
+    if (match(child)) found.push(child);
+    collect(child, match, found);
+  }
+  return found;
+}
+function findFirst(node, match) {
+  return collect(node, match)[0];
+}
 
 test('chip renders a link when given an href and a plain span otherwise', () => {
   const link = chip('Books', { href: '#/gift/book' });
@@ -425,4 +441,33 @@ test('giftIndexModel filters by search and drops groups that empty out', () => {
 test('giftIndexModel returns nothing when the search matches nothing', () => {
   const idx = buildIndex(dataset);
   assert.deepEqual(giftIndexModel(idx, 'zzzz'), []);
+});
+
+// The gutter column exists to stop the sticky corner clipping the first
+// rotated header. Its cost is one extra cell per row, and the failure mode if
+// someone adds it to the header but not the body (or vice versa) is a matrix
+// whose columns are silently off by one -- every cell showing the wrong
+// character. Nothing else in the suite renders matrix DOM.
+test('every matrix row carries the same number of cells as the header', () => {
+  const idx = buildIndex(dataset);
+  const container = fakeElement('div');
+  renderMatrix(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false });
+
+  const table = findFirst(container, (n) => n.className === 'matrix');
+  assert.ok(table, 'render should produce a .matrix table');
+
+  const rows = collect(table, (n) => n.tagName === 'TR');
+  assert.ok(rows.length >= 2, `expected a header row and at least one body row, got ${rows.length}`);
+
+  const widths = rows.map((row) => row.children.length);
+  const [header, ...body] = widths;
+  for (const [i, w] of body.entries()) {
+    assert.equal(w, header, `body row ${i} has ${w} cells against a ${header}-cell header`);
+  }
+
+  // corner + gutter + one column per giftable, non-spoiler character
+  const characters = matrixModel(idx, DEFAULT_FILTERS, '').characters.length;
+  assert.equal(header, characters + 2, 'header should be corner + gutter + one cell per character');
+  assert.equal(collect(table, (n) => n.className === 'lead-in').length, rows.length,
+    'exactly one gutter cell per row, header included');
 });

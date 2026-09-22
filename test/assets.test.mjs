@@ -28,11 +28,12 @@ test('the masthead palette does not depend on the colour mode', () => {
   // The masthead is dark in both modes, so redefining it under the dark-mode
   // query would make light mode render an ivory wordmark on a pale band (or,
   // for --masthead-focus, a focus ring that fails contrast in light mode).
-  // Every masthead/weave token belongs in this list -- a token left out is
-  // exactly how this bug got in.
+  // Every masthead token belongs in this list -- a token left out is exactly
+  // how this bug got in. (--masthead-raised and --masthead-edge were dropped
+  // when the weave strip went; their only consumers went with it.)
   const MASTHEAD_TOKENS = [
-    '--masthead-ground', '--masthead-raised', '--masthead-ink', '--masthead-muted',
-    '--masthead-rule', '--masthead-edge', '--masthead-focus',
+    '--masthead-ground', '--masthead-ink', '--masthead-muted',
+    '--masthead-rule', '--masthead-focus',
   ];
   for (const token of MASTHEAD_TOKENS) {
     assert.doesNotMatch(dark, new RegExp(`${token}:`), `${token} must not be redefined for dark mode`);
@@ -110,7 +111,7 @@ test('every page that loads the stylesheet also loads the tokens', () => {
   }
 });
 
-test('the weave strip is mounted and kept in step with the filters', () => {
+test('the counts line is mounted and kept in step with the filters', () => {
   const app = read('../assets/js/app.js');
   assert.match(app, /from '\.\/views\/weave\.js'/, 'app.js must import the weave view');
   assert.match(app, /getElementById\('weave'\)/, 'app.js must mount the strip into #weave');
@@ -132,7 +133,9 @@ test('each view gets a class so the matrix can lift the column limit', () => {
 // only thing standing between a bad edit and a silently broken component.
 test('every stylesheet is brace-balanced', () => {
   for (const file of ['tokens.css', 'style.css']) {
-    const css = read(`../assets/css/${file}`).replace(/\/\*[\s\S]*?\*\//g, '');
+    // Blank the comments but keep their newlines, or the reported line number
+    // lands ~150 lines early on the very file this exists to protect.
+    const css = read(`../assets/css/${file}`).replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
     let depth = 0;
     let line = 1;
     for (const ch of css) {

@@ -129,7 +129,9 @@ noscript {
 
 /* The masthead is dark in both colour modes, but the page's own --focus is
    not: in light mode it resolves to 2.33:1 here, below the 3:1 a focus
-   indicator needs. --masthead-focus is 10.76:1 in both modes. */
+   indicator needs. Under the current palette the page --focus would be
+   3.26:1 here, which only scrapes past; --masthead-focus is 10.44:1 in both
+   modes and keeps the ring unambiguous rather than marginal. */
 .masthead :where(a):focus-visible {
   outline-color: var(--masthead-focus);
 }
@@ -357,8 +359,8 @@ main#view > p,
 
 /* Provenance: a guide-sourced guess shows dimmer than one confirmed from the
    character's own in-game profile. No opacity here: composited over the state
-   tints it measured 3.11:1 (light) / 3.59:1 (dark) on category chips and
-   3.04:1 / 2.73:1 on the "Predicted -- not yet confirmed" badge, all below the
+   tints it measured 3.25:1 (light) / 3.59:1 (dark) on category chips and
+   2.78:1 / 3.38:1 on the "Predicted -- not yet confirmed" badge, all below the
    4.5:1 this page requires. A guess still reads as one three other ways --
    dashed border, italic, and the muted/predicted colour rather than ink --
    so don't restore opacity here. */
@@ -477,13 +479,27 @@ dialog input[type="text"] {
   padding: 0;
 }
 
-.dialog-actions button {
+.dialog-actions button,
+.report-button {
   padding: 8px 14px;
   border: 1px solid var(--edge);
   background: var(--ground);
   color: var(--ink);
   font: inherit;
   cursor: pointer;
+}
+
+/* The per-pair trigger in the gift and character tables. Without this it falls
+   back to the browser's own button chrome beside token-styled everything else
+   -- which is exactly what happened when this stylesheet was rewritten and the
+   rule master grouped with .dialog-actions button was not carried over. */
+.report-button {
+  padding: 5px 11px;
+  font-size: var(--step--1);
+}
+
+.report-button:hover {
+  border-color: var(--ink);
 }
 
 #report-submit {
@@ -738,7 +754,7 @@ a.chip:hover {
 
 /* A chip that triggers a report rather than navigating. Dashed while the pair
    is untested, solid on hover, so it reads as an invitation. Resting border
-   and text used --rule (1.28:1 / 1.39:1) and --untested, the dimmest token --
+   and text used --rule (1.26:1 / 1.34:1) and --untested, the dimmest token --
    styling the site's primary contribution affordance to look disabled. */
 .chip-action {
   font: inherit;
@@ -872,12 +888,19 @@ main#view.view-matrix {
 
 /* The empty gutter column between the row labels and the data. See matrix.js
    for why it exists: it catches the first rotated header's leftward lean,
-   which the sticky corner would otherwise paint over. No border and no
-   background, so it reads as space rather than as a column. */
+   which the sticky corner would otherwise paint over. Transparent and
+   unpadded, so it reads as a channel -- though border-collapse still resolves
+   the neighbours' borders onto its flanks, so a hairline shows each side. Its
+   header cell is sticky vertically (from .matrix thead th) but never
+   horizontally, which is the part the corner argument actually depends on. */
 .matrix th.lead-in,
 .matrix td.lead-in {
-  width: 24px;
-  min-width: 24px;
+  /* In rem, not px: the headers' leftward lean is driven by the span's
+     line-box height, so it scales with the root font size. A fixed 24px
+     gutter loses its clearance at about a 22px root -- an ordinary low-vision
+     browser setting -- and the first name goes back under the corner. */
+  width: 1.5rem;
+  min-width: 1.5rem;
   padding: 0;
   border: 0;
   background: transparent;
