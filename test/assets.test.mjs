@@ -102,3 +102,18 @@ test('every page that loads the stylesheet also loads the tokens', () => {
     assert.match(html, /tokens\.css/, `${page} loads style.css without tokens.css`);
   }
 });
+
+test('the weave strip is mounted and kept in step with the filters', () => {
+  const app = read('../assets/js/app.js');
+  assert.match(app, /from '\.\/views\/weave\.js'/, 'app.js must import the weave view');
+  assert.match(app, /getElementById\('weave'\)/, 'app.js must mount the strip into #weave');
+  // The strip's counts depend on the filters, so it has to re-render with the
+  // view -- a stale count in the masthead is worse than no count.
+  const renderBody = app.slice(app.indexOf('function render('), app.indexOf('async function refreshPending'));
+  assert.match(renderBody, /weave/i, 'render() must refresh the strip');
+});
+
+test('each view gets a class so the matrix can lift the column limit', () => {
+  const app = read('../assets/js/app.js');
+  assert.match(app, /view-\$\{route\.view\}|`view-/, 'render() must set a per-view class on #view');
+});

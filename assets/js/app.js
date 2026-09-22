@@ -9,6 +9,7 @@ import * as characterView from './views/character.js';
 import * as giftView from './views/gift.js';
 import * as matrixView from './views/matrix.js';
 import * as favoritesView from './views/favorites.js';
+import * as weaveView from './views/weave.js';
 
 const VIEW_MODULES = {
   character: characterView,
@@ -36,7 +37,16 @@ function render() {
   const container = document.getElementById('view');
   const route = parseRoute(location.hash);
   container.replaceChildren();
+  // A per-view hook, so the matrix can lift the content-column limit that
+  // every other view wants.
+  container.className = `view-${route.view}`;
   VIEW_MODULES[route.view].render(container, state.index, { ...state, id: route.id });
+
+  // The strip's counts depend on the filters, so it re-renders with the view.
+  // A stale count in the masthead is worse than no count at all.
+  const weave = document.getElementById('weave');
+  if (weave) weaveView.render(weave, state.index, state);
+
   for (const a of document.querySelectorAll('nav a')) {
     a.classList.toggle('active', a.getAttribute('href').startsWith(`#/${route.view}`));
   }
