@@ -298,7 +298,7 @@ Every hex below is contrast-checked against its ground in the spec's Colour tabl
 
 Run: `npm test`
 
-Expected: the four new asset tests pass; the `no stylesheet makes a third-party request` test also passes because the existing `style.css` contains no remote URL. All pre-existing tests still pass.
+Expected: all five new asset tests pass; the `no stylesheet makes a third-party request` test passes because the existing `style.css` contains no remote URL. All 172 pre-existing tests still pass.
 
 - [ ] **Step 6: Commit**
 
