@@ -33,3 +33,12 @@ test('an empty or unknown route falls back to the character view', () => {
   assert.deepEqual(parseRoute(''), { view: 'character', id: null });
   assert.deepEqual(parseRoute('#/nonsense'), { view: 'character', id: null });
 });
+
+test('hiding unconfirmed predictions keeps pending player reports', () => {
+  assert.equal(passesFilters({ state: 'PENDING' }, { ...DEFAULT_FILTERS, hideUnconfirmed: true }), true);
+  assert.equal(passesFilters({ state: 'PREDICTED' }, { ...DEFAULT_FILTERS, hideUnconfirmed: true }), false);
+});
+
+test('hiding untested pairs does not hide a pending one', () => {
+  assert.equal(passesFilters({ state: 'PENDING' }, { ...DEFAULT_FILTERS, hideUntested: true }), true);
+});

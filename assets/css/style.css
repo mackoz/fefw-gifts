@@ -16,6 +16,8 @@
   --color-confirmed-bg: #e6f6e9;
   --color-contested: #a34e00;
   --color-contested-bg: #fdeee0;
+  --color-pending: #0f6d78;
+  --color-pending-bg: #e0f4f6;
   --color-predicted: #4b4bb0;
   --color-predicted-bg: #ececfb;
   --color-untested: #6b6b6b;
@@ -38,6 +40,8 @@
     --color-confirmed-bg: #12321a;
     --color-contested: #e2924a;
     --color-contested-bg: #3a2210;
+    --color-pending: #63cbd6;
+    --color-pending-bg: #0d3035;
     --color-predicted: #a3a3f2;
     --color-predicted-bg: #26264a;
     --color-untested: #a3a3a3;
@@ -181,6 +185,7 @@ main#view {
 .state-favorite,
 .state-confirmed,
 .state-contested,
+.state-pending,
 .state-predicted,
 .state-untested {
   display: inline-flex;
@@ -217,6 +222,18 @@ main#view {
 }
 .state-contested::before {
   content: "\26A0";
+}
+
+.state-pending {
+  color: var(--color-pending);
+  background: var(--color-pending-bg);
+  border-color: currentColor;
+}
+.state-pending::before {
+  /* Matches the matrix legend's "•". Not "~": that is a guide's guess, and this
+     is a player's unreviewed result. */
+  content: "\2022";
+  font-weight: 700;
 }
 
 .state-predicted {
@@ -365,7 +382,170 @@ main#view {
 .matrix td.cell-favorite  { background: var(--color-favorite-bg);  color: var(--color-favorite); }
 .matrix td.cell-confirmed { background: var(--color-confirmed-bg); color: var(--color-confirmed); }
 .matrix td.cell-contested { background: var(--color-contested-bg); color: var(--color-contested); }
+.matrix td.cell-pending   { background: var(--color-pending-bg);   color: var(--color-pending); }
 .matrix td.cell-predicted { background: var(--color-predicted-bg); color: var(--color-predicted); }
 .matrix td.cell-untested  { background: transparent; }
 .matrix td.cell-exception { outline: 2px dotted var(--color-warning); outline-offset: -2px; }
 .matrix td.cell-rarity-mismatch { border-bottom: 2px dashed var(--color-warning); }
+
+/* --- Dialogs ---
+   The report and vote dialogs. Sized for a phone first: reports get written
+   right after playing, on the device that is to hand. */
+
+dialog {
+  width: min(32rem, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+
+dialog h2 {
+  margin-top: 0;
+}
+
+dialog label {
+  display: block;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+dialog select,
+dialog input[type="number"],
+dialog input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+#report-reactions {
+  margin-top: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.reaction-choice {
+  display: block;
+  font-weight: 400;
+  margin: 6px 0;
+}
+
+.dialog-intro {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+/* Reserves its line so the dialog does not jump when a message appears. */
+.dialog-status {
+  min-height: 1.5em;
+  margin: 12px 0 0;
+  color: var(--color-warning);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.dialog-actions button,
+.report-button {
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.report-button {
+  font-size: 0.85rem;
+}
+
+/* --- Peer voting ---
+   A prompt and two buttons. There is deliberately no count, score or bar here:
+   votes are a private maintainer signal, and a visible tally would read as
+   confirmation -- exactly the manufactured confidence this project exists to
+   eliminate. Do not add one. */
+
+.vote-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.vote-prompt {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  max-width: 32ch;
+  overflow-wrap: anywhere;
+}
+
+.vote-button {
+  padding: 2px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+/* --- Review queue (maintainer only) ---
+   Sized for a phone: reports get read right after a play session. */
+
+.review-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.review-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.review-pair {
+  margin: 0;
+  font-weight: 600;
+}
+
+.review-meta {
+  margin: 2px 0 0;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.review-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.review-actions button {
+  flex: 1 1 auto;
+  /* A comfortable touch target, because this page is used on a phone. */
+  min-height: 44px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: var(--color-bg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.review-approve { color: var(--color-confirmed); }
+.review-reject  { color: var(--color-warning); }

@@ -1,4 +1,6 @@
-const STATE_RANK = { FAVORITE: 0, CONFIRMED: 1, CONTESTED: 2, PREDICTED: 3, UNTESTED: 4 };
+// PENDING sits between the observed states and the guesses: a real player
+// reported it, but nobody has reviewed it yet.
+const STATE_RANK = { FAVORITE: 0, CONFIRMED: 1, CONTESTED: 2, PENDING: 3, PREDICTED: 4, UNTESTED: 5 };
 
 const REACTION_LABEL = {
   none: 'No support gain',
@@ -22,6 +24,7 @@ export function stateLabel(confidence) {
     case 'FAVORITE': return 'Favourite — double points';
     case 'CONFIRMED': return `Confirmed: ${REACTION_LABEL[confidence.reaction] ?? 'reported'}`;
     case 'CONTESTED': return 'Reports disagree';
+    case 'PENDING': return 'Reported — awaiting review';
     case 'PREDICTED': return confidence.predicted === 'negative' ? 'Predicted: probably no gain' : 'Predicted — not yet confirmed';
     default: return 'Not tested yet';
   }
@@ -75,4 +78,15 @@ export function cellClasses(confidence) {
   if (confidence.isException) classes.push('cell-exception');
   if (confidence.rarityMismatch) classes.push('cell-rarity-mismatch');
   return classes.join(' ');
+}
+
+// A per-pair report trigger. It carries its ids in dataset attributes and does
+// nothing itself: app.js listens once on the container and opens the dialog.
+export function reportButton(characterId, giftId) {
+  const button = el('button', 'report-button', 'Report');
+  button.type = 'button';
+  button.dataset.character = characterId;
+  button.dataset.gift = giftId;
+  button.setAttribute('aria-label', 'Report a result for this pair');
+  return button;
 }

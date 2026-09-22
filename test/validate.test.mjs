@@ -38,7 +38,7 @@ test('a category missing its label is rejected', () => {
 
 test('observations must not carry identifying fields', () => {
   const d = base();
-  d.observations.push({ id: 'o1', gift: 'g', character: 'c', reaction: 'liked', points: null, date: '2026-09-20', reporter: 'someone' });
+  d.observations.push({ id: 'o1', gift: 'g', character: 'c', reaction: 'liked', date: '2026-09-20', reporter: 'someone' });
   const { errors } = validate(d);
   assert.ok(errors.some((e) => /forbidden identifying field: reporter/.test(e)));
 });
@@ -135,7 +135,7 @@ test('an observation against a non-giftable character is rejected', () => {
   const d = base();
   d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: null, description: '', sources: [] });
   d.characters.push(character({ giftable: false }));
-  d.observations.push({ id: 'o1', gift: 'g1', character: 'c1', reaction: 'liked', points: null, date: '2026-09-20' });
+  d.observations.push({ id: 'o1', gift: 'g1', character: 'c1', reaction: 'liked', date: '2026-09-20' });
   const { errors } = validate(d);
   assert.match(errors[0], /observation o1: character c1 is not giftable/);
 });
@@ -143,7 +143,7 @@ test('an observation against a non-giftable character is rejected', () => {
 test('an observation with an unknown gift or invalid reaction is rejected', () => {
   const d = base();
   d.characters.push(character());
-  d.observations.push({ id: 'o1', gift: 'ghost', character: 'c1', reaction: 'meh', points: null, date: '2026-09-20' });
+  d.observations.push({ id: 'o1', gift: 'ghost', character: 'c1', reaction: 'meh', date: '2026-09-20' });
   const { errors } = validate(d);
   assert.ok(errors.some((e) => /observation o1: unknown gift: ghost/.test(e)));
   assert.ok(errors.some((e) => /observation o1: invalid reaction: meh/.test(e)));

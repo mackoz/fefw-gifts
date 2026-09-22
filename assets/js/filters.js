@@ -6,7 +6,10 @@ export const DEFAULT_FILTERS = {
   hideSpoilers: true,
 };
 
-const OBSERVED = new Set(['CONFIRMED', 'FAVORITE', 'CONTESTED']);
+// What survives "hide unconfirmed predictions". PENDING is in the list because
+// it is a player's own report rather than a guide's guess -- which does not make
+// it a confirmation, only something other than a prediction.
+const OBSERVED = new Set(['CONFIRMED', 'FAVORITE', 'CONTESTED', 'PENDING']);
 
 export function passesFilters(confidence, filters) {
   if (filters.hideUntested && confidence.state === 'UNTESTED') return false;

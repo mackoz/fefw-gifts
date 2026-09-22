@@ -1,5 +1,6 @@
 import { passesFilters } from '../filters.js';
-import { sortByConfidence, badge, el, emptyState, sourceName } from './shared.js';
+import { sortByConfidence, badge, el, emptyState, sourceName, reportButton } from './shared.js';
+import { voteControl, voteControlModel } from '../vote-control.js';
 
 export function characterRows(index, characterId, filters) {
   const rows = index.gifts
@@ -130,13 +131,24 @@ export function render(container, index, state) {
     row.append(el('td', null, gift.rarity ?? '—'));
     const statusCell = el('td');
     statusCell.append(badge(confidence, index));
+    if (confidence.state === 'PENDING' && state.submissionsEnabled) {
+      for (const report of index.pendingFor(character.id, gift.id)) {
+        statusCell.append(voteControl(voteControlModel(report, state.storage)));
+      }
+    }
     row.append(statusCell);
-    row.append(el('td', null, confidence.points === null ? '' : `${confidence.points} pts`));
+    if (state.submissionsEnabled) {
+      const actionCell = el('td');
+      actionCell.append(reportButton(character.id, gift.id));
+      row.append(actionCell);
+    }
     body.append(row);
   }
   const head = el('thead');
   const headRow = el('tr');
-  for (const h of ['Gift', 'Category', 'Rarity', 'Status', 'Points']) {
+  const headers = ['Gift', 'Category', 'Rarity', 'Status'];
+  if (state.submissionsEnabled) headers.push('Report');
+  for (const h of headers) {
     const th = el('th', null, h);
     th.scope = 'col';
     headRow.append(th);

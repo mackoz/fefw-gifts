@@ -62,8 +62,25 @@ Both must pass before any change is merged.
 
 ## Contributing
 
-See `CONTRIBUTING.md` for how to report a gift result and how to propose
-structural changes (a new category, a corrected rarity, a fixed trait).
+The in-site **Report a result** form is the primary way to submit a gift
+result; GitHub issues are for structural changes (a new category, a corrected
+rarity, a fixed trait) and as a fallback when the form is unavailable. See
+`CONTRIBUTING.md` for the details.
+
+### How a report becomes data
+
+1. A player submits a result on the site. It is stored as **pending** in a
+   Cloudflare Worker, never in this repository.
+2. The site shows it as *awaiting review*. It is not a confirmation: it
+   contributes no reaction and produces no verdict.
+3. Other visitors can privately agree or disagree, which orders the
+   maintainer's queue and nothing else.
+4. The maintainer approves it on a private review page.
+5. A nightly job opens a pull request adding it to `data/observations.json`.
+6. On merge it becomes canonical and drops out of the pending overlay.
+
+The repository is the source of truth at every step. The Worker is a
+convenience layer over it, and the site works completely without it.
 
 ## Sources
 

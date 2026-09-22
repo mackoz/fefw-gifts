@@ -9,6 +9,8 @@
   },
   "scripts": {
     "test": "node --test",
-    "validate": "node scripts/validate.mjs data"
+    "validate": "node scripts/validate.mjs data",
+    "ingest": "node scripts/ingest.mjs",
+    "worker:deploy": "npx --yes wrangler deploy --config worker/wrangler.toml"
   }
 }

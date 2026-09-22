@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Review queue — Fortune's Weave Gift Guide</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <noscript>
+    This page needs JavaScript enabled.
+  </noscript>
+
+  <header class="site-header">
+    <h1>Review queue</h1>
+    <p class="tagline">
+      Pending reports, best vote score first. Nothing here is public: every row
+      comes from an endpoint that requires the admin token, and the vote counts
+      shown here never appear on the site itself.
+    </p>
+    <nav><a href="../">Back to the guide</a></nav>
+  </header>
+
+  <main>
+    <form id="token-form" class="toolbar">
+      <label class="filter-toggle" for="token-input">Admin token</label>
+      <input id="token-input" type="password" autocomplete="off" spellcheck="false" placeholder="Paste it once">
+      <button type="submit">Use it</button>
+      <button type="button" id="token-forget">Forget it</button>
+      <button type="button" id="review-refresh">Refresh</button>
+      <p class="toggle-note">
+        The token is kept in this browser's local storage. Anyone who gets it can
+        approve anything — only use it on a device you trust, and rotate it if it
+        leaks.
+      </p>
+    </form>
+
+    <p id="review-status" class="empty-state" role="status" aria-live="polite"></p>
+    <ul id="review-list" class="review-list"></ul>
+  </main>
+
+  <script type="module">
+    import { mountReview, TOKEN_KEY } from '../assets/js/review.js';
+
+    const storage = (() => { try { return globalThis.localStorage; } catch { return undefined; } })();
+
+    mountReview({
+      storage,
+      elements: {
+        tokenForm: document.getElementById('token-form'),
+        tokenInput: document.getElementById('token-input'),
+        forget: document.getElementById('token-forget'),
+        refresh: document.getElementById('review-refresh'),
+        status: document.getElementById('review-status'),
+        list: document.getElementById('review-list'),
+      },
+    });
+  </script>
+</body>
+</html>

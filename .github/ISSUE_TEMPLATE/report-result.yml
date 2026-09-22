@@ -40,14 +40,6 @@ body:
         - They really liked it, two yellow arrows (DOUBLE points — this is their favourite)
     validations:
       required: true
-  - type: input
-    id: points
-    attributes:
-      label: Support points gained (optional)
-      description: The exact number, if you were able to read it off the support gauge.
-      placeholder: "20"
-    validations:
-      required: false
   - type: textarea
     id: notes
     attributes:

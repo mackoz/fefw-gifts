@@ -47,9 +47,8 @@
         <a href="https://github.com/mackoz/fefw-gifts/issues/new/choose">open an issue</a>.
       </p>
 
-      <!-- Plan 2 insertion point: "Report a result" button (anonymous submission
-           form backed by a Cloudflare Worker) goes here. Not implemented yet. -->
-      <a class="report-link" href="https://github.com/mackoz/fefw-gifts/issues/new/choose">Report a result on GitHub</a>
+      <button type="button" id="report-open" class="report-link" hidden>Report a result</button>
+      <a class="report-link" id="report-fallback" href="https://github.com/mackoz/fefw-gifts/issues/new/choose">Report a result on GitHub</a>
     </div>
   </header>
 
@@ -61,12 +60,59 @@
       <a href="https://www.polygon.com/fire-emblem-fortunes-weave-best-gifts-each-character/">Polygon</a>;
       the item list comes from
       <a href="https://game8.co/games/Fire-Emblem-Fortunes-Weave/archives/621281">Game8</a>.
-      Confirmed results come only from player reports. In-site submission
-      isn’t built yet — until it is, report a result
-      <a href="https://github.com/mackoz/fefw-gifts/issues/new/choose">on GitHub</a>.
+      Confirmed results come only from player reports.
+      Once in-site reporting is switched on it takes a few seconds and needs
+      no account; until then, report a result on GitHub.
+      Structural corrections still go through
+      <a href="https://github.com/mackoz/fefw-gifts/issues/new/choose">GitHub issues</a>.
       Full citations are in <a href="data/sources.json">data/sources.json</a>.
     </p>
   </footer>
+
+  <dialog id="report-dialog" aria-labelledby="report-title">
+    <form id="report-form" novalidate>
+      <h2 id="report-title">Report a result</h2>
+      <p class="dialog-intro">
+        Report only what the game itself showed you. There is no account and no
+        sign-up, and nothing about you is stored — not a name, not an email, not
+        an IP address.
+      </p>
+
+      <label for="report-character">Character</label>
+      <select id="report-character" required></select>
+
+      <label for="report-gift">Gift</label>
+      <select id="report-gift" required></select>
+
+      <fieldset id="report-reactions">
+        <legend>What did the game show?</legend>
+      </fieldset>
+
+      <div id="report-turnstile"></div>
+      <p id="report-status" class="dialog-status" role="status" aria-live="polite"></p>
+
+      <menu class="dialog-actions">
+        <button type="button" id="report-cancel">Cancel</button>
+        <button type="submit" id="report-submit">Submit</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="vote-dialog" aria-labelledby="vote-title">
+    <form id="vote-form">
+      <h2 id="vote-title">Confirm your response</h2>
+      <p class="dialog-intro">
+        This helps the maintainer decide what to check first. It never changes
+        what the site shows, and nothing about you is stored.
+      </p>
+      <div id="vote-turnstile"></div>
+      <p id="vote-status" class="dialog-status" role="status" aria-live="polite"></p>
+      <menu class="dialog-actions">
+        <button type="button" id="vote-cancel">Cancel</button>
+        <button type="submit" id="vote-submit">Send</button>
+      </menu>
+    </form>
+  </dialog>
 
   <script type="module" src="assets/js/app.js"></script>
 </body>

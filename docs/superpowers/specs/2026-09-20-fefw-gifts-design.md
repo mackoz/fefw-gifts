@@ -37,8 +37,8 @@ icon shading and a sparkle marker.
 prefer uncommon or rare items regardless of category. This is a trait of the
 character, not a property of the gift.
 
-**Reactions come in five objective tiers.** The game displays a banner and the
-support points gained:
+**Reactions come in five objective tiers.** The game displays only a one-line
+banner naming the tier:
 
 | Tier | Banner | Effect |
 |---|---|---|
@@ -49,7 +49,8 @@ support points gained:
 | `favorite` | they really liked it, two yellow arrows | **double points** |
 
 Because the game names the tier, reporting it is objective rather than a
-judgment call. Reporters can also read the exact points gained.
+judgment call. The game never displays a numeric support-point value, so no
+points field exists anywhere in this design.
 
 **Every character has at least one favorite item.** The double-points tier is
 reserved for it. No published guide has found them all — rare gifts are
@@ -106,14 +107,17 @@ Each link between a character and a category records where it came from:
 For any (character, gift item) pair the site derives one of:
 
 - **FAVORITE** — an observation reported the double-points tier
-- **CONFIRMED** — an observation exists for this exact item, showing its tier and
-  points
+- **CONFIRMED** — an observation exists for this exact item, showing its tier
 - **EXCEPTION** — an observation contradicts the prediction, with a `reason` where
   one is known
 - **PREDICTED** — no observation for this item, but a character-to-category link
   exists. Shaded by that link's provenance, so a `guide` prediction reads as
   weaker than a `profile` one.
 - **CONTESTED** — observations for this pair disagree. Surfaced for review.
+- **PENDING** — a report exists but a maintainer has not approved it yet. Ranked
+  between CONFIRMED and PREDICTED, labelled as awaiting review, and explicitly
+  **not** a confirmation: it contributes no reaction, no tally and no negative
+  verdict. Lives only in the Worker overlay, never in the repo.
 - **UNTESTED** — no link, no observation
 
 **Absence of a category match is never rendered as a dislike.** Only an
@@ -151,8 +155,14 @@ data/categories.json
 data/observations.json
   { id, gift, character,
     reaction: "none" | "slight" | "liked" | "loved" | "favorite",
-    points: number | null,
     date }                                           // no reporter: anonymous
+
+D1 `reports` table (Worker-side, never committed)
+  { id, character, gift, reaction,
+    status: "pending" | "approved" | "rejected" | "ingested",
+    upvotes, downvotes, created_at }
+  // Carries no voter or submitter identifier of any kind.
+  // `upvotes`/`downvotes` are never served by a public endpoint.
 
 data/sources.json
   { id, title, author, publisher, url, retrieved }
@@ -182,8 +192,8 @@ Four views, one search box:
 
 **By Character.** Profile traits, with flavor traits greyed and labeled as such.
 Rarity preference if known. Gift items sorted FAVORITE, CONFIRMED, PREDICTED,
-UNTESTED, each showing its state and, where confirmed, its reaction tier and
-points. A "help wanted" line naming the untested items in categories they like.
+UNTESTED, each showing its state and, where confirmed, its reaction tier.
+A "help wanted" line naming the untested items in categories they like.
 
 **By Gift.** The item's category and rarity, and every character, in the same
 tiers.
@@ -196,8 +206,12 @@ favorite is still unknown, with the untested items in their preferred categories
 as suggestions. This is the site's headline gap and the clearest place it beats
 every existing guide.
 
+**Review** (`/review`). A private maintainer route, not linked from the nav. See
+"Review page" under Contributions.
+
 Global toggles: **hide untested**, **hide unconfirmed predictions**, and
-**hide spoilers**.
+**hide spoilers**. `hide unconfirmed predictions` hides `PREDICTED` but keeps
+`PENDING`, which is a real player report rather than a guide guess.
 
 Every prediction is visibly a prediction, and carries its source.
 
@@ -210,62 +224,125 @@ itself, with no account and no signup.
 
 ### Submission path
 
-A **Report a result** button on every character, gift and matrix cell opens an
-in-page form, pre-filled with the character and item. The contributor picks a
-reaction tier, optionally enters the points gained, and submits.
+A **Report a result** button on every character and gift row opens an in-page
+form, pre-filled with the character and item; the matrix view has no button of
+its own, since 80 rows by 53 columns would mean over four thousand of them and
+a matrix cell is far too small to tap on a phone. The contributor picks a
+reaction tier and submits.
 
-The submission posts to a small Cloudflare Worker backed by D1. The row is stored
-with status `pending`. The site fetches pending rows and overlays them on the
-canonical data, so the contributor sees their report appear immediately, clearly
-labeled **pending review**.
+The submission posts to a Cloudflare Worker backed by D1 and is stored with
+status `pending`. The site fetches pending rows and overlays them on the
+canonical data, so the contributor sees their report appear immediately.
 
-A maintainer later approves pending rows. A sync script pulls approved rows,
-appends them to `data/observations.json`, marks them ingested, and opens a pull
-request. On merge they become canonical and drop out of the pending overlay.
+A maintainer approves or rejects pending rows in a private review page. A
+scheduled job pulls approved rows, appends them to `data/observations.json` and
+opens a pull request. On merge they become canonical and drop out of the overlay.
+
+### Pending is not confirmed
+
+A pending report renders in its own state, `PENDING`, ranked between `CONFIRMED`
+and `PREDICTED` and labelled plainly as awaiting review. It **must not**:
+
+- flip a pair to `CONFIRMED` or `FAVORITE`
+- contribute a `reaction`
+- count toward a confirmed-report tally
+- produce a negative verdict on a pair
+
+Only an observation that a maintainer has approved and merged into the repo may
+do any of those. This is the same rule that governs guide-derived predictions:
+the repo is the source of truth, and the Worker is a convenience layer over it.
+
+### Peer validation by voting
+
+Any visitor may upvote or downvote a pending report.
+
+**Votes never reach the published site.** They are a maintainer triage signal
+only: they order the review queue and flag disputed reports. No vote count is
+rendered to players, and no vote can promote, demote or alter a report.
+
+This constraint is the whole reason voting is safe here. With anonymous
+visitors, most votes come from people who never tested the pair — they are
+plausibility judgements, not evidence. A visible tally would read as
+confirmation and manufacture confidence out of guesswork, which is precisely
+what this project exists to eliminate. Keeping votes private makes them useful
+for prioritisation while denying them any authority over the data.
 
 ### Worker endpoints
 
 ```
-POST /submit    Turnstile-verified, rate-limited. Inserts a pending row.
-GET  /pending   Returns pending rows for the site overlay. Cached briefly.
-POST /ingest    Admin-token gated. Returns approved rows and marks them ingested.
+POST /report        Turnstile-verified. Inserts a pending row.
+POST /vote          Turnstile-verified. Adjusts a report's vote counters.
+GET  /pending       Public. Pending rows for the site overlay,
+                    WITHOUT vote counts. Cached briefly.
+GET  /review        Admin-token gated. Pending rows WITH vote counts,
+                    ordered by score.
+POST /review/:id    Admin-token gated. Approve or reject one report.
+POST /ingest        Admin-token gated. Returns approved rows and marks
+                    them ingested.
 ```
 
-Secrets (`TURNSTILE_SECRET`, `ADMIN_TOKEN`) live in Worker secrets and GitHub
-Actions secrets. CORS is restricted to the Pages origin.
+CORS is restricted to the Pages origin. Secrets (`TURNSTILE_SECRET`,
+`ADMIN_TOKEN`) live in Worker secrets, and `ADMIN_TOKEN` plus the Worker URL are
+also GitHub Actions secrets for the sync job.
+
+`/pending` omitting vote counts is a requirement, not an optimisation: it is what
+makes "votes never reach the site" true at the API boundary rather than only in
+the UI, so a future view cannot accidentally render them.
+
+### Review page
+
+A `/review` route on the site, served as ordinary static HTML. The maintainer
+pastes the admin token once; the browser retains it. Without a token the page
+shows nothing, because every row comes from an admin-gated endpoint.
+
+It lists pending reports ordered by vote score, each showing the character, gift,
+reaction, age and score, with approve and reject actions. It must be
+usable on a phone — reports are read right after playing.
+
+**Known limitation, accepted deliberately:** the admin token sits in
+`localStorage` on a public origin, so anyone holding it can approve anything. For
+a single maintainer this is a reasonable trade. The token must be long and
+random, it must only ever travel over HTTPS, and it is rotated if leaked. Putting
+Cloudflare Access in front of `/review` is the upgrade path if that stops being
+acceptable.
 
 ### Graceful degradation
 
 **The site must work completely with the Worker unavailable.** Canonical data
 ships in the repo and renders from GitHub Pages alone. If `/pending` fails or
 times out, the overlay is skipped and the form reports that submissions are
-temporarily unavailable. Nothing else changes. The repo remains the source of
-truth; the Worker is a convenience layer over it.
+temporarily unavailable. Nothing else changes.
 
 ### Anonymity and abuse
 
-**No personal data is collected.** Submissions carry no name, no email and no
-stored identifier — only the report itself and a timestamp. There is therefore no
+**No personal data is collected.** Reports and votes carry no name, no email, no
+IP and no stored identifier — only the content and a timestamp. There is no
 credit mechanism, by choice.
 
-Without identities, repeated submissions cannot be attributed, so agreement
-counts are weak evidence on their own. Three mitigations, in order of preference:
+Abuse is contained by three measures, in order of how much work they do:
 
-1. Cloudflare Turnstile on submit, which stops automated junk without a puzzle
-2. Edge rate limiting by IP, which stores nothing
-3. Maintainer review before anything becomes canonical, which is the real
-   backstop
+1. **Cloudflare Turnstile** on both reporting and voting. This is the one that
+   matters: it stops scripted submission at scale, which is the only way to
+   generate abuse in volume.
+2. **A `localStorage` token** recording which reports this browser has voted on.
+   It prevents accidental double-votes and casual repeats. It is trivially
+   bypassed by a private window and is therefore UX hygiene, not security.
+3. **Maintainer review** before anything becomes canonical. This is the real
+   backstop, and it is why the other two need not be airtight.
 
-Fingerprinting contributors is deliberately out of scope. If sock-puppeting
-becomes a real problem, a daily-rotated salted hash used only for same-source
-dedupe can be added — never displayed, never committed to the repo.
+**Fingerprinting is out of scope, including hashed IPs.** An earlier draft
+allowed a daily-rotated salted IP hash for dedupe. It is no longer warranted:
+because votes cannot reach the published site, the worst a stuffer achieves is
+misordering the maintainer's own queue — visible the moment a report is read.
+Shared carrier IPs would also block legitimate voters. Collecting less is the
+better trade.
 
 ### Structural changes
 
 Adding a category, correcting a gift's rarity, or fixing a character's traits are
-rare, structural edits rather than volume data. These go through a plain GitHub
-issue or a pull request, documented in `CONTRIBUTING.md`. They are not worth a
-web form.
+rare, structural edits rather than volume data. These go through the GitHub issue
+forms in `.github/ISSUE_TEMPLATE/`, documented in `CONTRIBUTING.md`. They are not
+worth a web form.
 
 ## Validation and testing
 
@@ -324,6 +401,12 @@ upgrading `guide` links to `profile` or `refuted` and marking flavor traits.
 **Phase 3 — item-level confirmation.** Ongoing. Observations convert PREDICTED
 cells to CONFIRMED, surface EXCEPTIONs, and discover off-profile likes.
 
+Phase 3 depends on the submission system — the in-page form, the Worker, peer
+voting and the review page — which is built as a second implementation plan. The
+first plan deliberately shipped without it, and must keep working without it:
+until submissions exist, results arrive through the GitHub issue forms instead,
+which is a usable fallback but gates contribution behind an account.
+
 ## Open questions
 
 Tracked in the repo, not guessed at in the UI:
@@ -339,6 +422,11 @@ Tracked in the repo, not guessed at in the UI:
 
 - Character artwork or item icons
 - Support conversation text, recruitment requirements, other wiki content
-- User accounts, comments, or voting
+- User accounts or comment threads
+- **Public** vote counts. Voting exists, but purely as a private maintainer
+  triage signal — see "Peer validation by voting". Rendering a tally to players
+  is out of scope by design, not by omission.
+- Auto-promotion of a report by vote threshold, with or without a maintainer
+  veto. Nothing reaches the published data without explicit approval.
 - Contributor credit or identity of any kind
 - Localisation
