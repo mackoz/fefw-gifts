@@ -1,5 +1,5 @@
 import { RARITY_ORDER } from '../confidence.js';
-import { el, emptyState } from './shared.js';
+import { el, emptyState, chip } from './shared.js';
 
 function suggestionsFor(index, character) {
   return index.gifts
@@ -33,46 +33,80 @@ export function favoritesModel(index, filters) {
   return { found, unknown };
 }
 
+// Each suggestion is a report trigger rather than plain text: this tab exists
+// to recruit the one result no other guide has, so the suggestion and the way
+// to report it are the same control. It carries the `.report-button` class
+// app.js listens for, and degrades to a link when submissions are off.
+function suggestionChips(character, suggestions, state) {
+  const list = el('ul', 'chip-list');
+  for (const gift of suggestions.slice(0, 6)) {
+    const item = el('li');
+    if (state.submissionsEnabled) {
+      const button = el('button', 'chip chip-action report-button', gift.name);
+      button.type = 'button';
+      button.dataset.character = character.id;
+      button.dataset.gift = gift.id;
+      button.setAttribute('aria-label', `Report a result for ${gift.name} on ${character.name}`);
+      item.append(button);
+    } else {
+      item.append(chip(gift.name, { href: `#/gift/${gift.id}` }));
+    }
+    list.append(item);
+  }
+  return list;
+}
+
 export function render(container, index, state) {
   const { found, unknown } = favoritesModel(index, state.filters);
+  const total = found.length + unknown.length;
 
   container.append(el('h2', null, 'Favourites hunt'));
   container.append(el('p', 'intro', 'Every character has at least one item that gives double support points. Most are still unknown. If you find one, report it — this is the gap no other guide fills.'));
-  container.append(el('p', 'progress', `Found ${found.length} of ${found.length + unknown.length}.`));
 
-  if (found.length + unknown.length === 0) {
+  if (total === 0) {
     container.append(emptyState('No characters to show. Untick “Hide spoilers” to see every character.'));
     return;
   }
 
+  container.append(el('p', 'progress', `Found ${found.length} of ${total}.`));
+
   container.append(el('h3', null, `Still unknown (${unknown.length})`));
   if (unknown.length === 0) {
     container.append(emptyState('Nothing left to hunt — every character here has a known favourite.'));
+  } else {
+    const list = el('ul', 'hunt-list');
+    for (const { character, suggestions } of unknown) {
+      const item = el('li', 'hunt-row');
+      const link = el('a', 'hunt-name', character.name);
+      link.href = `#/character/${character.id}`;
+      item.append(link);
+      if (suggestions.length === 0) {
+        item.append(el('p', 'hunt-note', 'Nothing untested left to suggest — try anything not yet reported.'));
+      } else {
+        item.append(suggestionChips(character, suggestions, state));
+      }
+      list.append(item);
+    }
+    container.append(list);
   }
-  const list = el('ul', 'favorites-unknown');
-  for (const { character, suggestions } of unknown) {
-    const item = el('li');
-    const link = el('a', null, character.name);
+
+  if (found.length === 0) return;
+
+  container.append(el('h3', null, `Found (${found.length})`));
+  const foundList = el('ul', 'hunt-list');
+  for (const { character, gifts } of found) {
+    const item = el('li', 'hunt-row');
+    const link = el('a', 'hunt-name', character.name);
     link.href = `#/character/${character.id}`;
     item.append(link);
-    const hint = suggestions.length
-      ? ` — worth trying: ${suggestions.slice(0, 5).map((g) => g.name).join(', ')}`
-      : ' — nothing untested to suggest yet';
-    item.append(el('span', 'suggestions', hint));
-    list.append(item);
-  }
-  if (unknown.length) container.append(list);
-
-  if (found.length) {
-    container.append(el('h3', null, `Found (${found.length})`));
-    const foundList = el('ul', 'favorites-found');
-    for (const { character, gifts } of found) {
-      const item = el('li');
-      const link = el('a', null, character.name);
-      link.href = `#/character/${character.id}`;
-      item.append(link, el('span', null, ` — ${gifts.map((g) => g.name).join(', ')}`));
-      foundList.append(item);
+    const chips = el('ul', 'chip-list');
+    for (const gift of gifts) {
+      const li = el('li');
+      li.append(chip(gift.name, { href: `#/gift/${gift.id}`, className: 'chip-favourite' }));
+      chips.append(li);
     }
-    container.append(foundList);
+    item.append(chips);
+    foundList.append(item);
   }
+  container.append(foundList);
 }
