@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildIndex } from '../assets/js/data.js';
 import { characterRows } from '../assets/js/views/character.js';
-import { sortByConfidence, stateLabel } from '../assets/js/views/shared.js';
+import { sortByConfidence, stateLabel, partitionRows, categoryChips } from '../assets/js/views/shared.js';
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
 import { giftRows } from '../assets/js/views/gift.js';
 
@@ -220,4 +220,50 @@ test('a pending favourite report does not close a favourites-hunt slot', () => {
   const { found, unknown } = favoritesModel(idx, DEFAULT_FILTERS);
   assert.equal(found.length, 0);
   assert.equal(unknown.length, 1);
+});
+
+test('partitionRows splits signal from untested and preserves order', () => {
+  const rows = [
+    { gift: { id: 'a' }, confidence: { state: 'FAVORITE' } },
+    { gift: { id: 'b' }, confidence: { state: 'PREDICTED' } },
+    { gift: { id: 'c' }, confidence: { state: 'UNTESTED' } },
+    { gift: { id: 'd' }, confidence: { state: 'PENDING' } },
+    { gift: { id: 'e' }, confidence: { state: 'UNTESTED' } },
+  ];
+  const { signal, untested } = partitionRows(rows);
+  assert.deepEqual(signal.map((r) => r.gift.id), ['a', 'b', 'd']);
+  assert.deepEqual(untested.map((r) => r.gift.id), ['c', 'e']);
+});
+
+test('partitionRows on an all-untested character yields an empty signal half', () => {
+  const rows = [{ gift: { id: 'a' }, confidence: { state: 'UNTESTED' } }];
+  const { signal, untested } = partitionRows(rows);
+  assert.deepEqual(signal, []);
+  assert.equal(untested.length, 1);
+});
+
+test('categoryChips resolves labels and drops refuted links', () => {
+  const idx = buildIndex(dataset);
+  const character = {
+    categories: {
+      books: { state: 'guide', source: 'polygon' },
+      coffee: { state: 'refuted', source: 'polygon' },
+    },
+  };
+  const chips = categoryChips(idx, character);
+  // A refuted link is not a like -- it must never render as one.
+  assert.deepEqual(chips.map((c) => c.id), ['books']);
+  assert.equal(chips[0].label, 'Books');
+  assert.equal(chips[0].state, 'guide');
+});
+
+test('categoryChips falls back to the raw id rather than inventing a label', () => {
+  const idx = buildIndex(dataset);
+  const chips = categoryChips(idx, { categories: { unknown: { state: 'guide', source: null } } });
+  assert.equal(chips[0].label, 'unknown');
+});
+
+test('categoryChips tolerates a character with no categories key', () => {
+  const idx = buildIndex(dataset);
+  assert.deepEqual(categoryChips(idx, {}), []);
 });

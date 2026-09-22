@@ -90,3 +90,40 @@ export function reportButton(characterId, giftId) {
   button.setAttribute('aria-label', 'Report a result for this pair');
   return button;
 }
+
+// Splits confidence-sorted rows into the half that carries a signal and the
+// half nobody has tried. The caller renders them differently: a table for what
+// is known, a dense chip grid for what is not. Input order is preserved, so a
+// list already sorted by confidence stays sorted.
+export function partitionRows(rows) {
+  const signal = [];
+  const untested = [];
+  for (const row of rows) {
+    (row.confidence.state === 'UNTESTED' ? untested : signal).push(row);
+  }
+  return { signal, untested };
+}
+
+// A character's guide-derived category links, with refuted ones removed: a
+// refuted link is not a like, and rendering it as one would invent a
+// preference nobody reported.
+export function categoryChips(index, character) {
+  return Object.entries(character.categories ?? {})
+    .filter(([, link]) => link.state !== 'refuted')
+    .map(([id, link]) => ({
+      id,
+      label: index.byCategoryId.get(id)?.label ?? id,
+      state: link.state,
+      source: link.source,
+    }));
+}
+
+// A small inline token: a category, a gift name, a suggestion. It renders as a
+// link when it has a destination and as a plain span when it does not, so
+// nothing ever looks clickable without being clickable.
+export function chip(text, { href, className } = {}) {
+  const classes = ['chip', className].filter(Boolean).join(' ');
+  const node = el(href ? 'a' : 'span', classes, text);
+  if (href) node.href = href;
+  return node;
+}

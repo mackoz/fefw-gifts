@@ -640,3 +640,41 @@ dialog input[type="text"] {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* --- Chips ---
+   One token style, used for categories, gift names and suggestions. A chip
+   that links is underlined on hover; a chip that is only a label never is. */
+
+.chip {
+  display: inline-block;
+  padding: 2px 9px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font-size: var(--step--1);
+  line-height: 1.5;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--raised);
+}
+
+a.chip:hover {
+  border-color: var(--edge);
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A category carried over from a published guide is a guess, and reads as one. */
+.chip.provenance-guide,
+.chip.provenance-refuted {
+  border-style: dashed;
+  color: var(--muted);
+}
