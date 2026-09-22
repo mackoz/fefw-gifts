@@ -275,9 +275,18 @@ written.
 Each is developed test-first and is importable by `node:test` without a DOM.
 
 - `weaveModel(index, filters)` — counts and marks
-- `groupRowsByState(rows)` — partition in confidence rank order
+- `weaveSummary(model)` — the counts sentence
+- `partitionRows(rows)` — `{ signal, untested }`, preserving confidence order
 - `giftIndexModel(index, search)` — category grouping, uncategorised last
 - `characterIndexModel(index, filters, search)` — name, chips, summary
+- `characterSummary(index, character)` — the strongest true statement
+- `categoryChips(index, character)` — liked categories, refuted excluded
+
+`deriveConfidence` never returns `FAVORITE` for a gift listed in
+`character.favorites` unless a player observed it, so any favourite count
+outside `favoritesModel` must mirror its declared-union-observed rule.
+`weaveModel` and `characterSummary` both do, or the masthead and the
+Favourites tab will report different totals from the same data.
 
 ## Binding invariants
 
