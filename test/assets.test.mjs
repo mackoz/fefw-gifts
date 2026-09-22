@@ -55,3 +55,50 @@ test('the wordmark is committed and small enough to ship in a header', () => {
   const bytes = statSync(logo).size;
   assert.ok(bytes < 60_000, `wordmark is ${bytes} bytes; keep it under 60 KB`);
 });
+
+test('the masthead carries the wordmark with an accessible name', () => {
+  const html = read('../index.html');
+  assert.match(html, /<img[^>]+src="assets\/img\/fefw-logo\.png"/, 'wordmark img is missing');
+  assert.match(html, /alt="Fire Emblem: Fortune's Weave"/, 'wordmark needs alt text, not an empty alt');
+  // Intrinsic size prevents the masthead reflowing once the image decodes.
+  assert.match(html, /<img[^>]+width="900"[^>]+height="186"/, 'wordmark needs width and height');
+});
+
+test('the heading does not repeat what the wordmark already says', () => {
+  const html = read('../index.html');
+  const h1 = html.slice(html.indexOf('<h1'), html.indexOf('</h1>'));
+  assert.doesNotMatch(h1, /Fortune's Weave Gift Guide/, 'h1 text duplicates the wordmark');
+  assert.match(h1, /Gift Guide/, 'h1 must still name the site');
+});
+
+test('both report controls ship so exactly one can survive', () => {
+  // The page must never be briefly wrong while JavaScript boots, and must
+  // still work with the Worker unconfigured.
+  const html = read('../index.html');
+  assert.match(html, /id="report-open"/, 'the in-site report button is missing');
+  assert.match(html, /id="report-fallback"/, 'the GitHub fallback is missing');
+  assert.match(html, /id="report-open"[^>]*\shidden/, 'the in-site button must start hidden');
+});
+
+test('the page loads no remote stylesheet, script or image', () => {
+  const html = read('../index.html');
+  assert.doesNotMatch(html, /<link[^>]+href="https?:/i, 'remote stylesheet');
+  assert.doesNotMatch(html, /<script[^>]+src="https?:/i, 'remote script');
+  assert.doesNotMatch(html, /<img[^>]+src="https?:/i, 'remote image');
+});
+
+test('the footer states the project is unaffiliated', () => {
+  const html = read('../index.html');
+  const footer = html.slice(html.indexOf('<footer'), html.indexOf('</footer>'));
+  assert.match(footer, /unaffiliated/i, 'footer must carry the fan-project line');
+});
+
+test('every page that loads the stylesheet also loads the tokens', () => {
+  // style.css declares no colour literal, so a page without tokens.css renders
+  // against undefined custom properties.
+  for (const page of ['../index.html', '../review/index.html']) {
+    const html = read(page);
+    if (!html.includes('style.css')) continue;
+    assert.match(html, /tokens\.css/, `${page} loads style.css without tokens.css`);
+  }
+});
