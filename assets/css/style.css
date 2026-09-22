@@ -582,3 +582,61 @@ dialog input[type="text"] {
   color: var(--muted);
   font-size: var(--step--1);
 }
+
+/* --- The weave strip ---
+   The whole grid at a few pixels per cell. Individual marks are NOT
+   interactive: at 80x53 in a full-width strip a cell is about 4px by 0.8px,
+   and a control nobody can hit must not be presented as one. The strip as a
+   whole links to the matrix, where per-pair detail lives. */
+
+.weave-mount:empty {
+  display: none;
+}
+
+.weave-mount {
+  margin-top: 22px;
+}
+
+.weave {
+  display: block;
+}
+
+.weave-svg {
+  display: block;
+  width: 100%;
+  height: clamp(44px, 7vw, 68px);
+  border: 1px solid var(--masthead-rule);
+}
+
+.weave:hover .weave-svg {
+  border-color: var(--masthead-edge);
+}
+
+.weave-ground { fill: var(--weave-ground); }
+
+.weave-mark { shape-rendering: crispEdges; }
+.weave-favorite  { fill: var(--weave-favorite); }
+.weave-confirmed { fill: var(--weave-confirmed); }
+.weave-contested { fill: var(--weave-contested); }
+.weave-pending   { fill: var(--weave-pending); }
+.weave-predicted { fill: var(--weave-predicted); }
+
+.weave-summary {
+  max-width: var(--measure);
+  margin: 10px 0 0;
+  color: var(--masthead-muted);
+  font-size: var(--step--1);
+}
+
+/* The page's only non-user-triggered motion: the marks arrive once, together,
+   as a single moment rather than a stagger of 349 separate animations. */
+@media (prefers-reduced-motion: no-preference) {
+  .weave-marks {
+    animation: weave-in 700ms ease-out backwards;
+  }
+}
+
+@keyframes weave-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
