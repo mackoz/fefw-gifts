@@ -906,7 +906,11 @@ main#view.view-matrix {
 .matrix th.col-head > span {
   display: inline-block;
   width: 1.8em;
-  transform: rotate(-60deg);
+  /* -60deg let the longest names (e.g. "Bonaventure") spill past their own
+     column into the next header's opaque background, which then painted over
+     the spilled tail. -75deg keeps every one of the 53 names inside its own
+     column; don't round this back to -60deg or -45deg without re-measuring. */
+  transform: rotate(-75deg);
   transform-origin: left bottom;
   transform-box: content-box;
   font-weight: 500;
