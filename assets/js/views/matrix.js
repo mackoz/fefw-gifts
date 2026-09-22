@@ -1,4 +1,5 @@
 import { passesFilters } from '../filters.js';
+import { POSITIVE_REACTIONS } from '../confidence.js';
 import { cellClasses, stateLabel, el, emptyState } from './shared.js';
 
 export function matrixModel(index, filters, search) {
@@ -24,7 +25,27 @@ export function matrixModel(index, filters, search) {
   return { characters, gifts, cellAt: (giftId, characterId) => cells.get(key(giftId, characterId)) };
 }
 
-export const SYMBOL = { FAVORITE: '★', CONFIRMED: '✔', CONTESTED: '?', PENDING: '•', PREDICTED: '~', UNTESTED: '' };
+export const SYMBOL = { FAVORITE: '★', CONFIRMED: '✔', CONTESTED: '?', PENDING: '•', PREDICTED: '~', UNTESTED: '', TESTED: '–' };
+
+// TESTED is a render-only pseudo-state: a CONFIRMED pair whose reaction is not
+// positive means a player tested this and it did nothing. Drawing that as ✔
+// under a legend reading "confirmed" claims the gift works, the opposite of
+// what was reported. It is deliberately NOT part of the confidence state
+// machine in confidence.js -- nothing derives from it but this view's symbol,
+// tint and title. Mirrors characterSummary in character.js.
+export function cellState(confidence) {
+  if (confidence.state === 'CONFIRMED' && !POSITIVE_REACTIONS.includes(confidence.reaction)) return 'TESTED';
+  return confidence.state;
+}
+
+// stateLabel is keyed on the real states, so handing it the pseudo-state would
+// come back "Not tested yet" -- a denial of the very report this marks. The
+// pseudo-state gets its own label, in the same words as its legend row.
+const CELL_LABEL = { TESTED: 'Confirmed: no support gain' };
+
+export function cellLabel(confidence) {
+  return CELL_LABEL[cellState(confidence)] ?? stateLabel(confidence);
+}
 
 // The matrix can empty out three ways, and each one needs a different way back.
 export function emptyMatrixMessage(state) {
@@ -36,10 +57,36 @@ export function emptyMatrixMessage(state) {
   return 'Nothing to show. Untick “Hide spoilers” to see every character.';
 }
 
+// A real key: swatch, symbol and label per state. The old run-on string joined
+// six entries with middle dots, which reads as decoration rather than a key.
+const LEGEND = [
+  ['FAVORITE', 'favourite'],
+  ['CONFIRMED', 'confirmed'],
+  ['TESTED', 'tested, no support gain'],
+  ['CONTESTED', 'reports disagree'],
+  ['PENDING', 'reported, awaiting review'],
+  ['PREDICTED', 'predicted, unconfirmed'],
+  ['UNTESTED', 'not tested'],
+];
+
+function legend() {
+  const list = el('ul', 'matrix-legend');
+  // Safari/VoiceOver drops role="list" implicit in <ul> once list-style:
+  // none meets display: grid/flex, so it has to be set back explicitly.
+  list.setAttribute('role', 'list');
+  for (const [state, label] of LEGEND) {
+    const item = el('li');
+    item.append(el('span', `legend-swatch cell-${state.toLowerCase()}`, SYMBOL[state]));
+    item.append(el('span', 'legend-label', label));
+    list.append(item);
+  }
+  return list;
+}
+
 export function render(container, index, state) {
   const model = matrixModel(index, state.filters, state.search);
   container.append(el('h2', null, 'Full matrix'));
-  container.append(el('p', 'legend', '★ favourite · ✔ confirmed · ? reports disagree · • reported, awaiting review · ~ predicted, unconfirmed · blank not tested'));
+  container.append(legend());
 
   if (model.gifts.length === 0 || model.characters.length === 0) {
     container.append(emptyState(emptyMatrixMessage(state)));
@@ -47,6 +94,14 @@ export function render(container, index, state) {
   }
 
   const scroller = el('div', 'matrix-scroll');
+  // The table itself has no focusable element, and in Safari a keyboard-only
+  // user cannot scroll an overflow container that isn't itself focusable --
+  // which would leave 79 of every 80 rows unreachable. tabindex makes the
+  // scroller a stop; role+aria-label give it the announced name it otherwise
+  // lacks.
+  scroller.tabIndex = 0;
+  scroller.setAttribute('role', 'region');
+  scroller.setAttribute('aria-label', 'Full character and gift matrix');
   const table = el('table', 'matrix');
 
   const head = el('thead');
@@ -54,9 +109,21 @@ export function render(container, index, state) {
   const corner = el('th', 'corner', 'Gift');
   corner.scope = 'col';
   headRow.append(corner);
+  // A narrow, empty, non-sticky column between the row labels and the data.
+  // The rotated headers lean about 17px left of their own column and land on
+  // the header before them, which paints earlier and so shows them through.
+  // The first character column has no header before it -- it has the sticky
+  // corner, which paints ABOVE everything (z-index 3) and would swallow the
+  // first several letters of the first name. This column gives that lean
+  // somewhere harmless to land. It scrolls away normally, so unlike making
+  // the corner transparent it lets no header bleed through during scroll.
+  headRow.append(el('th', 'lead-in'));
   for (const character of model.characters) {
-    const th = el('th', 'col-head', character.name);
+    const th = el('th', 'col-head');
     th.scope = 'col';
+    // The label is wrapped so it can be rotated without rotating the cell,
+    // which would take the header out of the table's own layout.
+    th.append(el('span', null, character.name));
     headRow.append(th);
   }
   head.append(headRow);
@@ -67,12 +134,17 @@ export function render(container, index, state) {
     const rowHead = el('th', 'row-head', gift.name);
     rowHead.scope = 'row';
     row.append(rowHead);
+    row.append(el('td', 'lead-in'));
     for (const character of model.characters) {
       const confidence = model.cellAt(gift.id, character.id);
+      // Class, symbol and title all go through cellState: leaving any one of
+      // them on confidence.state would draw a ✔, a confirmed tint or a
+      // "Confirmed" tooltip over a no-gain result.
+      const shown = { ...confidence, state: cellState(confidence) };
       // cellClasses, not stateClasses: a badge's inline-flex and ::before symbol
       // would break the table grid and duplicate the symbol already set here.
-      const cell = el('td', cellClasses(confidence), SYMBOL[confidence.state]);
-      cell.title = `${character.name} · ${gift.name}: ${stateLabel(confidence)}`;
+      const cell = el('td', cellClasses(shown), SYMBOL[shown.state]);
+      cell.title = `${character.name} and ${gift.name}: ${cellLabel(confidence)}`;
       row.append(cell);
     }
     body.append(row);

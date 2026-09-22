@@ -1,0 +1,135 @@
+/* Design tokens for the Fortune's Weave gift guide.
+
+   "Ember and sepia": the warm brown-sepia ground the figures stand on in the
+   game's key art, lit by the gold of its wordmark and trim. An earlier draft
+   built the page on the violet-indigo of the characters' hair and robes; it
+   was rejected on review as too cold for the subject. Two other Fortune's
+   Weave fan projects independently landed on gold-and-vellum schemes -- a
+   pine-green wiki and a parchment companion -- which is the genre's own
+   heraldic language; this set stays in that family without copying either.
+
+   The wordmark's own ivory-to-gold gradient was drawn for a dark warm ground,
+   which is why it sits on this one without a halo.
+
+   Semantic rule: predictions sit in the ground's own hue so guesses recede,
+   and player evidence is the only thing that glows. Every text token clears
+   4.5:1 against its ground and every control border clears 3:1 -- the ratios
+   are recorded in the spec and are reproducible from these values. */
+
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url('../fonts/fraunces-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url('../fonts/fraunces-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('../fonts/plex-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('../fonts/plex-sans-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  color-scheme: light dark;
+
+  /* Light mode is the base declaration; the dark block below overrides it. */
+  --ground: #f7f2ea;
+  --raised: #fffdf8;
+  --ink: #241a14;
+  --muted: #5f5145;
+  --rule: #e2d8cb;
+  --edge: #8c7259;
+  --focus: #8a5a00;
+
+  --favorite: #8a5a00;
+  --favorite-bg: #f8eed6;
+  --confirmed: #0d6a52;
+  --confirmed-bg: #dcf0e8;
+  --contested: #a83a50;
+  --contested-bg: #fae4e8;
+  --pending: #241a14;
+  --pending-bg: #efe7da;
+  --predicted: #6b5540;
+  --predicted-bg: #f0e9de;
+  --untested: #6b5f52;
+  --untested-bg: #efeae2;
+  --warning: #a8391f;
+
+  /* The masthead is a dark band in BOTH colour modes, so it carries its own
+     palette and is never redefined under the dark-mode query. Redefining it
+     there would put an ivory wordmark on a pale band in light mode. */
+  --masthead-ground: #120d0a;
+  --masthead-ink: #f2e7d8;
+  --masthead-muted: #b3a08c;
+  --masthead-rule: #3a2a22;
+  --masthead-focus: #e8b75c;
+
+  --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --step--1: 0.8125rem;
+  --step-0: 1rem;
+  --step-1: 1.15rem;
+  --step-2: 1.75rem;
+  --step-3: clamp(2rem, 1.4rem + 2.6vw, 3.25rem);
+  --text-table: 0.9375rem;
+
+  --col: 72rem;
+  --measure: 66ch;
+  --gutter: 16px;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #1a1310;
+    --raised: #241a16;
+    --ink: #f2e7d8;
+    --muted: #b3a08c;
+    --rule: #3a2a22;
+    --edge: #8c6e58;
+    --focus: #e8b75c;
+
+    --favorite: #e8b75c;
+    --favorite-bg: #3a2a12;
+    --confirmed: #5fc9a0;
+    --confirmed-bg: #0e3228;
+    --contested: #e8889c;
+    --contested-bg: #3a1a22;
+    --pending: #fbf2e4;
+    --pending-bg: #2e2620;
+    --predicted: #bd9a78;
+    --predicted-bg: #2a1f18;
+    --untested: #a08d79;
+    --untested-bg: #231a15;
+    --warning: #ff8a6b;
+  }
+}

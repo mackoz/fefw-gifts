@@ -9,6 +9,7 @@ import * as characterView from './views/character.js';
 import * as giftView from './views/gift.js';
 import * as matrixView from './views/matrix.js';
 import * as favoritesView from './views/favorites.js';
+import * as weaveView from './views/weave.js';
 
 const VIEW_MODULES = {
   character: characterView,
@@ -18,6 +19,17 @@ const VIEW_MODULES = {
 };
 
 const api = createApi();
+
+// The masthead counts depend only on state.filters and state.index --
+// never on state.search -- so these track what it last rendered from. Without
+// this guard, render() (which runs on every keystroke in the search box) would
+// rebuild the strip's DOM on every keystroke too, restarting its one-time
+// 700ms fade-in and re-deriving all 4,240 pairs for a render nothing
+// downstream of the strip would even see. `weaveIndex` is compared by
+// reference, since buildIndex() returns a fresh object each time the pending
+// overlay refreshes -- exactly when the strip does need to rebuild.
+let weaveFiltersKey = null;
+let weaveIndex = null;
 
 const state = {
   filters: { ...DEFAULT_FILTERS },
@@ -36,7 +48,22 @@ function render() {
   const container = document.getElementById('view');
   const route = parseRoute(location.hash);
   container.replaceChildren();
+  // A per-view hook, so the matrix can lift the content-column limit that
+  // every other view wants.
+  container.className = `view-${route.view}`;
   VIEW_MODULES[route.view].render(container, state.index, { ...state, id: route.id });
+
+  // The strip's counts depend on the filters, so it re-renders with the view.
+  // A stale count in the masthead is worse than no count at all -- but only
+  // when the filters or the index actually changed; see weaveFiltersKey above.
+  const weave = document.getElementById('weave');
+  const filtersKey = JSON.stringify(state.filters);
+  if (weave && (filtersKey !== weaveFiltersKey || state.index !== weaveIndex)) {
+    weaveFiltersKey = filtersKey;
+    weaveIndex = state.index;
+    weaveView.render(weave, state.index, state);
+  }
+
   for (const a of document.querySelectorAll('nav a')) {
     a.classList.toggle('active', a.getAttribute('href').startsWith(`#/${route.view}`));
   }

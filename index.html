@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Fortune's Weave Gift Guide</title>
   <meta name="description" content="A community gift guide for Fire Emblem: Fortune's Weave, confirming which individual gift items work via anonymous player reports.">
+  <link rel="preload" href="assets/fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/plex-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -12,45 +15,62 @@
     This site needs JavaScript enabled to load the gift data and render the guide.
   </noscript>
 
-  <header class="site-header">
-    <h1>Fortune's Weave Gift Guide</h1>
-    <p class="tagline">
-      Predicted likes are guesses carried over from published guides — only a
-      player reporting their actual in-game result counts as confirmed.
-    </p>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <h1 class="masthead-title">
+        <img src="assets/img/fefw-logo.png" alt="Fire Emblem: Fortune's Weave" width="900" height="186" decoding="async">
+        <span>Gift Guide</span>
+      </h1>
 
-    <nav>
+      <p class="masthead-tagline">
+        Predicted likes are guesses carried over from published guides. Only a
+        player reporting their actual in-game result counts as confirmed.
+      </p>
+
+      <div id="weave" class="weave-mount"></div>
+    </div>
+  </header>
+
+  <div class="tabbar">
+    <nav class="tabbar-inner" aria-label="Views">
       <a href="#/character">Characters</a>
       <a href="#/gift">Gifts</a>
       <a href="#/matrix">Matrix</a>
-      <a href="#/favorites">Favorites</a>
-    </nav>
-
-    <div class="toolbar">
-      <input type="search" id="search" placeholder="Search names in this view…" aria-label="Search names in the current view">
-
-      <label class="filter-toggle">
-        <input type="checkbox" data-filter="hideUntested">
-        Hide untested pairs
-      </label>
-      <label class="filter-toggle">
-        <input type="checkbox" data-filter="hideUnconfirmed">
-        Hide unconfirmed predictions
-      </label>
-      <label class="filter-toggle">
-        <input type="checkbox" data-filter="hideSpoilers" checked>
-        Hide spoilers
-      </label>
-      <p class="toggle-note">
-        No characters are marked as spoilers yet, so this hides nothing today.
-        If you’ve finished the game and know which ones belong behind it,
-        <a href="https://github.com/mackoz/fefw-gifts/issues/new/choose">open an issue</a>.
-      </p>
-
+      <a href="#/favorites">Favourites</a>
       <button type="button" id="report-open" class="report-link" hidden>Report a result</button>
       <a class="report-link" id="report-fallback" href="https://github.com/mackoz/fefw-gifts/issues/new/choose">Report a result on GitHub</a>
+    </nav>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <input type="search" id="search" placeholder="Search names in this view…" aria-label="Search names in the current view">
+
+      <details class="filters">
+        <summary>Filters</summary>
+        <div class="filters-body">
+          <label class="filter-toggle">
+            <input type="checkbox" data-filter="hideUntested">
+            Hide untested pairs
+          </label>
+          <label class="filter-toggle">
+            <input type="checkbox" data-filter="hideUnconfirmed">
+            Hide unconfirmed predictions
+          </label>
+          <label class="filter-toggle">
+            <input type="checkbox" data-filter="hideSpoilers" checked>
+            Hide spoilers
+          </label>
+          <p class="toggle-note">
+            No characters are marked as spoilers yet, so this hides nothing
+            today. If you’ve finished the game and know which ones belong
+            behind it,
+            <a href="https://github.com/mackoz/fefw-gifts/issues/new/choose">open an issue</a>.
+          </p>
+        </div>
+      </details>
     </div>
-  </header>
+  </div>
 
   <main id="view"></main>
 
@@ -60,12 +80,15 @@
       <a href="https://www.polygon.com/fire-emblem-fortunes-weave-best-gifts-each-character/">Polygon</a>;
       the item list comes from
       <a href="https://game8.co/games/Fire-Emblem-Fortunes-Weave/archives/621281">Game8</a>.
-      Confirmed results come only from player reports.
-      Once in-site reporting is switched on it takes a few seconds and needs
-      no account; until then, report a result on GitHub.
-      Structural corrections still go through
-      <a href="https://github.com/mackoz/fefw-gifts/issues/new/choose">GitHub issues</a>.
-      Full citations are in <a href="data/sources.json">data/sources.json</a>.
+      Confirmed results come only from player reports. Structural corrections
+      go through
+      <a href="https://github.com/mackoz/fefw-gifts/issues/new/choose">GitHub issues</a>,
+      and full citations are in <a href="data/sources.json">data/sources.json</a>.
+    </p>
+    <p class="colophon">
+      An unaffiliated fan project. Fire Emblem and Fortune’s Weave are
+      trademarks of Nintendo and Intelligent Systems, who have nothing to do
+      with this site.
     </p>
   </footer>
 

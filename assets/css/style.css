@@ -1,185 +1,325 @@
-/* Fortune's Weave Gift Guide — page shell styles.
-   Confidence-state colours are custom properties so every view (Tasks 7-10)
-   can share one palette, redefined for dark mode. Every state also carries a
-   text/symbol cue so it reads without relying on colour alone. */
+/* Page shell, layout and components. Design tokens live in tokens.css and are
+   loaded first. Nothing in this file declares a colour literal: every colour
+   resolves to a token, so the palette has exactly one definition. */
 
-:root {
-  --color-bg: #ffffff;
-  --color-text: #1a1a1a;
-  --color-muted: #6b6b6b;
-  --color-border: #d9d9d9;
-  --color-link: #1a4fa0;
-
-  --color-favorite: #b8860b;
-  --color-favorite-bg: #fff6db;
-  --color-confirmed: #1e7a34;
-  --color-confirmed-bg: #e6f6e9;
-  --color-contested: #a34e00;
-  --color-contested-bg: #fdeee0;
-  --color-pending: #0f6d78;
-  --color-pending-bg: #e0f4f6;
-  --color-predicted: #4b4bb0;
-  --color-predicted-bg: #ececfb;
-  --color-untested: #6b6b6b;
-  --color-untested-bg: #f2f2f2;
-
-  --color-warning: #a30000;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --color-bg: #14161a;
-    --color-text: #eaeaea;
-    --color-muted: #a3a3a3;
-    --color-border: #3a3d42;
-    --color-link: #8ab4ff;
-
-    --color-favorite: #e6c34d;
-    --color-favorite-bg: #3a3110;
-    --color-confirmed: #5fd37c;
-    --color-confirmed-bg: #12321a;
-    --color-contested: #e2924a;
-    --color-contested-bg: #3a2210;
-    --color-pending: #63cbd6;
-    --color-pending-bg: #0d3035;
-    --color-predicted: #a3a3f2;
-    --color-predicted-bg: #26264a;
-    --color-untested: #a3a3a3;
-    --color-untested-bg: #23252a;
-
-    --color-warning: #ff6b6b;
-  }
-}
-
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-html, body {
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+html,
+body {
   max-width: 100%;
   overflow-x: hidden;
 }
 
 body {
   margin: 0;
-  padding: 0 16px 32px;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  line-height: 1.5;
+  padding: 0 0 48px;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.55;
+}
+
+/* One column rule, applied by every band's inner wrapper. The matrix is the
+   only thing that escapes it. */
+.masthead-inner,
+.tabbar-inner,
+.toolbar-inner,
+main,
+.site-footer {
+  max-width: var(--col);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+:where(a):focus-visible,
+:where(button):focus-visible,
+:where(input):focus-visible,
+:where(summary):focus-visible,
+:where(.matrix-scroll):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  /* On the element, not the outline -- an outline follows the border radius,
+     so this is how the focus ring gets rounded corners. */
+  border-radius: 2px;
 }
 
 a {
-  color: var(--color-link);
+  color: inherit;
+  text-decoration-color: var(--edge);
+  text-underline-offset: 0.16em;
+}
+
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+h2 {
+  font-size: var(--step-2);
+  font-variation-settings: 'opsz' 60;
+  margin: 28px 0 4px;
+}
+
+h3 {
+  font-size: var(--step-1);
+  font-variation-settings: 'opsz' 24;
+  margin: 28px 0 6px;
 }
 
 noscript {
   display: block;
+  max-width: var(--col);
+  margin: 16px auto 0;
   padding: 12px 16px;
-  margin-top: 16px;
-  background: var(--color-contested-bg);
-  color: var(--color-contested);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
+  background: var(--contested-bg);
+  color: var(--contested);
+  border: 1px solid var(--edge);
 }
 
-.site-header {
-  padding-top: 16px;
+/* --- Masthead ---
+   A dark band in both colour modes, so it resolves from the --masthead-*
+   tokens rather than from the page palette. */
+
+.masthead {
+  background: var(--masthead-ground);
+  color: var(--masthead-ink);
+  border-bottom: 1px solid var(--masthead-rule);
 }
 
-.site-header h1 {
-  margin: 0 0 4px;
-  font-size: 1.5rem;
+.masthead-inner {
+  padding-block: 28px 20px;
 }
 
-.tagline {
-  margin: 0 0 16px;
-  color: var(--color-muted);
-  max-width: 60ch;
-}
-
-nav {
+.masthead-title {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-nav a {
-  padding: 6px 10px;
-  border-radius: 4px;
-  border: 1px solid var(--color-border);
-  text-decoration: none;
-  color: var(--color-text);
-}
-
-nav a.active {
-  border-color: var(--color-link);
-  color: var(--color-link);
-  font-weight: 600;
-}
-
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 16px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-#search {
-  flex: 1 1 200px;
-  min-width: 0;
-  padding: 6px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-
-.filter-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  font-size: 0.9rem;
-}
-
-/* The toolbar is a wrapping flex row; this note takes a full line of its own so
-   it sits under the toggle it qualifies rather than between two checkboxes. */
-.toggle-note {
-  flex: 1 0 100%;
+  align-items: baseline;
+  gap: 4px 18px;
   margin: 0;
-  color: var(--color-muted);
-  font-size: 0.8rem;
-  max-width: 60ch;
+  font-size: var(--step-3);
+  font-variation-settings: 'opsz' 144;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+.masthead-title img {
+  display: block;
+  width: clamp(13rem, 34vw, 22rem);
+  height: auto;
+}
+
+.masthead-tagline {
+  max-width: var(--measure);
+  margin: 14px 0 0;
+  color: var(--masthead-muted);
+  font-size: var(--step--1);
+}
+
+/* The masthead is dark in both colour modes, but the page's own --focus is
+   not: in light mode it resolves to 2.33:1 here, below the 3:1 a focus
+   indicator needs. Under the current palette the page --focus would be
+   3.26:1 here, which only scrapes past; --masthead-focus is 10.44:1 in both
+   modes and keeps the ring unambiguous rather than marginal. */
+.masthead :where(a):focus-visible {
+  outline-color: var(--masthead-focus);
+}
+
+/* --- Tab bar --- */
+
+.tabbar {
+  border-bottom: 1px solid var(--rule);
+  background: var(--raised);
+}
+
+.tabbar-inner {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+/* The tabs are exactly this container's content height and overflow-x: auto
+   clips anything painted outside it, so the default 2px-offset ring is sliced
+   off top and bottom and a keyboard user cannot see where they are in the
+   primary navigation. Drawing the ring inside the tab fixes that without
+   padding the container -- padding would push the active tab's underline off
+   the band's bottom rule, which is where the design wants it sitting. */
+.tabbar-inner :where(a, button):focus-visible {
+  outline-offset: -2px;
+}
+
+.tabbar-inner a:not(.report-link) {
+  padding: 13px 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+}
+
+.tabbar-inner a:not(.report-link):hover {
+  color: var(--ink);
+}
+
+.tabbar-inner a.active {
+  color: var(--ink);
+  font-weight: 600;
+  border-bottom-color: var(--favorite);
 }
 
 .report-link {
-  padding: 6px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
+  align-self: center;
+  margin-inline-start: auto;
+  padding: 7px 14px;
+  border: 1px solid var(--edge);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--step--1);
   text-decoration: none;
   white-space: nowrap;
-  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.report-link:hover {
+  border-color: var(--ink);
+}
+
+/* --- Toolbar --- */
+
+.toolbar-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  padding-block: 12px;
+}
+
+#search {
+  flex: 1 1 18rem;
+  min-width: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--edge);
+  background: var(--raised);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-table);
+}
+
+#search::placeholder {
+  /* The field's only visible label, so it needs label contrast, not hint
+     contrast. Chrome's default is 3.68:1 on --raised in dark mode. */
+  color: var(--muted);
+  opacity: 1;
+}
+
+/* Shrinkable, not fixed: the disclosure's note is capped at 66ch, and with
+   flex-shrink 0 that max-content width became the item's floor -- opening
+   Filters on a phone pushed the note off-screen where nothing could scroll to
+   it. min-width: 0 lets a flex item shrink below max-content at all. */
+.filters {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.filters > summary {
+  padding: 8px 12px;
+  border: 1px solid var(--edge);
+  font-size: var(--text-table);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.filters > summary::-webkit-details-marker {
+  display: none;
+}
+
+.filters > summary::after {
+  content: '\0020\25BE';
+}
+
+.filters[open] > summary::after {
+  content: '\0020\25B4';
+}
+
+.filters-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--rule);
+  background: var(--raised);
+}
+
+.filter-toggle input {
+  /* Otherwise these render Chrome's default blue on an ember-and-sepia page --
+     the one colour on screen that belongs to no token. */
+  accent-color: var(--favorite);
+}
+
+.filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-table);
+}
+
+.toggle-note {
+  max-width: var(--measure);
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--step--1);
 }
 
 main#view {
-  min-height: 40vh;
+  min-height: 50vh;
+}
+
+main#view > p,
+.intro,
+.notes,
+.provenance-note,
+.rarity-pref,
+.descriptor,
+.help-wanted {
+  max-width: var(--measure);
 }
 
 .site-footer {
-  margin-top: 32px;
-  padding-top: 16px;
-  border-top: 1px solid var(--color-border);
-  color: var(--color-muted);
-  font-size: 0.85rem;
+  margin-top: 48px;
+  padding-block: 20px 0;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+.site-footer p {
+  max-width: var(--measure);
+}
+
+.colophon {
+  margin-bottom: 0;
 }
 
 /* --- Confidence states ---
-   Each state pairs a colour with a text label/symbol prefix so it never
+   Each state pairs a colour with a text label and symbol prefix, so it never
    depends on colour perception alone. */
 
 .state-favorite,
@@ -190,228 +330,147 @@ main#view {
 .state-untested {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: 5px;
+  padding: 2px 9px;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: var(--step--1);
   border: 1px solid transparent;
+  /* Nowrap: the pill stays on one line. It used to wrap to keep the gift
+     table's min-content width down, but .table-scroll now lets that table go
+     wide and scroll instead, so a three-line lozenge is no longer the
+     trade-off -- see the .table-scroll rule under "Gift and character
+     tables". */
+  white-space: nowrap;
 }
 
 .state-favorite {
-  color: var(--color-favorite);
-  background: var(--color-favorite-bg);
+  color: var(--favorite);
+  background: var(--favorite-bg);
   border-color: currentColor;
 }
-.state-favorite::before {
-  content: "\2605";
-}
+.state-favorite::before { content: "\2605"; }
 
 .state-confirmed {
-  color: var(--color-confirmed);
-  background: var(--color-confirmed-bg);
+  color: var(--confirmed);
+  background: var(--confirmed-bg);
   border-color: currentColor;
 }
-.state-confirmed::before {
-  content: "\2713";
-}
+.state-confirmed::before { content: "\2713"; }
 
 .state-contested {
-  color: var(--color-contested);
-  background: var(--color-contested-bg);
+  color: var(--contested);
+  background: var(--contested-bg);
   border-color: currentColor;
 }
-.state-contested::before {
-  content: "\26A0";
-}
+.state-contested::before { content: "\26A0"; }
 
 .state-pending {
-  color: var(--color-pending);
-  background: var(--color-pending-bg);
+  color: var(--pending);
+  background: var(--pending-bg);
   border-color: currentColor;
 }
 .state-pending::before {
-  /* Matches the matrix legend's "•". Not "~": that is a guide's guess, and this
-     is a player's unreviewed result. */
+  /* Matches the matrix legend's bullet. Not "~": that is a guide's guess, and
+     this is a player's unreviewed result. */
   content: "\2022";
   font-weight: 700;
 }
 
 .state-predicted {
-  color: var(--color-predicted);
-  background: var(--color-predicted-bg);
+  color: var(--predicted);
+  background: var(--predicted-bg);
   border: 1px dashed currentColor;
 }
 .state-predicted::before {
-  /* "~" not "?": the matrix legend already spends "?" on "reports disagree". */
+  /* "~" not "?": the matrix legend already spends "?" on reports disagreeing. */
   content: "~";
   font-weight: 700;
 }
 
 .state-untested {
-  color: var(--color-untested);
-  background: var(--color-untested-bg);
+  color: var(--untested);
+  background: var(--untested-bg);
 }
-.state-untested::before {
-  content: "\2014";
-}
+.state-untested::before { content: "\2014"; }
 
-/* Provenance of a prediction: a guide-sourced guess is shown dimmer than one
-   confirmed from the character's own in-game profile. */
-
-.provenance-guide {
-  opacity: 0.6;
-  font-style: italic;
-}
-
-.provenance-profile {
-  opacity: 1;
-}
-
-/* A refuted link is guide-derived too -- dimmed like any other unverified guess,
-   so a negative prediction never reads louder than a positive one. */
+/* Provenance: a guide-sourced guess shows dimmer than one confirmed from the
+   character's own in-game profile. No opacity here: composited over the state
+   tints it measured 3.25:1 (light) / 3.59:1 (dark) on category chips and
+   2.78:1 / 3.38:1 on the "Predicted -- not yet confirmed" badge, all below the
+   4.5:1 this page requires. A guess still reads as one three other ways --
+   dashed border, italic, and the muted/predicted colour rather than ink --
+   so don't restore opacity here. */
+.provenance-guide,
 .provenance-refuted {
-  opacity: 0.6;
   font-style: italic;
 }
 
-/* Discovered by a player report: the strongest provenance there is. */
+
 .provenance-discovered {
-  opacity: 1;
   font-weight: 600;
 }
 
-/* An observed result that contradicts its prediction. */
 .is-exception {
-  outline: 2px dotted var(--color-warning);
+  outline: 2px dotted var(--warning);
   outline-offset: 2px;
 }
 .is-exception::after {
   content: " (unexpected result)";
   font-size: 0.8em;
-  color: var(--color-warning);
+  color: var(--warning);
 }
 
-/* The gift's rarity is below what the character is known to require. */
 .rarity-mismatch {
-  border-bottom: 2px dashed var(--color-warning);
+  border-bottom: 2px dashed var(--warning);
 }
 .rarity-mismatch::after {
   content: " (below their reported preference)";
   font-size: 0.8em;
-  color: var(--color-warning);
+  color: var(--warning);
 }
 
-/* An explained empty result, rather than a bare heading that reads as breakage. */
+/* A pair that is both an exception and a rarity mismatch would otherwise lose
+   the exception note entirely -- the more meaningful of the two -- because
+   only one ::after can win. Name both conditions instead of picking one. */
+.is-exception.rarity-mismatch::after {
+  content: " (unexpected result, and below their reported preference)";
+}
+
 .empty-state {
-  color: var(--color-muted);
-  max-width: 60ch;
-  margin: 8px 0 16px;
+  max-width: var(--measure);
+  margin: 10px 0 18px;
+  color: var(--muted);
 }
 
-/* Flavor-only trait text: informational, not mechanical, so it's greyed out. */
 .trait-flavor {
-  color: var(--color-muted);
+  color: var(--muted);
   font-style: italic;
 }
 
-@media (max-width: 480px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  #search {
-    flex: 1 1 auto;
-  }
-}
-
-/* --- Full matrix view ---
-   Densest view in the site: 80 gift rows by up to 53 character columns.
-   Headers stick while the body scrolls both ways, and cells stay narrow and
-   centred so as many columns as possible fit on screen. */
-
-.matrix-scroll {
-  overflow-x: auto;
-}
-
-.matrix {
-  border-collapse: collapse;
-}
-
-.matrix th,
-.matrix td {
-  padding: 4px 8px;
-  text-align: center;
-  border: 1px solid var(--color-border);
-  white-space: nowrap;
-}
-
-.matrix td {
-  min-width: 2.5em;
-}
-
-.matrix th.row-head,
-.matrix th.corner {
-  text-align: left;
-}
-
-.matrix thead th {
-  position: sticky;
-  top: 0;
-  background: var(--color-bg);
-  z-index: 2;
-}
-
-.matrix th.row-head {
-  position: sticky;
-  left: 0;
-  background: var(--color-bg);
-  z-index: 1;
-}
-
-.matrix th.corner {
-  position: sticky;
-  left: 0;
-  z-index: 3;
-}
-
-/* Cell tint classes for cellClasses(confidence): colour only. The visible
-   symbol is already the cell's text content (see matrix.js), so unlike the
-   badge classes in shared.js these never set display or add ::before/::after
-   -- either would break the table grid or duplicate the symbol. */
-.matrix td.cell-favorite  { background: var(--color-favorite-bg);  color: var(--color-favorite); }
-.matrix td.cell-confirmed { background: var(--color-confirmed-bg); color: var(--color-confirmed); }
-.matrix td.cell-contested { background: var(--color-contested-bg); color: var(--color-contested); }
-.matrix td.cell-pending   { background: var(--color-pending-bg);   color: var(--color-pending); }
-.matrix td.cell-predicted { background: var(--color-predicted-bg); color: var(--color-predicted); }
-.matrix td.cell-untested  { background: transparent; }
-.matrix td.cell-exception { outline: 2px dotted var(--color-warning); outline-offset: -2px; }
-.matrix td.cell-rarity-mismatch { border-bottom: 2px dashed var(--color-warning); }
-
 /* --- Dialogs ---
-   The report and vote dialogs. Sized for a phone first: reports get written
-   right after playing, on the device that is to hand. */
+   Sized for a phone first: reports get written right after playing, on the
+   device that is to hand. */
 
 dialog {
   width: min(32rem, calc(100vw - 32px));
-  padding: 20px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-bg);
-  color: var(--color-text);
+  padding: 22px;
+  border: 1px solid var(--edge);
+  background: var(--raised);
+  color: var(--ink);
 }
 
 dialog::backdrop {
-  background: rgb(0 0 0 / 0.5);
+  background: rgb(0 0 0 / 0.6);
 }
 
 dialog h2 {
   margin-top: 0;
+  font-size: var(--step-2);
 }
 
 dialog label {
   display: block;
-  margin-top: 12px;
+  margin-top: 14px;
   font-weight: 600;
 }
 
@@ -419,58 +478,72 @@ dialog select,
 dialog input[type="number"],
 dialog input[type="text"] {
   width: 100%;
-  padding: 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-bg);
-  color: var(--color-text);
+  padding: 9px;
+  border: 1px solid var(--edge);
+  background: var(--ground);
+  color: var(--ink);
+  font: inherit;
 }
 
 #report-reactions {
   margin-top: 16px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
+  padding: 10px 14px;
+  border: 1px solid var(--rule);
 }
 
 .reaction-choice {
   display: block;
   font-weight: 400;
-  margin: 6px 0;
+  margin: 7px 0;
 }
 
 .dialog-intro {
-  color: var(--color-muted);
-  font-size: 0.9rem;
+  max-width: var(--measure);
+  color: var(--muted);
+  font-size: var(--step--1);
 }
 
 /* Reserves its line so the dialog does not jump when a message appears. */
 .dialog-status {
   min-height: 1.5em;
   margin: 12px 0 0;
-  color: var(--color-warning);
+  color: var(--warning);
 }
 
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin: 16px 0 0;
+  margin: 18px 0 0;
   padding: 0;
 }
 
 .dialog-actions button,
 .report-button {
-  padding: 6px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-bg);
-  color: var(--color-text);
+  padding: 8px 14px;
+  border: 1px solid var(--edge);
+  background: var(--ground);
+  color: var(--ink);
   font: inherit;
   cursor: pointer;
 }
 
+/* The per-pair trigger in the gift and character tables. Without this it falls
+   back to the browser's own button chrome beside token-styled everything else
+   -- which is exactly what happened when this stylesheet was rewritten and the
+   rule master grouped with .dialog-actions button was not carried over. */
 .report-button {
-  font-size: 0.85rem;
+  padding: 5px 11px;
+  font-size: var(--step--1);
+}
+
+.report-button:hover {
+  border-color: var(--ink);
+}
+
+#report-submit {
+  border-color: var(--ink);
+  font-weight: 600;
 }
 
 /* --- Peer voting ---
@@ -488,20 +561,20 @@ dialog input[type="text"] {
 }
 
 .vote-prompt {
-  color: var(--color-muted);
-  font-size: 0.8rem;
-  max-width: 32ch;
+  max-width: 34ch;
+  color: var(--muted);
+  font-size: var(--step--1);
   overflow-wrap: anywhere;
 }
 
 .vote-button {
-  padding: 2px 8px;
-  border: 1px solid var(--color-border);
+  padding: 3px 10px;
+  border: 1px solid var(--edge);
   border-radius: 999px;
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: transparent;
+  color: var(--ink);
   font: inherit;
-  font-size: 0.8rem;
+  font-size: var(--step--1);
   cursor: pointer;
 }
 
@@ -515,8 +588,8 @@ dialog input[type="text"] {
 }
 
 .review-row {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--color-border);
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
 }
 
 .review-pair {
@@ -525,15 +598,15 @@ dialog input[type="text"] {
 }
 
 .review-meta {
-  margin: 2px 0 0;
-  color: var(--color-muted);
-  font-size: 0.85rem;
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: var(--step--1);
 }
 
 .review-actions {
   display: flex;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .review-actions button {
@@ -541,11 +614,502 @@ dialog input[type="text"] {
   /* A comfortable touch target, because this page is used on a phone. */
   min-height: 44px;
   border: 1px solid currentColor;
-  border-radius: 4px;
-  background: var(--color-bg);
+  background: transparent;
   font: inherit;
   cursor: pointer;
 }
 
-.review-approve { color: var(--color-confirmed); }
-.review-reject  { color: var(--color-warning); }
+.review-approve { color: var(--confirmed); }
+.review-reject  { color: var(--warning); }
+
+/* Scoped to #token-form, not .toolbar: the main page's div.toolbar is only a
+   full-bleed band wrapper around .toolbar-inner and must stay unstyled --
+   matching it here turned that wrapper into a centred, max-content-width flex
+   container and threw the whole toolbar row out of alignment with the rest
+   of the page. The maintainer review page's token form is the only element
+   these declarations are for; without them that form loses its row and its
+   rule.
+
+   It carries no column of its own. Its <main> now takes the shared column
+   rule at the top of this file, so repeating max-width/margin-inline/
+   padding-inline here would inset this form one gutter further than the
+   status line and the list directly beneath it. */
+#token-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* --- Plain page header ---
+   Used by review/index.html, which is maintainer-only and deliberately does
+   not carry the masthead, the wordmark or the weave strip. */
+
+.site-header {
+  max-width: var(--col);
+  margin-inline: auto;
+  padding: 28px var(--gutter) 0;
+}
+
+.site-header h1 {
+  margin: 0;
+  font-size: var(--step-2);
+  font-variation-settings: 'opsz' 60;
+}
+
+.tagline {
+  max-width: var(--measure);
+  margin: 10px 0 20px;
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+/* --- The masthead's state-of-knowledge line ---
+   This was a full-width SVG strip drawing all 4,240 cells. Cut: at 80x53 in a
+   band that wide each cell became about 21px by 1.3px, and a 16:1 distortion
+   reads as scan lines, not a grid. The sentence carries the same fact and is
+   legible. With the strip gone the page has no non-user-triggered motion. */
+
+.weave-mount:empty {
+  display: none;
+}
+
+.weave-summary {
+  max-width: var(--measure);
+  margin: 18px 0 0;
+  color: var(--masthead-muted);
+  font-size: var(--step--1);
+}
+
+/* --- Chips ---
+   One token style, used for categories, gift names and suggestions. A chip
+   that links is underlined on hover; a chip that is only a label never is. */
+
+.chip {
+  display: inline-block;
+  padding: 2px 9px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font-size: var(--step--1);
+  line-height: 1.5;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--raised);
+}
+
+a.chip:hover {
+  border-color: var(--edge);
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A category carried over from a published guide is a guess, and reads as one. */
+.chip.provenance-guide,
+.chip.provenance-refuted {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+/* --- Characters index ---
+   A tessellation, not a card kit: cells share hairlines instead of each
+   carrying its own border, radius and shadow. */
+
+.tessera-grid {
+  display: grid;
+  /* min() keeps a track from ever exceeding the container. It matters here
+     because html/body set overflow-x: hidden and this grid has no scroller of
+     its own, so at a 320px viewport and a large root font the overflow is
+     clipped unreachably rather than scrolled to. Unchanged whenever 15rem
+     fits. */
+  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
+  gap: 1px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The hairline is drawn per cell, as a box-shadow rather than a border: a
+   border would double up where two cells meet (2px instead of 1px, and it
+   would not line up with the 1px gap at all). A box-shadow paints outside the
+   box without taking layout space, so adjacent cells' rings meet exactly in
+   the gap and read as one shared hairline. Drawing the hairline through the
+   grid's own background (the previous approach) painted a solid --rule slab
+   over the trailing empty tracks of the last row -- there is no cell there to
+   cover it back up. */
+.tessera {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+  background: var(--ground);
+  box-shadow: 0 0 0 1px var(--rule);
+}
+
+.tessera-name {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 24;
+  font-size: var(--step-1);
+  text-decoration: none;
+}
+
+.tessera-name:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.tessera-summary {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+/* --- Gift and character tables --- */
+
+.gift-table {
+  width: 100%;
+  margin-top: 12px;
+  border-collapse: collapse;
+  font-size: var(--text-table);
+}
+
+.gift-table th,
+.gift-table td {
+  padding: 9px 14px 9px 0;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rule);
+}
+
+.gift-table thead th {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+.gift-table tbody tr:hover td {
+  background: var(--raised);
+}
+
+/* The gift and character tables carry up to five columns and a status pill.
+   The page hides horizontal overflow, so without this an overflowing table is
+   clipped with no way to reach the Report column -- which is the site's
+   primary contribution control. Measured at 320px it lost 29px, and it loses
+   the whole column the moment any gift gets a recorded rarity and the table
+   grows a fifth column. Scroll it rather than clip it. */
+.table-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+/* --- The untested block --- */
+
+.untested-block {
+  margin-top: 30px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+
+.untested-block > summary {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 24;
+  font-size: var(--step-1);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.untested-note {
+  max-width: var(--measure);
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+/* A chip that triggers a report rather than navigating. Dashed while the pair
+   is untested, solid on hover, so it reads as an invitation. Resting border
+   and text used --rule (1.26:1 / 1.34:1) and --untested, the dimmest token --
+   styling the site's primary contribution affordance to look disabled. */
+.chip-action {
+  font: inherit;
+  font-size: var(--step--1);
+  color: var(--muted);
+  border-style: dashed;
+  border-color: var(--edge);
+  cursor: pointer;
+}
+
+.chip-action:hover {
+  color: var(--ink);
+  border-style: solid;
+  border-color: var(--edge);
+}
+
+/* --- Detail page text ---
+   Small paragraphs and lists rendered above the gift table on a character's
+   page (character.js's renderProfile) or above the character table on a
+   gift's page (gift.js). .provenance-note, .rarity-pref, .notes, .descriptor
+   and .help-wanted already get max-width: var(--measure) from the shared rule
+   near the top of this file -- don't redeclare it here. .traits and .meta
+   are not in that list, so they keep their own. */
+
+.traits {
+  max-width: var(--measure);
+  margin: 8px 0 0;
+  padding-left: 1.2em;
+}
+
+.provenance-note,
+.rarity-pref,
+.notes {
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+.meta {
+  max-width: var(--measure);
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+.descriptor,
+.help-wanted {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+.descriptor {
+  font-style: italic;
+}
+
+/* --- Gift index groups --- */
+
+main#view > .chip-list {
+  margin-bottom: 4px;
+}
+
+/* --- Full matrix ---
+   The densest view in the site: 80 gift rows by up to 53 character columns.
+   Headers stick while the body scrolls both ways, and the column labels are
+   rotated so far more of them fit on one screen. */
+
+/* Set by app.js on #view. The matrix earns the whole viewport; nothing else
+   does, so the column rule is lifted only here. */
+main#view.view-matrix {
+  max-width: none;
+}
+
+.matrix-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 10px 0 18px;
+  padding: 0;
+  list-style: none;
+  font-size: var(--step--1);
+}
+
+.matrix-legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.legend-swatch {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  border: 1px solid var(--rule);
+  font-weight: 700;
+}
+
+.legend-label {
+  color: var(--muted);
+}
+
+.matrix-scroll {
+  overflow: auto;
+  overscroll-behavior-x: contain;
+  max-height: 80vh;
+}
+
+.matrix {
+  border-collapse: collapse;
+  font-size: var(--step--1);
+}
+
+.matrix th,
+.matrix td {
+  border: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+.matrix td {
+  min-width: 1.9em;
+  padding: 3px 4px;
+  text-align: center;
+}
+
+.matrix th.row-head,
+.matrix th.corner {
+  padding: 3px 10px 3px 6px;
+  text-align: left;
+  font-weight: 500;
+}
+
+/* The empty gutter column between the row labels and the data. See matrix.js
+   for why it exists: it catches the first rotated header's leftward lean,
+   which the sticky corner would otherwise paint over. Transparent and
+   unpadded, so it reads as a channel -- though border-collapse still resolves
+   the neighbours' borders onto its flanks, so a hairline shows each side. Its
+   header cell is sticky vertically (from .matrix thead th) but never
+   horizontally, which is the part the corner argument actually depends on. */
+.matrix th.lead-in,
+.matrix td.lead-in {
+  /* In rem, not px: the headers' leftward lean is driven by the span's
+     line-box height, so it scales with the root font size. A fixed 24px
+     gutter loses its clearance at about a 22px root -- an ordinary low-vision
+     browser setting -- and the first name goes back under the corner. */
+  width: 1.5rem;
+  min-width: 1.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.matrix thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--ground);
+}
+
+.matrix th.col-head {
+  height: 8.5rem;
+  padding: 0;
+  vertical-align: bottom;
+}
+
+.matrix th.col-head > span {
+  display: inline-block;
+  width: 1.8em;
+  /* -60deg let the longest names (e.g. "Bonaventure") spill past their own
+     column into the next header's opaque background, which then painted over
+     the spilled tail. -75deg keeps every one of the 53 names inside its own
+     column; don't round this back to -60deg or -45deg without re-measuring. */
+  transform: rotate(-75deg);
+  transform-origin: left bottom;
+  transform-box: content-box;
+  font-weight: 500;
+  text-align: left;
+}
+
+.matrix th.row-head {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--ground);
+}
+
+.matrix th.corner {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  vertical-align: bottom;
+}
+
+/* Cell tint classes for cellClasses(confidence): colour only. The visible
+   symbol is already the cell's text content (see matrix.js), so unlike the
+   badge classes in shared.js these never set display or add ::before/::after
+   -- either would break the table grid or duplicate the symbol. */
+.matrix td.cell-favorite,
+.legend-swatch.cell-favorite  { background: var(--favorite-bg);  color: var(--favorite); }
+.matrix td.cell-confirmed,
+.legend-swatch.cell-confirmed { background: var(--confirmed-bg); color: var(--confirmed); }
+.matrix td.cell-contested,
+.legend-swatch.cell-contested { background: var(--contested-bg); color: var(--contested); }
+.matrix td.cell-pending,
+.legend-swatch.cell-pending   { background: var(--pending-bg);   color: var(--pending); }
+.matrix td.cell-predicted,
+.legend-swatch.cell-predicted { background: var(--predicted-bg); color: var(--predicted); }
+/* A confirmed report of "no support gain" is a real result, so the cell is
+   marked -- but it is not a success, so it must not borrow the confirmed tint.
+   Neutral ground with muted ink: we looked, and nothing happened. */
+.matrix td.cell-tested,
+.legend-swatch.cell-tested    { background: transparent; color: var(--muted); }
+.matrix td.cell-untested      { background: transparent; }
+/* Matches the cell: an untested pair renders as no box, so the legend key for
+   it must not show one either. The swatch's own border still marks the slot. */
+.legend-swatch.cell-untested  { background: transparent; }
+.matrix td.cell-exception { outline: 2px dotted var(--warning); outline-offset: -2px; }
+.matrix td.cell-rarity-mismatch { border-bottom: 2px dashed var(--warning); }
+
+/* --- Favourites hunt --- */
+
+/* .intro already gets max-width: var(--measure) from the shared rule near the
+   top of this file. */
+.progress {
+  max-width: var(--measure);
+  margin: 14px 0 0;
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 24;
+  font-size: var(--step-1);
+}
+
+.hunt-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+
+.hunt-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.hunt-name {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 24;
+  font-size: var(--step-1);
+  text-decoration: none;
+}
+
+.hunt-name:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.hunt-note {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+/* Both hunt sections render a name followed by chips. Without this label a
+   predicted suggestion is indistinguishable from a confirmed favourite. The
+   inline margin keeps it off the name it follows; .hunt-row is a plain block,
+   so the label stays on the name's line and wraps with it at 320px. */
+.hunt-hint {
+  margin-inline-start: 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.chip-favourite {
+  color: var(--favorite);
+  border-color: currentColor;
+  background: var(--favorite-bg);
+}
