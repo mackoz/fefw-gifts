@@ -142,14 +142,15 @@ function renderPicker(container, index, state) {
 // traits, and a heading followed by "nobody has entered this yet" on all 53
 // pages is furniture, not information.
 function renderProfile(container, index, character) {
-  if (character.traits.length > 0) {
-    const traits = el('ul', 'traits');
-    for (const t of character.traits) {
+  const entries = character.traits ?? [];
+  if (entries.length > 0) {
+    const list = el('ul', 'traits');
+    for (const t of entries) {
       const item = el('li', t.category ? 'trait' : 'trait trait-flavor', t.text);
       if (!t.category) item.append(el('span', 'flavor-tag', ' (flavour — not a gift type)'));
-      traits.append(item);
+      list.append(item);
     }
-    container.append(el('h3', null, 'Profile'), traits);
+    container.append(el('h3', null, 'Profile'), list);
   }
 
   if (character.rarityPreference) {

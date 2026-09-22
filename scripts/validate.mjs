@@ -61,6 +61,7 @@ export function validate(dataset) {
 
   for (const ch of dataset.characters) {
     if (!ch.name) errors.push(`character ${ch.id}: missing name`);
+    if (!Array.isArray(ch.traits)) errors.push(`character ${ch.id}: traits must be an array`);
 
     for (const [catId, link] of Object.entries(ch.categories ?? {})) {
       if (!categoryIds.has(catId)) errors.push(`character ${ch.id}: unknown category: ${catId}`);

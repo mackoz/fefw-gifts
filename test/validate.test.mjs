@@ -124,6 +124,32 @@ test('a favorite referencing an unknown gift is rejected', () => {
   assert.match(errors[0], /character c1: unknown favorite gift: ghost-gift/);
 });
 
+test('a character with no traits key is rejected', () => {
+  const d = base();
+  const c = character();
+  delete c.traits;
+  d.characters.push(c);
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['character c1: traits must be an array']);
+});
+
+test('a character with an empty traits array produces no error', () => {
+  const d = base();
+  d.characters.push(character({ traits: [] }));
+  assert.deepEqual(validate(d).errors, []);
+});
+
+test('a character whose traits is not an array is rejected', () => {
+  const d = base();
+  d.characters.push(character({ traits: 'x' }));
+  const { errors } = validate(d);
+  // The redundant `?? []` at :77 is deliberately left in place (see the fix
+  // brief), so a non-array, non-nullish `traits` like a string still gets
+  // iterated character-by-character and may add further errors of its own.
+  // What matters here is that the new check still fires.
+  assert.ok(errors.includes('character c1: traits must be an array'));
+});
+
 test('an invalid rarityPreference is rejected', () => {
   const d = base();
   d.characters.push(character({ rarityPreference: 'shiny' }));
