@@ -1,4 +1,5 @@
 import { fetchDataset, buildIndex } from './data.js';
+import { debounce } from './debounce.js';
 import { parseRoute, DEFAULT_FILTERS } from './filters.js';
 import { createApi } from './api.js';
 import { TURNSTILE_SITE_KEY } from './config.js';
@@ -98,10 +99,10 @@ async function main() {
   state.index = buildIndex(state.dataset, []);
 
   addEventListener('hashchange', render);
-  document.getElementById('search').addEventListener('input', (e) => {
+  document.getElementById('search').addEventListener('input', debounce((e) => {
     state.search = e.target.value.trim().toLowerCase();
     render();
-  });
+  }, 120));
   for (const box of document.querySelectorAll('[data-filter]')) {
     box.checked = state.filters[box.dataset.filter];
     box.addEventListener('change', () => {

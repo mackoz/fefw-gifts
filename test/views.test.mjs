@@ -756,3 +756,19 @@ test('every list the stylesheet un-lists keeps an explicit list role', () => {
   assert.equal(lists.length, 2, 'the hunt renders an unknown list and a found list');
   for (const list of lists) assert.equal(list.getAttribute('role'), 'list', 'every .hunt-list needs role="list"');
 });
+
+// The validator now rejects a missing traits key (see I1 in the fix brief),
+// but the view has to survive it too: real data can still reach the browser
+// out of band (a stale cache, a hand-edited file), and renderProfile must not
+// throw. It should render the page and simply omit the Profile section.
+test('a character with no traits key renders without throwing and omits the Profile section', () => {
+  const { traits, ...noTraits } = dataset.characters[0];
+  const idx = buildIndex({ ...dataset, characters: [noTraits] });
+
+  const container = fakeElement('div');
+  assert.doesNotThrow(() => {
+    characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'c1' });
+  });
+  const heading = findFirst(container, (n) => n.tagName === 'H3' && n.textContent === 'Profile');
+  assert.equal(heading, undefined, 'no traits means no Profile heading');
+});

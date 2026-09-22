@@ -132,6 +132,28 @@ test('each view gets a class so the matrix can lift the column limit', () => {
   assert.match(renderBody, /className = `view-\$\{route\.view\}`/, 'render() must set a per-view class on #view');
 });
 
+// The search wiring is DOM-level and app.js has no behavioural test, so this
+// source guard is the only thing standing between a refactor and a silent
+// performance regression: deleting the debounce(...) wrapper leaves the
+// search box re-rendering the whole view -- 4,240 matrix cells on the matrix
+// route -- on every keystroke, and nothing else in the suite would notice.
+//
+// This deliberately pins a shape, not just presence: it also captures and
+// checks the delay, since a real delay of 0 or undefined would defeat the
+// debounce as surely as removing it, and previously stayed green. If the
+// wiring is refactored (e.g. the handler pulled out to a named const) this
+// test is meant to go red and be updated on purpose, not loosened until it
+// passes.
+test('the search input is wired through debounce with a positive delay', () => {
+  const app = sourceOf('app.js');
+  assert.match(app, /import \{ debounce \} from '\.\/debounce\.js'/, 'app.js must import debounce from debounce.js');
+  const wiring = app.match(
+    /getElementById\('search'\)\.addEventListener\('input',\s*debounce\(\(e\) => \{[\s\S]*?\},\s*(\d+)\s*\)\)/,
+  );
+  assert.ok(wiring, 'the search input listener must be wrapped in debounce(...)');
+  assert.ok(Number(wiring[1]) > 0, `the debounce delay must be a positive number, got ${wiring[1]}`);
+});
+
 // A stray closing brace does not fail loudly: CSS error recovery silently
 // discards the NEXT rule, so one extra `}` after a block deletion cost the
 // whole .chip rule -- radius, border and background -- with no error anywhere.
