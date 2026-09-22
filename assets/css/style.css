@@ -643,6 +643,37 @@ dialog input[type="text"] {
   border-bottom: 1px solid var(--rule);
 }
 
+/* The token form's own controls. #search establishes the field shape on the
+   main page and .review-actions button the button shape on this one; this
+   form was the last place still falling back to UA chrome, which reads as
+   unstyled rather than deliberate against the ember ground. */
+#token-input {
+  flex: 1 1 14rem;
+  min-width: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--edge);
+  background: var(--raised);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-table);
+}
+
+#token-input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+#token-form button {
+  /* 44px to match .review-actions button -- this page is used on a phone. */
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--edge);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
 /* --- Plain page header ---
    Used by review/index.html, which is maintainer-only and deliberately does
    not carry the masthead, the wordmark or the weave strip. */
