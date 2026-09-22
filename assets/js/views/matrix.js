@@ -84,6 +84,15 @@ export function render(container, index, state) {
   const corner = el('th', 'corner', 'Gift');
   corner.scope = 'col';
   headRow.append(corner);
+  // A narrow, empty, non-sticky column between the row labels and the data.
+  // The rotated headers lean about 17px left of their own column and land on
+  // the header before them, which paints earlier and so shows them through.
+  // The first character column has no header before it -- it has the sticky
+  // corner, which paints ABOVE everything (z-index 3) and would swallow the
+  // first several letters of the first name. This column gives that lean
+  // somewhere harmless to land. It scrolls away normally, so unlike making
+  // the corner transparent it lets no header bleed through during scroll.
+  headRow.append(el('th', 'lead-in'));
   for (const character of model.characters) {
     const th = el('th', 'col-head');
     th.scope = 'col';
@@ -100,6 +109,7 @@ export function render(container, index, state) {
     const rowHead = el('th', 'row-head', gift.name);
     rowHead.scope = 'row';
     row.append(rowHead);
+    row.append(el('td', 'lead-in'));
     for (const character of model.characters) {
       const confidence = model.cellAt(gift.id, character.id);
       // cellClasses, not stateClasses: a badge's inline-flex and ::before symbol

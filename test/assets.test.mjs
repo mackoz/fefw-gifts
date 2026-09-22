@@ -124,3 +124,25 @@ test('each view gets a class so the matrix can lift the column limit', () => {
   const app = read('../assets/js/app.js');
   assert.match(app, /view-\$\{route\.view\}|`view-/, 'render() must set a per-view class on #view');
 });
+
+// A stray closing brace does not fail loudly: CSS error recovery silently
+// discards the NEXT rule, so one extra `}` after a block deletion cost the
+// whole .chip rule -- radius, border and background -- with no error anywhere.
+// Nothing else in this suite executes CSS, so this structural check is the
+// only thing standing between a bad edit and a silently broken component.
+test('every stylesheet is brace-balanced', () => {
+  for (const file of ['tokens.css', 'style.css']) {
+    const css = read(`../assets/css/${file}`).replace(/\/\*[\s\S]*?\*\//g, '');
+    let depth = 0;
+    let line = 1;
+    for (const ch of css) {
+      if (ch === '\n') line += 1;
+      else if (ch === '{') depth += 1;
+      else if (ch === '}') {
+        depth -= 1;
+        assert.ok(depth >= 0, `${file}: stray closing brace at line ~${line}`);
+      }
+    }
+    assert.equal(depth, 0, `${file}: ${depth} unclosed block(s)`);
+  }
+});
