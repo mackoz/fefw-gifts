@@ -819,3 +819,129 @@ a.chip:hover {
 main#view > .chip-list {
   margin-bottom: 4px;
 }
+
+/* --- Full matrix ---
+   The densest view in the site: 80 gift rows by up to 53 character columns.
+   Headers stick while the body scrolls both ways, and the column labels are
+   rotated so far more of them fit on one screen. */
+
+/* Set by app.js on #view. The matrix earns the whole viewport; nothing else
+   does, so the column rule is lifted only here. */
+main#view.view-matrix {
+  max-width: none;
+}
+
+.matrix-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 10px 0 18px;
+  padding: 0;
+  list-style: none;
+  font-size: var(--step--1);
+}
+
+.matrix-legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.legend-swatch {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  border: 1px solid var(--rule);
+  font-weight: 700;
+}
+
+.legend-label {
+  color: var(--muted);
+}
+
+.matrix-scroll {
+  overflow: auto;
+  overscroll-behavior-x: contain;
+  max-height: 80vh;
+}
+
+.matrix {
+  border-collapse: collapse;
+  font-size: var(--step--1);
+}
+
+.matrix th,
+.matrix td {
+  border: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+.matrix td {
+  min-width: 1.9em;
+  padding: 3px 4px;
+  text-align: center;
+}
+
+.matrix th.row-head,
+.matrix th.corner {
+  padding: 3px 10px 3px 6px;
+  text-align: left;
+  font-weight: 500;
+}
+
+.matrix thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--ground);
+}
+
+.matrix th.col-head {
+  height: 8.5rem;
+  padding: 0;
+  vertical-align: bottom;
+}
+
+.matrix th.col-head > span {
+  display: inline-block;
+  width: 1.8em;
+  transform: rotate(-60deg);
+  transform-origin: left bottom;
+  transform-box: content-box;
+  font-weight: 500;
+  text-align: left;
+}
+
+.matrix th.row-head {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--ground);
+}
+
+.matrix th.corner {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  vertical-align: bottom;
+}
+
+/* Cell tint classes for cellClasses(confidence): colour only. The visible
+   symbol is already the cell's text content (see matrix.js), so unlike the
+   badge classes in shared.js these never set display or add ::before/::after
+   -- either would break the table grid or duplicate the symbol. */
+.matrix td.cell-favorite,
+.legend-swatch.cell-favorite  { background: var(--favorite-bg);  color: var(--favorite); }
+.matrix td.cell-confirmed,
+.legend-swatch.cell-confirmed { background: var(--confirmed-bg); color: var(--confirmed); }
+.matrix td.cell-contested,
+.legend-swatch.cell-contested { background: var(--contested-bg); color: var(--contested); }
+.matrix td.cell-pending,
+.legend-swatch.cell-pending   { background: var(--pending-bg);   color: var(--pending); }
+.matrix td.cell-predicted,
+.legend-swatch.cell-predicted { background: var(--predicted-bg); color: var(--predicted); }
+.matrix td.cell-untested      { background: transparent; }
+.legend-swatch.cell-untested  { background: var(--untested-bg); }
+.matrix td.cell-exception { outline: 2px dotted var(--warning); outline-offset: -2px; }
+.matrix td.cell-rarity-mismatch { border-bottom: 2px dashed var(--warning); }

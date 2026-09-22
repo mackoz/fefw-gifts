@@ -36,10 +36,32 @@ export function emptyMatrixMessage(state) {
   return 'Nothing to show. Untick “Hide spoilers” to see every character.';
 }
 
+// A real key: swatch, symbol and label per state. The old run-on string joined
+// six entries with middle dots, which reads as decoration rather than a key.
+const LEGEND = [
+  ['FAVORITE', 'favourite'],
+  ['CONFIRMED', 'confirmed'],
+  ['CONTESTED', 'reports disagree'],
+  ['PENDING', 'reported, awaiting review'],
+  ['PREDICTED', 'predicted, unconfirmed'],
+  ['UNTESTED', 'not tested'],
+];
+
+function legend() {
+  const list = el('ul', 'matrix-legend');
+  for (const [state, label] of LEGEND) {
+    const item = el('li');
+    item.append(el('span', `legend-swatch cell-${state.toLowerCase()}`, SYMBOL[state]));
+    item.append(el('span', 'legend-label', label));
+    list.append(item);
+  }
+  return list;
+}
+
 export function render(container, index, state) {
   const model = matrixModel(index, state.filters, state.search);
   container.append(el('h2', null, 'Full matrix'));
-  container.append(el('p', 'legend', '★ favourite · ✔ confirmed · ? reports disagree · • reported, awaiting review · ~ predicted, unconfirmed · blank not tested'));
+  container.append(legend());
 
   if (model.gifts.length === 0 || model.characters.length === 0) {
     container.append(emptyState(emptyMatrixMessage(state)));
@@ -55,8 +77,11 @@ export function render(container, index, state) {
   corner.scope = 'col';
   headRow.append(corner);
   for (const character of model.characters) {
-    const th = el('th', 'col-head', character.name);
+    const th = el('th', 'col-head');
     th.scope = 'col';
+    // The label is wrapped so it can be rotated without rotating the cell,
+    // which would take the header out of the table's own layout.
+    th.append(el('span', null, character.name));
     headRow.append(th);
   }
   head.append(headRow);
@@ -72,7 +97,7 @@ export function render(container, index, state) {
       // cellClasses, not stateClasses: a badge's inline-flex and ::before symbol
       // would break the table grid and duplicate the symbol already set here.
       const cell = el('td', cellClasses(confidence), SYMBOL[confidence.state]);
-      cell.title = `${character.name} · ${gift.name}: ${stateLabel(confidence)}`;
+      cell.title = `${character.name} and ${gift.name}: ${stateLabel(confidence)}`;
       row.append(cell);
     }
     body.append(row);
