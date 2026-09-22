@@ -69,6 +69,14 @@ export function render(container, index, state) {
   }
 
   const scroller = el('div', 'matrix-scroll');
+  // The table itself has no focusable element, and in Safari a keyboard-only
+  // user cannot scroll an overflow container that isn't itself focusable --
+  // which would leave 79 of every 80 rows unreachable. tabindex makes the
+  // scroller a stop; role+aria-label give it the announced name it otherwise
+  // lacks.
+  scroller.tabIndex = 0;
+  scroller.setAttribute('role', 'region');
+  scroller.setAttribute('aria-label', 'Full character and gift matrix');
   const table = el('table', 'matrix');
 
   const head = el('thead');

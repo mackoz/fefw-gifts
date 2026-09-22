@@ -80,6 +80,11 @@
   --masthead-muted: #a99cc4;
   --masthead-rule: #332b52;
   --masthead-edge: #7768ab;
+  /* --focus is not in this token set, so a focus ring inside the masthead
+     would otherwise resolve to the page's --focus, which is 2.33:1 on the
+     masthead ground in light mode -- below the 3:1 WCAG requires for a focus
+     indicator. This is 10.76:1 in both modes. */
+  --masthead-focus: #efc15a;
 
   /* The weave strip lives in the masthead, so it uses the dark state colours
      whatever the page mode is. */
@@ -129,7 +134,7 @@
     --contested-bg: #3d1428;
     --pending: #e8e0f2;
     --pending-bg: #2e2748;
-    --predicted: #8b7ad9;
+    --predicted: #9384dd;
     --predicted-bg: #241e42;
     --untested: #9488b2;
     --untested-bg: #1f1a33;

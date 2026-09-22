@@ -26,8 +26,17 @@ test('the masthead palette does not depend on the colour mode', () => {
   const css = read('../assets/css/tokens.css');
   const dark = css.slice(css.indexOf('prefers-color-scheme: dark'));
   // The masthead is dark in both modes, so redefining it under the dark-mode
-  // query would make light mode render an ivory wordmark on a pale band.
-  for (const token of ['--masthead-ground', '--masthead-ink', '--weave-ground']) {
+  // query would make light mode render an ivory wordmark on a pale band (or,
+  // for --masthead-focus, a focus ring that fails contrast in light mode).
+  // Every masthead/weave token belongs in this list -- a token left out is
+  // exactly how this bug got in.
+  const MASTHEAD_TOKENS = [
+    '--masthead-ground', '--masthead-raised', '--masthead-ink', '--masthead-muted',
+    '--masthead-rule', '--masthead-edge', '--masthead-focus',
+    '--weave-ground', '--weave-favorite', '--weave-confirmed', '--weave-contested',
+    '--weave-pending', '--weave-predicted',
+  ];
+  for (const token of MASTHEAD_TOKENS) {
     assert.doesNotMatch(dark, new RegExp(`${token}:`), `${token} must not be redefined for dark mode`);
   }
 });

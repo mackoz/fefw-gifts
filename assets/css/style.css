@@ -131,6 +131,13 @@ noscript {
   font-size: var(--step--1);
 }
 
+/* The masthead is dark in both colour modes, but the page's own --focus is
+   not: in light mode it resolves to 2.33:1 here, below the 3:1 a focus
+   indicator needs. --masthead-focus is 10.76:1 in both modes. */
+.masthead :where(a):focus-visible {
+  outline-color: var(--masthead-focus);
+}
+
 /* --- Tab bar --- */
 
 .tabbar {
@@ -353,10 +360,14 @@ main#view > p,
 .state-untested::before { content: "\2014"; }
 
 /* Provenance: a guide-sourced guess shows dimmer than one confirmed from the
-   character's own in-game profile. */
+   character's own in-game profile. No opacity here: composited over the state
+   tints it measured 3.11:1 (light) / 3.59:1 (dark) on category chips and
+   3.04:1 / 2.73:1 on the "Predicted -- not yet confirmed" badge, all below the
+   4.5:1 this page requires. A guess still reads as one three other ways --
+   dashed border, italic, and the muted/predicted colour rather than ink --
+   so don't restore opacity here. */
 .provenance-guide,
 .provenance-refuted {
-  opacity: 0.65;
   font-style: italic;
 }
 
