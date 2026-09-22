@@ -150,13 +150,18 @@ noscript {
   display: flex;
   align-items: stretch;
   gap: 2px;
-  /* Not decoration: the tabs are exactly this container's content height, and
-     overflow-x: auto clips anything painted outside it. Without this padding
-     the 2px focus ring at 2px offset is sliced off top and bottom, so a
-     keyboard user cannot see where they are in the primary navigation. */
-  padding-block: 4px;
   overflow-x: auto;
   scrollbar-width: thin;
+}
+
+/* The tabs are exactly this container's content height and overflow-x: auto
+   clips anything painted outside it, so the default 2px-offset ring is sliced
+   off top and bottom and a keyboard user cannot see where they are in the
+   primary navigation. Drawing the ring inside the tab fixes that without
+   padding the container -- padding would push the active tab's underline off
+   the band's bottom rule, which is where the design wants it sitting. */
+.tabbar-inner :where(a, button):focus-visible {
+  outline-offset: -2px;
 }
 
 .tabbar-inner a:not(.report-link) {
