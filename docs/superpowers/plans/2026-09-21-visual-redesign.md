@@ -477,7 +477,9 @@ Add a preload for the two latin font files immediately above them, so text does 
 
 - [ ] **Step 5: Rewrite `assets/css/style.css`**
 
-Delete the file's contents entirely and write this. The `:root` and `@media (prefers-color-scheme: dark)` blocks are gone — Task 1 owns them. Confidence badge, matrix, dialog, vote and review rules are preserved verbatim from the old file except that their hard-coded colour names now resolve to the Task 1 tokens; they are reproduced in full here so no lookup is needed.
+Delete the file's contents entirely and write this. The `:root` and `@media (prefers-color-scheme: dark)` blocks are gone — Task 1 owns them.
+
+**The matrix rules are deliberately NOT in this block.** Confidence badge, dialog, vote and review rules are reproduced in full below, but everything under the old `--- Full matrix view ---` heading is dropped here and rewritten from scratch by Task 7. Between this task and Task 7 the matrix view has no table styling. That is expected; do not re-add it.
 
 ```css
 /* Page shell, layout and components. Design tokens live in tokens.css and are
@@ -2457,9 +2459,9 @@ export function render(container, index, state) {
 }
 ```
 
-- [ ] **Step 2: Replace the matrix block in `assets/css/style.css`**
+- [ ] **Step 2: Add the matrix block to `assets/css/style.css`**
 
-Delete the old `--- Full matrix view ---` block and write:
+Task 2 dropped the old `--- Full matrix view ---` rules rather than carrying them over, so there is nothing to delete — the matrix view has had no table styling since then. Append this block:
 
 ```css
 /* --- Full matrix ---
