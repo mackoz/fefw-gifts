@@ -20,6 +20,17 @@ const VIEW_MODULES = {
 
 const api = createApi();
 
+// The weave strip's model depends only on state.filters and state.index --
+// never on state.search -- so these track what it last rendered from. Without
+// this guard, render() (which runs on every keystroke in the search box) would
+// rebuild the strip's DOM on every keystroke too, restarting its one-time
+// 700ms fade-in and re-deriving all 4,240 pairs for a render nothing
+// downstream of the strip would even see. `weaveIndex` is compared by
+// reference, since buildIndex() returns a fresh object each time the pending
+// overlay refreshes -- exactly when the strip does need to rebuild.
+let weaveFiltersKey = null;
+let weaveIndex = null;
+
 const state = {
   filters: { ...DEFAULT_FILTERS },
   search: '',
@@ -43,9 +54,15 @@ function render() {
   VIEW_MODULES[route.view].render(container, state.index, { ...state, id: route.id });
 
   // The strip's counts depend on the filters, so it re-renders with the view.
-  // A stale count in the masthead is worse than no count at all.
+  // A stale count in the masthead is worse than no count at all -- but only
+  // when the filters or the index actually changed; see weaveFiltersKey above.
   const weave = document.getElementById('weave');
-  if (weave) weaveView.render(weave, state.index, state);
+  const filtersKey = JSON.stringify(state.filters);
+  if (weave && (filtersKey !== weaveFiltersKey || state.index !== weaveIndex)) {
+    weaveFiltersKey = filtersKey;
+    weaveIndex = state.index;
+    weaveView.render(weave, state.index, state);
+  }
 
   for (const a of document.querySelectorAll('nav a')) {
     a.classList.toggle('active', a.getAttribute('href').startsWith(`#/${route.view}`));
