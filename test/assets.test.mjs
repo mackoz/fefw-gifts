@@ -220,3 +220,11 @@ test('app.js hands the missing-item elements to the form and wires the Gifts-tab
   assert.match(app, /openMissingItem\(\w+\.dataset\.name\)/, 'and open the dialog with its name');
   assert.match(app, /state\.searchText = e\.target\.value\.trim\(\)/, 'the typed search must reach the view');
 });
+
+test('the review page ships the missing-items section and hands it to mountReview', () => {
+  const html = read('../review/index.html');
+  for (const id of ['item-review-count', 'item-review-status', 'item-review-list']) {
+    assert.match(html, new RegExp(`id="${id}"`), `review page is missing #${id}`);
+    assert.match(html, new RegExp(`getElementById\\('${id}'\\)`), `mountReview is never given #${id}`);
+  }
+});

@@ -639,6 +639,51 @@ dialog input[type="text"] {
 .review-approve { color: var(--confirmed); }
 .review-reject  { color: var(--warning); }
 
+/* --- Missing items (maintainer only) ---
+   One card per item, sized for a phone like the rest of this page. */
+
+.item-review {
+  margin-top: 32px;
+}
+
+.item-reports {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.item-report {
+  padding: 6px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.item-field {
+  display: block;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+.item-field input,
+.item-field select {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 8px 11px;
+  border: 1px solid var(--edge);
+  background: var(--raised);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.item-include {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}
+
 /* Scoped to #token-form, not .toolbar: the main page's div.toolbar is only a
    full-bleed band wrapper around .toolbar-inner and must stay unstyled --
    matching it here turned that wrapper into a centred, max-content-width flex
