@@ -15,16 +15,52 @@ export function toObservation(row) {
 
 // The report id becomes the observation id, so re-running after a half-finished
 // sync cannot duplicate a row.
+//
+// The Worker's schema allows a NULL id (see worker/schema.sql: `id TEXT PRIMARY
+// KEY` with no `NOT NULL`, which SQLite permits for a non-INTEGER primary key).
+// The Worker marks rows ingested with `UPDATE ... WHERE id IN (...)`, which can
+// never match such a row, so it stays `approved` and is handed back on every
+// future sync. Rejecting it in validate() would be correct on its own, but by
+// the time validation runs, every *other* row in the same batch has already
+// been marked ingested by the Worker -- so failing the whole run here would
+// throw away every good row along with the bad one, and the bad row would keep
+// coming back forever. Setting it aside instead lets the good rows land and
+// reports the bad one so it can be fixed by hand in D1. The durable fix is a
+// live D1 migration adding `NOT NULL` to `reports.id`; that is deliberately out
+// of scope for this script.
 export function mergeObservations(existing, rows) {
   const seen = new Set(existing.map((observation) => observation.id));
   const added = [];
+  const skipped = [];
   for (const row of rows) {
+    if (typeof row.id !== 'string' || row.id.length === 0) {
+      skipped.push(row);
+      continue;
+    }
     const observation = toObservation(row);
     if (seen.has(observation.id)) continue;
     seen.add(observation.id);
     added.push(observation);
   }
-  return { observations: [...existing, ...added], added };
+  return { observations: [...existing, ...added], added, skipped };
+}
+
+// Formats one GitHub Actions warning annotation for a skipped row. Workflow
+// commands read up to the first unescaped `\r` or `\n` in a value, and `%` must
+// be escaped too so an already-escaped sequence in the data can't be
+// reinterpreted -- per GitHub's rules: %25, \r -> %0D, \n -> %0A. Without this,
+// a field containing a newline (this can be a hand-written D1 row, not just a
+// player report) could end the warning command and have the remainder read as
+// a new, unintended workflow command.
+function escapeWorkflowValue(value) {
+  return String(value).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+}
+
+export function skippedRowWarning(row) {
+  const character = escapeWorkflowValue(row.character);
+  const gift = escapeWorkflowValue(row.gift);
+  const createdAt = escapeWorkflowValue(row.created_at);
+  return `::warning title=Report skipped::approved report with no usable id (character=${character}, gift=${gift}, created_at=${createdAt}) was not ingested; it will be returned every night until its id is fixed in D1`;
 }
 
 async function main() {
@@ -56,7 +92,16 @@ async function main() {
 
   const observationsPath = path.join(dataDir, 'observations.json');
   const existing = JSON.parse(await readFile(observationsPath, 'utf8'));
-  const { observations, added } = mergeObservations(existing, rows);
+  const { observations, added, skipped } = mergeObservations(existing, rows);
+
+  // Emitted before the early return below, so a night where every row is
+  // skipped still surfaces a warning instead of silently logging "nothing to
+  // ingest". This does not fail the run: the pull-request step only runs on
+  // success, and failing here would throw away every good row in the same
+  // batch along with the bad one.
+  for (const row of skipped) {
+    console.log(skippedRowWarning(row));
+  }
 
   if (added.length === 0) {
     console.log('nothing to ingest');
