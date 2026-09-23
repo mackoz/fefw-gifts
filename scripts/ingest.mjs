@@ -1,6 +1,7 @@
 import { readFile, writeFile, appendFile } from 'node:fs/promises';
 import path from 'node:path';
 import { loadDataset, validate } from './validate.mjs';
+import { normalizeName, slugify, validateItemApproval } from '../assets/js/item-rules.js';
 
 // The observation shape from the spec's data model, and nothing else.
 export function toObservation(row) {
@@ -63,6 +64,178 @@ export function skippedRowWarning(row) {
   return `::warning title=Report skipped::approved report with no usable id (character=${character}, gift=${gift}, created_at=${createdAt}) was not ingested; it will be returned every night until its id is fixed in D1`;
 }
 
+// --- Missing items ---
+
+// Pure. Applies one night's approved missing-item reports to the dataset, in
+// the spec's order: new categories, then new gifts (which may name a category
+// created a moment ago), then results. Only the maintainer's approved values
+// are read -- the player's raw name and typed line are not even in the
+// Worker's response -- and every approval is re-checked here, because a row
+// edited by hand in D1 must not reach data/ either.
+export function applyItemReports(dataset, items) {
+  const categories = [...dataset.categories];
+  const gifts = [...dataset.gifts];
+  const summary = { newGifts: [], newCategories: [], reusedCategories: [], results: 0 };
+  const skipped = [];
+
+  const structurallyValid = [];
+  for (const item of Array.isArray(items) ? items : []) {
+    const approved = item?.approved;
+    const check = approved !== null && typeof approved === 'object' && !Array.isArray(approved)
+      ? validateItemApproval({ ...approved, decision: 'approve' })
+      : { errors: ['no approval'], value: null };
+    if (typeof item?.id !== 'string' || item.id === '' || check.errors.length) {
+      skipped.push(item);
+      continue;
+    }
+    structurallyValid.push({ item, approved: check.value });
+  }
+
+  // A structurally valid approval can still be stale: it may have been made
+  // on a phone days before this sync, naming a gift, category or character
+  // that a maintainer has since renamed or removed by hand. Exactly like an
+  // invalid approval, a stale one is set aside rather than failing the whole
+  // night -- checked against both the dataset on disk and the categories this
+  // same batch is about to create.
+  const originalCategoryIds = new Set(categories.map((category) => category.id));
+  const batchNewCategoryIds = new Set(
+    structurallyValid.map(({ approved }) => approved.newCategory?.id).filter((id) => id != null),
+  );
+  const originalGiftIds = new Set(gifts.map((gift) => gift.id));
+  const charactersById = new Map(dataset.characters.map((character) => [character.id, character]));
+
+  const approvals = [];
+  for (const entry of structurallyValid) {
+    const { item, approved } = entry;
+    const staleGift = approved.giftId !== null && !originalGiftIds.has(approved.giftId);
+    const staleCategory = approved.category !== null
+      && !originalCategoryIds.has(approved.category)
+      && !batchNewCategoryIds.has(approved.category);
+    const wantsResult = approved.includeResult && item.character && item.reaction;
+    const character = wantsResult ? charactersById.get(item.character) : undefined;
+    const staleCharacter = wantsResult && (!character || !character.giftable);
+    if (staleGift || staleCategory || staleCharacter) {
+      skipped.push(item);
+      continue;
+    }
+    approvals.push(entry);
+  }
+
+  // 1. Categories. An id that already exists -- in data/ or created a moment
+  // ago by an earlier report in this same batch -- is reused rather than
+  // duplicated, and the reuse is noted for the maintainer.
+  const categoryIds = new Set(categories.map((category) => category.id));
+  for (const { approved } of approvals) {
+    const proposed = approved.newCategory;
+    if (!proposed) continue;
+    if (categoryIds.has(proposed.id)) {
+      summary.reusedCategories.push(`reused existing category ${proposed.id}`);
+      continue;
+    }
+    categories.push({ id: proposed.id, label: proposed.label, inGameDescriptor: proposed.inGameDescriptor, aliases: [] });
+    categoryIds.add(proposed.id);
+    summary.newCategories.push(`${proposed.label} (${proposed.id}) — “${proposed.inGameDescriptor}”`);
+  }
+
+  // 2. Gifts. An item already listed under any spelling -- "Lanternoil"
+  // beside "Lantern Oil" -- is that gift, matched by normalised name rather
+  // than by slug, so several reports of one item in a batch (and every
+  // spelling variant within it) yield one gift.
+  const results = [];
+  for (const { item, approved } of approvals) {
+    let giftId = approved.giftId;
+    if (giftId === null) {
+      const slug = slugify(approved.name);
+      const key = normalizeName(approved.name);
+      const existing = gifts.find((gift) => normalizeName(gift.name) === key);
+      if (existing) {
+        giftId = existing.id;
+      } else {
+        const category = approved.newCategory?.id ?? approved.category ?? null;
+        gifts.push({ id: slug, name: approved.name, category, rarity: approved.rarity, description: '', sources: [] });
+        giftId = slug;
+        summary.newGifts.push(`${approved.name} (${slug}) — category: ${category ?? 'not recorded'}, rarity: ${approved.rarity ?? 'not recorded'}`);
+      }
+    }
+
+    // 3. Results: only when the maintainer kept one and both halves exist.
+    if (approved.includeResult && item.character && item.reaction) {
+      results.push({ id: item.id, gift: giftId, character: item.character, reaction: item.reaction, created_at: item.created_at });
+    }
+  }
+
+  // The report id becomes the observation id, exactly as for result reports,
+  // so a re-run cannot duplicate a row.
+  const merged = mergeObservations(dataset.observations, results);
+  summary.results = merged.added.length;
+  return { categories, gifts, observations: merged.observations, summary, skipped };
+}
+
+const ITEMS_NOT_SYNCED = '::warning title=Missing items not synced::';
+
+// Never throws and never fails the run. By the time this is called, /ingest
+// has already marked the night's result rows ingested, so failing here would
+// throw them away -- result syncing must never depend on this feature.
+export async function fetchItemBatch(workerUrl, adminToken, fetchImpl = (...args) => globalThis.fetch(...args)) {
+  let response;
+  try {
+    response = await fetchImpl(`${workerUrl}/ingest-items`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+  } catch (err) {
+    return { items: [], warning: `${ITEMS_NOT_SYNCED}could not reach /ingest-items (${escapeWorkflowValue(err?.message)}); result reports are unaffected` };
+  }
+
+  if (response.status === 404) {
+    return { items: [], warning: `${ITEMS_NOT_SYNCED}the Worker has no /ingest-items route yet -- redeploy it (see worker/README.md); result reports are unaffected` };
+  }
+  if (!response.ok) {
+    return { items: [], warning: `${ITEMS_NOT_SYNCED}/ingest-items returned ${response.status}; result reports are unaffected` };
+  }
+
+  let body;
+  try {
+    body = await response.json();
+  } catch {
+    return { items: [], warning: `${ITEMS_NOT_SYNCED}/ingest-items answered with a body that is not JSON; any rows it marked ingested must be re-entered by hand` };
+  }
+  return { items: Array.isArray(body?.items) ? body.items : [], warning: null };
+}
+
+export function itemSkippedWarning(item) {
+  return `::warning title=Missing item skipped::approved item report ${escapeWorkflowValue(item?.id)} has no usable approval and was not synced; the logged batch above is the only copy`;
+}
+
+// categories.json is aligned by hand, so it is never re-serialised: new
+// entries are appended as one-line objects in the file's own style, and every
+// existing byte stays where it was.
+export function appendCategoryLines(text, entries) {
+  if (entries.length === 0) return text;
+  const head = text.slice(0, text.lastIndexOf(']')).replace(/\s+$/, '');
+  const separator = head.endsWith('[') ? '' : ',';
+  const lines = entries.map((c) => `  { "id": ${JSON.stringify(c.id)}, "label": ${JSON.stringify(c.label)}, "inGameDescriptor": ${JSON.stringify(c.inGameDescriptor)}, "aliases": [] }`);
+  return `${head}${separator}\n${lines.join(',\n')}\n]\n`;
+}
+
+// The pull request body. Every new item and category is listed, because the
+// maintainer approved each one on a phone and is now looking at it in a diff.
+export function ingestSummary({ added, summary }) {
+  const lines = [`${added} approved result report(s) from the submission Worker.`];
+  if (summary.newGifts.length > 0) {
+    lines.push('', `**New items (${summary.newGifts.length})** — check each name against the game before merging:`, ...summary.newGifts.map((line) => `- ${line}`));
+  }
+  if (summary.newCategories.length > 0) {
+    lines.push('', `**New categories (${summary.newCategories.length})** — check the label, id and in-game line:`, ...summary.newCategories.map((line) => `- ${line}`));
+  }
+  const reusedCategories = summary.reusedCategories ?? [];
+  if (reusedCategories.length > 0) {
+    lines.push('', `**Reused categories (${reusedCategories.length})**`, ...reusedCategories.map((line) => `- ${line}`));
+  }
+  if (summary.results > 0) lines.push('', `${summary.results} result(s) from missing-item reports.`);
+  return `${lines.join('\n')}\n`;
+}
+
 async function main() {
   const workerUrl = (process.env.WORKER_URL ?? '').replace(/\/+$/, '');
   const adminToken = process.env.ADMIN_TOKEN ?? '';
@@ -90,45 +263,70 @@ async function main() {
   // log is the only copy left.
   console.log(JSON.stringify(rows, null, 2));
 
-  const observationsPath = path.join(dataDir, 'observations.json');
-  const existing = JSON.parse(await readFile(observationsPath, 'utf8'));
-  const { observations, added, skipped } = mergeObservations(existing, rows);
+  // The same for missing items: takeApprovedItems marks them in the same call.
+  const { items, warning } = await fetchItemBatch(workerUrl, adminToken);
+  console.log(JSON.stringify(items, null, 2));
+  if (warning) console.log(warning);
+
+  const dataset = await loadDataset(dataDir);
+  const merged = mergeObservations(dataset.observations, rows);
 
   // Emitted before the early return below, so a night where every row is
   // skipped still surfaces a warning instead of silently logging "nothing to
   // ingest". This does not fail the run: the pull-request step only runs on
   // success, and failing here would throw away every good row in the same
   // batch along with the bad one.
-  for (const row of skipped) {
+  for (const row of merged.skipped) {
     console.log(skippedRowWarning(row));
   }
 
-  if (added.length === 0) {
+  const applied = applyItemReports({ ...dataset, observations: merged.observations }, items);
+  for (const item of applied.skipped) console.log(itemSkippedWarning(item));
+
+  const { summary } = applied;
+  const itemChanges = summary.newGifts.length + summary.newCategories.length + summary.results;
+  if (merged.added.length === 0 && itemChanges === 0) {
     console.log('nothing to ingest');
-    await report(0);
+    await report(0, 0);
     return;
   }
 
   // Validate the merged dataset in memory and write only if it is clean. A bad
   // row must never reach the working tree, let alone a pull request.
-  const dataset = await loadDataset(dataDir);
-  const { errors } = validate({ ...dataset, observations });
+  const { errors } = validate({ ...dataset, categories: applied.categories, gifts: applied.gifts, observations: applied.observations });
   if (errors.length) {
     console.error(`${errors.length} validation error(s); nothing written:`);
     for (const error of errors) console.error(`  - ${error}`);
     process.exit(1);
   }
 
-  await writeFile(observationsPath, `${JSON.stringify(observations, null, 2)}\n`);
-  console.log(`ingested ${added.length} observation(s)`);
-  await report(added.length);
+  // Only the files that changed are written, so an unchanged file is not
+  // rewritten. categories.json is hand-aligned and appended to as text;
+  // gifts.json and observations.json round-trip through JSON.stringify.
+  if (summary.newCategories.length > 0) {
+    const categoriesPath = path.join(dataDir, 'categories.json');
+    const text = await readFile(categoriesPath, 'utf8');
+    await writeFile(categoriesPath, appendCategoryLines(text, applied.categories.slice(dataset.categories.length)));
+  }
+  if (summary.newGifts.length > 0) {
+    await writeFile(path.join(dataDir, 'gifts.json'), `${JSON.stringify(applied.gifts, null, 2)}\n`);
+  }
+  if (applied.observations.length !== dataset.observations.length) {
+    await writeFile(path.join(dataDir, 'observations.json'), `${JSON.stringify(applied.observations, null, 2)}\n`);
+  }
+
+  console.log(`ingested ${merged.added.length} result report(s); ${summary.newGifts.length} new item(s), ${summary.newCategories.length} new categor(y/ies), ${summary.results} item result(s)`);
+  if (process.env.INGEST_SUMMARY) {
+    await writeFile(process.env.INGEST_SUMMARY, ingestSummary({ added: merged.added.length, summary }));
+  }
+  await report(merged.added.length, itemChanges);
 }
 
-// Hands the count to the workflow. Writing to GITHUB_OUTPUT is a no-op
+// Hands the counts to the workflow. Writing to GITHUB_OUTPUT is a no-op
 // locally, so the script behaves the same either way.
-async function report(count) {
+async function report(added, items) {
   if (!process.env.GITHUB_OUTPUT) return;
-  await appendFile(process.env.GITHUB_OUTPUT, `added=${count}\n`);
+  await appendFile(process.env.GITHUB_OUTPUT, `added=${added}\nitems=${items}\n`);
 }
 
 // CLI entry point: `npm run ingest`. Importing this file runs nothing.
