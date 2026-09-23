@@ -85,8 +85,8 @@ convenience layer over it, and the site works completely without it.
 ## Sources
 
 - Josh Broadwell, *Best gifts for each character in Fire Emblem: Fortune's
-  Weave*, Polygon (retrieved 2026-09-20).
-- *List of All Items*, Game8 (retrieved 2026-09-20).
+  Weave*, Polygon (retrieved 2026-09-20; Sept. 21 update retrieved 2026-09-23).
+- *List of All Items*, Game8 (retrieved 2026-09-23).
 
 Full citations, including URLs and retrieval dates, are recorded in
 `data/sources.json`. Guide-derived category predictions always carry their

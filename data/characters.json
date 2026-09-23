@@ -10,7 +10,7 @@
         "state": "guide",
         "source": "polygon-2026-09-17"
       },
-      "beauty": {
+      "paintings": {
         "state": "guide",
         "source": "polygon-2026-09-17"
       }
@@ -33,9 +33,13 @@
       "fashion": {
         "state": "guide",
         "source": "polygon-2026-09-17"
+      },
+      "fortune-telling": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
       }
     },
-    "rarityPreference": "uncommon-plus",
+    "rarityPreference": null,
     "favorites": [],
     "notes": null
   },
@@ -171,7 +175,7 @@
         "state": "guide",
         "source": "polygon-2026-09-17"
       },
-      "beauty": {
+      "paintings": {
         "state": "guide",
         "source": "polygon-2026-09-17"
       }
@@ -183,10 +187,35 @@
   {
     "id": "centurio",
     "name": "Centurio",
-    "giftable": false,
+    "giftable": true,
     "spoiler": false,
     "traits": [],
-    "categories": {},
+    "categories": {
+      "spirituality": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
+      },
+      "coffee": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
+      },
+      "military": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
+      },
+      "weapons": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
+      },
+      "training": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
+      },
+      "board-games": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
+      }
+    },
     "rarityPreference": null,
     "favorites": [],
     "notes": null
@@ -267,6 +296,14 @@
       "beauty": {
         "state": "guide",
         "source": "polygon-2026-09-17"
+      },
+      "sweets": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "paintings": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
       }
     },
     "rarityPreference": null,
@@ -292,6 +329,10 @@
     "traits": [],
     "categories": {
       "fishing": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "fish": {
         "state": "guide",
         "source": "polygon-2026-09-17"
       }
@@ -331,7 +372,11 @@
         "state": "guide",
         "source": "polygon-2026-09-17"
       },
-      "spicy-foods": {
+      "beverages": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "cooking": {
         "state": "guide",
         "source": "polygon-2026-09-17"
       }
@@ -363,6 +408,10 @@
         "source": "polygon-2026-09-17"
       },
       "horses": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "beverages": {
         "state": "guide",
         "source": "polygon-2026-09-17"
       }
@@ -417,11 +466,19 @@
       "vegetables": {
         "state": "guide",
         "source": "polygon-2026-09-17"
+      },
+      "agriculture": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
+      },
+      "spirituality": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
       }
     },
     "rarityPreference": null,
     "favorites": [],
-    "notes": null
+    "notes": "Polygon reports he likes vegetable items such as seeds, bulbs and potted vegetables, but not pickled vegetables."
   },
   {
     "id": "hong-hua",
@@ -504,11 +561,15 @@
       "fashion": {
         "state": "guide",
         "source": "polygon-2026-09-17"
+      },
+      "sweets": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
       }
     },
     "rarityPreference": null,
     "favorites": [],
-    "notes": null
+    "notes": "Polygon reports he takes honey pastries and Saraminian Sweets, but not mellow or simple pastries."
   },
   {
     "id": "kalla",
@@ -555,6 +616,10 @@
       "beauty": {
         "state": "guide",
         "source": "polygon-2026-09-17"
+      },
+      "paintings": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
       }
     },
     "rarityPreference": null,
@@ -587,7 +652,12 @@
     "giftable": true,
     "spoiler": false,
     "traits": [],
-    "categories": {},
+    "categories": {
+      "sweets": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
     "rarityPreference": null,
     "favorites": [],
     "notes": null
@@ -607,7 +677,7 @@
         "state": "guide",
         "source": "polygon-2026-09-17"
       },
-      "beauty": {
+      "paintings": {
         "state": "guide",
         "source": "polygon-2026-09-17"
       }
@@ -704,6 +774,10 @@
       "coffee": {
         "state": "guide",
         "source": "polygon-2026-09-17"
+      },
+      "sweets": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
       }
     },
     "rarityPreference": null,
@@ -752,7 +826,7 @@
         "state": "guide",
         "source": "polygon-2026-09-17"
       },
-      "beauty": {
+      "paintings": {
         "state": "guide",
         "source": "polygon-2026-09-17"
       },
@@ -840,6 +914,10 @@
         "state": "guide",
         "source": "polygon-2026-09-17"
       },
+      "paintings": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
       "board-games": {
         "state": "guide",
         "source": "polygon-2026-09-17"
@@ -852,10 +930,31 @@
   {
     "id": "orchel",
     "name": "Orchel",
-    "giftable": false,
+    "giftable": true,
     "spoiler": false,
     "traits": [],
-    "categories": {},
+    "categories": {
+      "cooking": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
+      },
+      "spicy-foods": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
+      },
+      "paintings": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
+      },
+      "books": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
+      },
+      "agriculture": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
+      }
+    },
     "rarityPreference": null,
     "favorites": [],
     "notes": null
@@ -870,6 +969,18 @@
       "coffee": {
         "state": "guide",
         "source": "polygon-2026-09-17"
+      },
+      "fishing": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
+      },
+      "fish": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
+      },
+      "board-games": {
+        "state": "guide",
+        "source": "polygon-2026-09-21"
       }
     },
     "rarityPreference": null,
@@ -882,7 +993,12 @@
     "giftable": true,
     "spoiler": false,
     "traits": [],
-    "categories": {},
+    "categories": {
+      "sweets": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      }
+    },
     "rarityPreference": null,
     "favorites": [],
     "notes": null
@@ -908,6 +1024,10 @@
       "fishing": {
         "state": "guide",
         "source": "polygon-2026-09-17"
+      },
+      "fish": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
       }
     },
     "rarityPreference": null,
@@ -922,6 +1042,10 @@
     "traits": [],
     "categories": {
       "cooking": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "beverages": {
         "state": "guide",
         "source": "polygon-2026-09-17"
       }
@@ -961,6 +1085,10 @@
         "state": "guide",
         "source": "polygon-2026-09-17"
       },
+      "paintings": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
       "books": {
         "state": "guide",
         "source": "polygon-2026-09-17"
@@ -978,6 +1106,10 @@
     "traits": [],
     "categories": {
       "cooking": {
+        "state": "guide",
+        "source": "polygon-2026-09-17"
+      },
+      "sweets": {
         "state": "guide",
         "source": "polygon-2026-09-17"
       }
@@ -1031,7 +1163,7 @@
         "state": "guide",
         "source": "polygon-2026-09-17"
       },
-      "beauty": {
+      "paintings": {
         "state": "guide",
         "source": "polygon-2026-09-17"
       }
@@ -1042,7 +1174,7 @@
   },
   {
     "id": "the-lady-of-lillies",
-    "name": "The Lady of Lillies",
+    "name": "The Lady Of Lillies",
     "giftable": false,
     "spoiler": false,
     "traits": [],
@@ -1173,7 +1305,7 @@
         "state": "guide",
         "source": "polygon-2026-09-17"
       },
-      "beauty": {
+      "paintings": {
         "state": "guide",
         "source": "polygon-2026-09-17"
       },
