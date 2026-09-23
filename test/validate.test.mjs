@@ -440,6 +440,38 @@ test('an id-less observation is rejected, protecting the ingest dedup from colli
   assert.deepEqual(errors, ['observations[0]: id must be a non-empty string']);
 });
 
+// A bad entry is excluded, and anything that points at it would then report
+// "unknown". Against the real data, deleting one source's id produced 102
+// errors with the cause on line one. Validation stops after the shape pass so
+// the cause comes back alone. Each fixture below points at the broken entry;
+// without the stop, each would report one "unknown ..." error on top.
+test('a category with a bad id stops validation before its references cascade', () => {
+  const d = base();
+  d.categories = [{ label: 'Books', inGameDescriptor: null, aliases: [] }];
+  d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: null, description: '', sources: [] });
+  d.characters.push(character({ categories: { books: { state: 'profile', source: null } } }));
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['categories[0]: id must be a non-empty string']);
+});
+
+test('a source with a bad id stops validation before its references cascade', () => {
+  const d = base();
+  d.sources = [{ title: 'T', author: null, publisher: 'P', url: 'https://e.x', retrieved: '2026-09-20' }];
+  d.gifts.push({ id: 'g1', name: 'G', category: null, rarity: null, description: '', sources: ['s1'] });
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['sources[0]: id must be a non-empty string']);
+});
+
+// The cost of stopping, stated as a test so it reads as a decision rather
+// than a bug: an unrelated problem elsewhere waits for the next run.
+test('a shape error defers unrelated errors to the next run, by design', () => {
+  const d = base();
+  d.characters.push(character({ id: 7 }), character({ id: 'c2', giftable: 'yes' }));
+  assert.deepEqual(validate(d).errors, ['characters[0]: id must be a non-empty string']);
+  d.characters[0].id = 'c1';
+  assert.deepEqual(validate(d).errors, ['character c2: giftable must be a boolean']);
+});
+
 // --- giftable and spoiler must be booleans --------------------------------
 
 for (const field of ['giftable', 'spoiler']) {

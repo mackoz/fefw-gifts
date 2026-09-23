@@ -80,6 +80,15 @@ export function validate(dataset) {
     });
   }
 
+  // The same trade as the early return above, one level down. An excluded
+  // entry still has things pointing at it, and every one of them would report
+  // "unknown": deleting a single source's id produced 102 errors -- the cause
+  // on line one and 101 lines of consequence beneath it. Stop here too, so the
+  // shape problems come back alone and the references are worth reading once
+  // they are fixed. The exclusion above stays as a second layer: if this
+  // return is ever removed, no loop below can meet an entry without an id.
+  if (errors.length) return { errors };
+
   const { categories, sources, observations } = clean;
   const RARITIES = new Set(['common', 'uncommon', 'rare']);
   const categoryIds = new Set(categories.map((c) => c.id));
