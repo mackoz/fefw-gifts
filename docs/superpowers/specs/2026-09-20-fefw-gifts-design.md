@@ -344,6 +344,13 @@ rare, structural edits rather than volume data. These go through the GitHub issu
 forms in `.github/ISSUE_TEMPLATE/`, documented in `CONTRIBUTING.md`. They are not
 worth a web form.
 
+**Superseded for missing items.** An item `gifts.json` does not list turned out
+not to be rare, so players now report one from the site, anonymously and hidden
+until the maintainer approves it. See
+[`2026-09-23-missing-item-reports-design.md`](2026-09-23-missing-item-reports-design.md).
+Category edits, rarity corrections to existing items and trait fixes still go
+through the issue forms.
+
 ## Validation and testing
 
 The validator is the safety net for the whole design and runs on every pull
