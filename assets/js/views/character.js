@@ -113,6 +113,53 @@ function chipList(entries) {
   return list;
 }
 
+// Builds a list string with no Oxford comma: 1 -> "A", 2 -> "A and B",
+// 3+ -> "A, B and C".
+function joinList(labels) {
+  if (labels.length === 1) return labels[0];
+  if (labels.length === 2) return `${labels[0]} and ${labels[1]}`;
+  return `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
+}
+
+// The chips under "Reported to like" mix three very different claims: a guide's
+// guess (carried over, unconfirmed), an in-game profile listing, and something
+// a player actually found through play. Saying "carried over" about all three
+// -- the bug this replaces -- overclaims for the two that are not guesses.
+// Each group gets its own sentence, and the guide sentence is demoted to "the
+// rest" once something stronger sits above it.
+export function provenanceNote(index, chips) {
+  if (chips.length === 0) return '';
+
+  const discovered = chips.filter((c) => c.state === 'discovered');
+  const profile = chips.filter((c) => c.state === 'profile');
+  const guide = chips.filter((c) => c.state === 'guide');
+
+  const sentences = [];
+
+  if (discovered.length > 0) {
+    if (guide.length === 0 && profile.length === 0) {
+      sentences.push('Found through play.');
+    } else {
+      const verb = discovered.length === 1 ? 'was' : 'were';
+      sentences.push(`${joinList(discovered.map((c) => c.label))} ${verb} found through play.`);
+    }
+  }
+
+  if (profile.length > 0) {
+    const verb = profile.length === 1 ? 'is' : 'are';
+    sentences.push(`${joinList(profile.map((c) => c.label))} ${verb} on the in-game profile.`);
+  }
+
+  if (guide.length > 0) {
+    const publishers = [...new Set(guide.map((c) => sourceName(index, c.source)))];
+    sentences.push(discovered.length === 0 && profile.length === 0
+      ? `Category preferences carried over from ${publishers.join(' and ')}. They’re predictions until a player confirms an item.`
+      : `The rest are carried over from ${publishers.join(' and ')} and are predictions until a player confirms an item.`);
+  }
+
+  return sentences.join(' ');
+}
+
 function renderPicker(container, index, state) {
   const entries = characterIndexModel(index, state.filters, state.search);
   container.append(el('h2', null, 'Characters'));
@@ -161,15 +208,12 @@ function renderProfile(container, index, character) {
   const chips = categoryChips(index, character);
   if (chips.length === 0) return;
 
-  const publishers = [...new Set(chips.map((c) => c.source).filter(Boolean).map((s) => sourceName(index, s)))];
   container.append(el('h3', null, 'Reported to like'), chipList(chips));
-  container.append(el('p', 'provenance-note', publishers.length
-    ? `Category preferences carried over from ${publishers.join(' and ')}. They’re predictions until a player confirms an item.`
-    : 'Category preferences are unconfirmed until a player reports an actual result.'));
+  container.append(el('p', 'provenance-note', provenanceNote(index, chips)));
 }
 
 function giftTable(index, character, rows, state) {
-  // No gift has a recorded rarity today, so the column would be 100% em-dashes.
+  // Most gifts have no recorded rarity yet; the column only appears when a row has one.
   const showRarity = rows.some(({ gift }) => gift.rarity);
 
   const headers = ['Gift', 'Category'];
