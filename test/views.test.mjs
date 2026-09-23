@@ -4,7 +4,7 @@ import { buildIndex } from '../assets/js/data.js';
 import { characterRows, characterIndexModel, characterSummary, signalHeading, provenanceNote } from '../assets/js/views/character.js';
 import { sortByConfidence, stateLabel, partitionRows, categoryChips, chip, reportButton, reportChip } from '../assets/js/views/shared.js';
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
-import { giftRows, giftIndexModel } from '../assets/js/views/gift.js';
+import { giftRows, giftIndexModel, missingItemButton } from '../assets/js/views/gift.js';
 
 const dataset = {
   categories: [
@@ -897,4 +897,46 @@ test('the character detail view renders the provenance note text from provenance
     note.textContent,
     'Fermented Drinks was found through play. The rest are carried over from Polygon and are predictions until a player confirms an item.',
   );
+});
+
+// The Gifts tab's second entry point into a missing-item report. Like the
+// report controls above, it must not exist with submissions off.
+test('a search that matches no gift offers to report it, but only with submissions on', () => {
+  const idx = buildIndex(dataset);
+  const base = { filters: DEFAULT_FILTERS, search: 'lantern oil', searchText: 'Lantern Oil', storage: undefined };
+
+  const on = fakeElement('div');
+  giftView.render(on, idx, { ...base, submissionsEnabled: true });
+  const buttons = collect(on, (n) => (n.className ?? '').includes('missing-item-button'));
+  assert.equal(buttons.length, 1);
+  assert.equal(buttons[0].tagName, 'BUTTON');
+  assert.equal(buttons[0].type, 'button');
+  assert.equal(buttons[0].dataset.name, 'Lantern Oil', 'carries the query as typed, not lower-cased');
+  assert.equal(buttons[0].textContent, 'Report ‘Lantern Oil’ as a missing item');
+
+  const off = fakeElement('div');
+  giftView.render(off, idx, { ...base, submissionsEnabled: false });
+  assert.equal(collect(off, (n) => n.tagName === 'BUTTON').length, 0, 'no button with submissions off');
+});
+
+test('a search that finds a gift, or no search at all, offers no missing-item report', () => {
+  const idx = buildIndex(dataset);
+  for (const search of ['bre', '']) {
+    const container = fakeElement('div');
+    giftView.render(container, idx, { filters: DEFAULT_FILTERS, search, searchText: search, submissionsEnabled: true, storage: undefined });
+    assert.equal(collect(container, (n) => (n.className ?? '').includes('missing-item-button')).length, 0, JSON.stringify(search));
+  }
+});
+
+test('the missing-item button falls back to the matching text when no typed text is given', () => {
+  const idx = buildIndex(dataset);
+  const container = fakeElement('div');
+  giftView.render(container, idx, { filters: DEFAULT_FILTERS, search: 'zz', submissionsEnabled: true, storage: undefined });
+  assert.equal(collect(container, (n) => (n.className ?? '').includes('missing-item-button'))[0].dataset.name, 'zz');
+});
+
+test('missingItemButton carries its query where app.js reads it', () => {
+  const button = missingItemButton('Lantern Oil');
+  assert.equal(button.className, 'missing-item-button');
+  assert.equal(button.dataset.name, 'Lantern Oil');
 });

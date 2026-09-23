@@ -35,6 +35,16 @@ export function giftIndexModel(index, search) {
   return named;
 }
 
+// The Gifts tab's way into a missing-item report. Like reportButton, it does
+// nothing itself: app.js's delegated listener reads `dataset.name` and opens
+// the report dialog in missing-item mode with the name pre-filled.
+export function missingItemButton(query) {
+  const button = el('button', 'missing-item-button', `Report ‘${query}’ as a missing item`);
+  button.type = 'button';
+  button.dataset.name = query;
+  return button;
+}
+
 function renderPicker(container, index, state) {
   const groups = giftIndexModel(index, state.search);
   container.append(el('h2', null, 'Gifts'));
@@ -43,6 +53,12 @@ function renderPicker(container, index, state) {
     container.append(emptyState(state.search
       ? `No gift’s name matches “${state.search}”.`
       : 'No gifts have been recorded yet.'));
+    // Only with the Worker configured: with submissions off there is nowhere
+    // to send a report, and the page must look as it did before. The typed
+    // text is offered, not the lower-cased copy used for matching.
+    if (state.search && state.submissionsEnabled) {
+      container.append(missingItemButton(state.searchText || state.search));
+    }
     return;
   }
 

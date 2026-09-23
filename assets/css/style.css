@@ -485,7 +485,8 @@ dialog input[type="text"] {
   font: inherit;
 }
 
-#report-reactions {
+#report-reactions,
+#report-rarity {
   margin-top: 16px;
   padding: 10px 14px;
   border: 1px solid var(--rule);
@@ -510,6 +511,12 @@ dialog input[type="text"] {
   color: var(--warning);
 }
 
+/* A missing-item report changes nothing public, so its confirmation is the
+   only feedback the player gets. It should not look like an error. */
+.dialog-status[data-tone="success"] {
+  color: var(--confirmed);
+}
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -519,7 +526,8 @@ dialog input[type="text"] {
 }
 
 .dialog-actions button,
-.report-button {
+.report-button,
+.missing-item-button {
   padding: 8px 14px;
   border: 1px solid var(--edge);
   background: var(--ground);
@@ -538,6 +546,15 @@ dialog input[type="text"] {
 }
 
 .report-button:hover {
+  border-color: var(--ink);
+}
+
+/* The Gifts tab's "Report ‘…’ as a missing item", under the empty search. */
+.missing-item-button {
+  margin-top: 12px;
+}
+
+.missing-item-button:hover {
   border-color: var(--ink);
 }
 

@@ -100,14 +100,45 @@
         an IP address.
       </p>
 
-      <label for="report-character">Character</label>
-      <select id="report-character" required></select>
+      <div id="report-character-field">
+        <label for="report-character">Character</label>
+        <select id="report-character" required></select>
+      </div>
 
       <label for="report-gift">Gift</label>
       <select id="report-gift" required></select>
 
+      <div id="report-item-fields" hidden>
+        <p class="dialog-intro">
+          Only the site maintainer sees this until it’s approved.
+        </p>
+
+        <label for="report-item-name">Item name, exactly as the game shows it</label>
+        <input type="text" id="report-item-name" maxlength="40" autocomplete="off">
+        <p id="report-item-duplicate" class="dialog-status" hidden></p>
+
+        <label for="report-item-category">Its “Primarily enjoyed by …” line</label>
+        <select id="report-item-category"></select>
+
+        <div id="report-item-line-field" hidden>
+          <label for="report-item-line">Type the rest of the line</label>
+          <input type="text" id="report-item-line" maxlength="40" autocomplete="off">
+        </div>
+
+        <fieldset id="report-rarity">
+          <legend>Rarity</legend>
+          <label class="reaction-choice"><input type="radio" name="rarity" value="common"> Common</label>
+          <label class="reaction-choice"><input type="radio" name="rarity" value="uncommon"> Uncommon</label>
+          <label class="reaction-choice"><input type="radio" name="rarity" value="rare"> Rare</label>
+          <label class="reaction-choice"><input type="radio" name="rarity" value="" checked> Not sure</label>
+        </fieldset>
+
+        <label for="report-item-character">Gave it to (optional)</label>
+        <select id="report-item-character"></select>
+      </div>
+
       <fieldset id="report-reactions">
-        <legend>What did the game show?</legend>
+        <legend id="report-reactions-legend">What did the game show?</legend>
       </fieldset>
 
       <div id="report-turnstile"></div>
