@@ -2,7 +2,7 @@
   {
     "id": "yarc-milk",
     "name": "Yarc Milk",
-    "category": null,
+    "category": "children",
     "rarity": null,
     "description": "",
     "sources": [
@@ -12,7 +12,7 @@
   {
     "id": "ginji-cervi",
     "name": "Ginji Cervi",
-    "category": null,
+    "category": "sweets",
     "rarity": null,
     "description": "",
     "sources": [
@@ -52,7 +52,7 @@
   {
     "id": "strong-cervi",
     "name": "Strong Cervi",
-    "category": null,
+    "category": "children",
     "rarity": null,
     "description": "",
     "sources": [
@@ -92,7 +92,7 @@
   {
     "id": "kitten-figurine",
     "name": "Kitten Figurine",
-    "category": null,
+    "category": "animals",
     "rarity": null,
     "description": "",
     "sources": [
@@ -112,7 +112,7 @@
   {
     "id": "honey-milk",
     "name": "Honey Milk",
-    "category": null,
+    "category": "sweets",
     "rarity": null,
     "description": "",
     "sources": [
@@ -122,8 +122,8 @@
   {
     "id": "eastern-black-silk",
     "name": "Eastern Black Silk",
-    "category": null,
-    "rarity": null,
+    "category": "fashion",
+    "rarity": "uncommon",
     "description": "",
     "sources": [
       "game8-items"
@@ -132,7 +132,7 @@
   {
     "id": "jamel-milk",
     "name": "Jamel Milk",
-    "category": null,
+    "category": "sweets",
     "rarity": null,
     "description": "",
     "sources": [
@@ -172,7 +172,7 @@
   {
     "id": "pastry-cookbook",
     "name": "Pastry Cookbook",
-    "category": "cooking",
+    "category": "sweets",
     "rarity": null,
     "description": "",
     "sources": [
@@ -182,7 +182,7 @@
   {
     "id": "protection-figurine",
     "name": "Protection Figurine",
-    "category": null,
+    "category": "spirituality",
     "rarity": null,
     "description": "",
     "sources": [
@@ -191,7 +191,7 @@
   },
   {
     "id": "the-works-of-dante",
-    "name": "The Works of Dante",
+    "name": "The Works Of Dante",
     "category": "books",
     "rarity": null,
     "description": "",
@@ -222,7 +222,7 @@
   {
     "id": "weak-cervi",
     "name": "Weak Cervi",
-    "category": null,
+    "category": "children",
     "rarity": null,
     "description": "",
     "sources": [
@@ -282,7 +282,7 @@
   {
     "id": "traders-handbook",
     "name": "Trader's Handbook",
-    "category": null,
+    "category": "books",
     "rarity": null,
     "description": "",
     "sources": [
@@ -292,7 +292,7 @@
   {
     "id": "full-sewing-kit",
     "name": "Full Sewing Kit",
-    "category": "crafting",
+    "category": "fashion",
     "rarity": null,
     "description": "",
     "sources": [
@@ -311,7 +311,7 @@
   },
   {
     "id": "pack-of-pastels",
-    "name": "Pack of Pastels",
+    "name": "Pack Of Pastels",
     "category": null,
     "rarity": null,
     "description": "",
@@ -322,7 +322,7 @@
   {
     "id": "fodlan-tea",
     "name": "Fodlan Tea",
-    "category": null,
+    "category": "beverages",
     "rarity": null,
     "description": "",
     "sources": [
@@ -332,7 +332,7 @@
   {
     "id": "dual-fish-knives",
     "name": "Dual Fish Knives",
-    "category": "fishing",
+    "category": "cooking",
     "rarity": null,
     "description": "",
     "sources": [
@@ -342,7 +342,7 @@
   {
     "id": "skin-balm",
     "name": "Skin Balm",
-    "category": null,
+    "category": "fashion",
     "rarity": null,
     "description": "",
     "sources": [
@@ -362,7 +362,7 @@
   {
     "id": "simple-pastries",
     "name": "Simple Pastries",
-    "category": null,
+    "category": "sweets",
     "rarity": null,
     "description": "",
     "sources": [
@@ -382,7 +382,7 @@
   {
     "id": "coffee-pastries",
     "name": "Coffee Pastries",
-    "category": null,
+    "category": "sweets",
     "rarity": null,
     "description": "",
     "sources": [
@@ -392,7 +392,7 @@
   {
     "id": "saraminian-sweets",
     "name": "Saraminian Sweets",
-    "category": null,
+    "category": "sweets",
     "rarity": null,
     "description": "",
     "sources": [
@@ -402,7 +402,7 @@
   {
     "id": "garum",
     "name": "Garum",
-    "category": null,
+    "category": "cooking",
     "rarity": null,
     "description": "",
     "sources": [
@@ -412,7 +412,7 @@
   {
     "id": "alecto-garum",
     "name": "Alecto Garum",
-    "category": null,
+    "category": "cooking",
     "rarity": null,
     "description": "",
     "sources": [
@@ -492,7 +492,7 @@
   {
     "id": "huge-fish-eyeball",
     "name": "Huge Fish Eyeball",
-    "category": "fishing",
+    "category": "fish",
     "rarity": null,
     "description": "",
     "sources": [
@@ -502,7 +502,7 @@
   {
     "id": "shield-portrait",
     "name": "Shield Portrait",
-    "category": "beauty",
+    "category": "paintings",
     "rarity": null,
     "description": "",
     "sources": [
@@ -511,7 +511,7 @@
   },
   {
     "id": "tales-of-adventure",
-    "name": "Tales of Adventure",
+    "name": "Tales Of Adventure",
     "category": "books",
     "rarity": null,
     "description": "",
@@ -582,7 +582,7 @@
   {
     "id": "strong-seasonings",
     "name": "Strong Seasonings",
-    "category": "spicy-foods",
+    "category": "cooking",
     "rarity": null,
     "description": "",
     "sources": [
@@ -612,7 +612,7 @@
   {
     "id": "mature-dried-cervi",
     "name": "Mature Dried Cervi",
-    "category": null,
+    "category": "children",
     "rarity": null,
     "description": "",
     "sources": [
@@ -642,7 +642,7 @@
   {
     "id": "fragrant-pastries",
     "name": "Fragrant Pastries",
-    "category": null,
+    "category": "sweets",
     "rarity": null,
     "description": "",
     "sources": [
@@ -652,7 +652,7 @@
   {
     "id": "candy-crystals",
     "name": "Candy Crystals",
-    "category": null,
+    "category": "sweets",
     "rarity": null,
     "description": "",
     "sources": [
@@ -662,7 +662,7 @@
   {
     "id": "rancid-garum",
     "name": "Rancid Garum",
-    "category": null,
+    "category": "cooking",
     "rarity": null,
     "description": "",
     "sources": [
@@ -692,7 +692,7 @@
   {
     "id": "brined-fish-guts",
     "name": "Brined Fish Guts",
-    "category": "fishing",
+    "category": "fish",
     "rarity": null,
     "description": "",
     "sources": [
@@ -702,7 +702,7 @@
   {
     "id": "rare-southern-seeds",
     "name": "Rare Southern Seeds",
-    "category": null,
+    "category": "agriculture",
     "rarity": null,
     "description": "",
     "sources": [
@@ -722,7 +722,7 @@
   {
     "id": "morfis-tea",
     "name": "Morfis Tea",
-    "category": null,
+    "category": "beverages",
     "rarity": null,
     "description": "",
     "sources": [
@@ -791,12 +791,242 @@
   },
   {
     "id": "portrait-of-yu-phas",
-    "name": "Portrait of Yu Phas",
+    "name": "Portrait Of Yu Phas",
     "category": "beauty",
     "rarity": null,
     "description": "",
     "sources": [
       "game8-items"
+    ]
+  },
+  {
+    "id": "magic-trick-set",
+    "name": "Magic-Trick Set",
+    "category": "spirituality",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "smooth-garum",
+    "name": "Smooth Garum",
+    "category": "cooking",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "eastern-tea-leaves",
+    "name": "Eastern Tea Leaves",
+    "category": "beverages",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "eastern-earrings",
+    "name": "Eastern Earrings",
+    "category": "fashion",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "pickled-bulbs",
+    "name": "Pickled Bulbs",
+    "category": "vegetables",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "poems-of-the-greats",
+    "name": "Poems Of The Greats",
+    "category": "books",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "crimson-ghosh",
+    "name": "Crimson Ghosh",
+    "category": "fermented-drinks",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "niiza-garum",
+    "name": "Niiza Garum",
+    "category": "cooking",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "spirit-board-game",
+    "name": "Spirit Board Game",
+    "category": "board-games",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "thick-foreign-tome",
+    "name": "Thick Foreign Tome",
+    "category": "books",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "pure-white-cervi",
+    "name": "Pure-White Cervi",
+    "category": "sweets",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "divination-bagua",
+    "name": "Divination Bagua",
+    "category": "fortune-telling",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "special-medicine",
+    "name": "Special “Medicine”",
+    "category": "fermented-drinks",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "arrowhead-gem",
+    "name": "Arrowhead Gem",
+    "category": "fashion",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "board-game-tactics",
+    "name": "Board Game Tactics",
+    "category": "board-games",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "tales-of-the-arena",
+    "name": "Tales Of The Arena",
+    "category": "books",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "ceremonial-spear",
+    "name": "Ceremonial Spear",
+    "category": "weapons",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "game8-items"
+    ]
+  },
+  {
+    "id": "pegasus-painting",
+    "name": "Pegasus Painting",
+    "category": "paintings",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "polygon-2026-09-21"
+    ]
+  },
+  {
+    "id": "tales-of-a-master",
+    "name": "Tales Of A Master",
+    "category": "books",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "polygon-2026-09-21"
+    ]
+  },
+  {
+    "id": "imitation-medal",
+    "name": "Imitation Medal",
+    "category": "military",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "polygon-2026-09-21"
+    ]
+  },
+  {
+    "id": "training-medal",
+    "name": "Training Medal",
+    "category": "military",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "polygon-2026-09-21"
+    ]
+  },
+  {
+    "id": "training-pillar",
+    "name": "Training Pillar",
+    "category": "training",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "polygon-2026-09-21"
+    ]
+  },
+  {
+    "id": "bow-maintenance-kit",
+    "name": "Bow Maintenance Kit",
+    "category": "archery",
+    "rarity": null,
+    "description": "",
+    "sources": [
+      "polygon-2026-09-21"
     ]
   }
 ]
