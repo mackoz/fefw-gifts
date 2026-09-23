@@ -19,9 +19,10 @@ export async function loadDataset(dir) {
 // TypeError, killing the validator with a stack trace instead of printing the
 // error it had already recorded. This covers the list fields inside a
 // character or gift; the five top-level arrays (characters, gifts,
-// observations, categories, sources) are not guarded this way, so a `[null]`
-// among them still throws. Either way the gate holds -- the exit code is 1 --
-// what a top-level throw costs is the diagnostic, not the protection.
+// observations, categories, sources) are guarded separately, by the shape
+// prelude at the top of validate(): it checks each one is an array, and each
+// element within it is an object with a usable id, before any loop below
+// ever runs, so a `[null]` among them is reported rather than thrown.
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -45,7 +46,41 @@ function checkDuplicates(items, kind, errors) {
 
 export function validate(dataset) {
   const errors = [];
-  const { categories, sources, observations } = dataset;
+
+  // Each top-level collection must be an array, checked once here instead of
+  // threading a guard through every loop below. With a collection unreadable
+  // -- say `categories` is `7` -- every cross-reference downstream fires
+  // spuriously: no readable categories means every gift and character naming
+  // one reports "unknown category", burying the one line that actually names
+  // the cause. Returning early trades a later-arriving report of any
+  // unrelated error elsewhere for a readable one now. That trade is
+  // deliberate -- do not "fix" this into a fall-through.
+  for (const name of FILES) {
+    if (!Array.isArray(dataset[name])) errors.push(`${name} must be an array`);
+  }
+  if (errors.length) return { errors };
+
+  // Each element must be an object with a non-empty string id. A bad element
+  // is reported by position and excluded from `clean` -- nothing downstream
+  // ever sees an entity without a usable id, which is what removes the
+  // `character undefined: ...` labels a missing id used to produce, and what
+  // keeps an id-less observation from colliding with every other one on
+  // `undefined` in the ingest dedup.
+  const clean = {};
+  for (const name of FILES) {
+    clean[name] = [];
+    dataset[name].forEach((item, i) => {
+      if (item === null || typeof item !== 'object' || Array.isArray(item)) {
+        errors.push(`${name}[${i}] must be an object`);
+      } else if (typeof item.id !== 'string' || item.id.length === 0) {
+        errors.push(`${name}[${i}]: id must be a non-empty string`);
+      } else {
+        clean[name].push(item);
+      }
+    });
+  }
+
+  const { categories, sources, observations } = clean;
   const RARITIES = new Set(['common', 'uncommon', 'rare']);
   const categoryIds = new Set(categories.map((c) => c.id));
   const sourceIds = new Set(sources.map((s) => s.id));
@@ -58,9 +93,9 @@ export function validate(dataset) {
     if (!Array.isArray(c.aliases)) errors.push(`category ${c.id}: aliases must be an array`);
   }
 
-  checkDuplicates(dataset.gifts, 'gift', errors);
+  checkDuplicates(clean.gifts, 'gift', errors);
 
-  for (const g of dataset.gifts) {
+  for (const g of clean.gifts) {
     if (!g.name) errors.push(`gift ${g.id}: missing name`);
     if (g.category !== null && !categoryIds.has(g.category)) {
       errors.push(`gift ${g.id}: unknown category: ${g.category}`);
@@ -77,12 +112,14 @@ export function validate(dataset) {
   const STATES = new Set(['guide', 'profile', 'discovered', 'refuted']);
   const RARITY_PREFS = new Set(['any', 'uncommon-plus', 'rare']);
   const REACTIONS = new Set(['none', 'slight', 'liked', 'loved', 'favorite']);
-  const giftIds = new Set(dataset.gifts.map((g) => g.id));
+  const giftIds = new Set(clean.gifts.map((g) => g.id));
 
-  checkDuplicates(dataset.characters, 'character', errors);
+  checkDuplicates(clean.characters, 'character', errors);
 
-  for (const ch of dataset.characters) {
+  for (const ch of clean.characters) {
     if (!ch.name) errors.push(`character ${ch.id}: missing name`);
+    if (typeof ch.giftable !== 'boolean') errors.push(`character ${ch.id}: giftable must be a boolean`);
+    if (typeof ch.spoiler !== 'boolean') errors.push(`character ${ch.id}: spoiler must be a boolean`);
     if (!Array.isArray(ch.traits)) errors.push(`character ${ch.id}: traits must be an array`);
     if (ch.categories === null || typeof ch.categories !== 'object' || Array.isArray(ch.categories)) {
       errors.push(`character ${ch.id}: categories must be an object`);
@@ -111,20 +148,20 @@ export function validate(dataset) {
       }
     }
 
-    for (const t of asArray(ch.traits)) {
+    for (const [i, t] of asArray(ch.traits).entries()) {
       // Same reasoning as the category link above: a null or non-object entry
       // would otherwise reach t.category and throw.
       if (t === null || typeof t !== 'object' || Array.isArray(t)) {
-        errors.push(`character ${ch.id}: trait entries must be objects`);
+        errors.push(`character ${ch.id}: traits[${i}] must be an object`);
         continue;
       }
       if (typeof t.text !== 'string' || t.text.length === 0) {
-        errors.push(`character ${ch.id}: trait text must be a non-empty string`);
+        errors.push(`character ${ch.id}: traits[${i}]: text must be a non-empty string`);
       }
       // Absent and explicit-null both mean "not recorded", so a trait that
       // omits the key reports only what is actually wrong with it.
       if (t.category !== null && t.category !== undefined && !categoryIds.has(t.category)) {
-        errors.push(`character ${ch.id}: trait "${t.text}" names unknown category: ${t.category}`);
+        errors.push(`character ${ch.id}: traits[${i}] names unknown category: ${t.category}`);
       }
     }
 
@@ -138,7 +175,7 @@ export function validate(dataset) {
     }
   }
 
-  const charById = new Map(dataset.characters.map((c) => [c.id, c]));
+  const charById = new Map(clean.characters.map((c) => [c.id, c]));
   checkDuplicates(observations, 'observation', errors);
 
   for (const o of observations) {

@@ -183,7 +183,7 @@ test('a trait naming an unknown category is rejected', () => {
   const d = base();
   d.characters.push(character({ traits: [{ text: 'x', category: 'nope' }] }));
   const { errors } = validate(d);
-  assert.match(errors[0], /character c1: trait "x" names unknown category: nope/);
+  assert.match(errors[0], /character c1: traits\[0\] names unknown category: nope/);
 });
 
 // A trait that omits `category` entirely -- not even an explicit null -- used
@@ -194,14 +194,14 @@ test('a trait with no category key reports only the missing text, not a phantom 
   const d = base();
   d.characters.push(character({ traits: [{}] }));
   const { errors } = validate(d);
-  assert.deepEqual(errors, ['character c1: trait text must be a non-empty string']);
+  assert.deepEqual(errors, ['character c1: traits[0]: text must be a non-empty string']);
 });
 
 test('a null trait entry is reported, not fatal', () => {
   const d = base();
   d.characters.push(character({ traits: [null] }));
   const { errors } = validate(d);
-  assert.deepEqual(errors, ['character c1: trait entries must be objects']);
+  assert.deepEqual(errors, ['character c1: traits[0] must be an object']);
 });
 
 test('a non-object trait entry is reported, not fatal', () => {
@@ -210,21 +210,21 @@ test('a non-object trait entry is reported, not fatal', () => {
   const { errors } = validate(d);
   // Before the shape check this reported `trait "undefined" names unknown
   // category: undefined`, which named neither the entry nor a fixable cause.
-  assert.deepEqual(errors, ['character c1: trait entries must be objects']);
+  assert.deepEqual(errors, ['character c1: traits[0] must be an object']);
 });
 
 test('a trait with no text is rejected', () => {
   const d = base();
   d.characters.push(character({ traits: [{ category: null }] }));
   const { errors } = validate(d);
-  assert.deepEqual(errors, ['character c1: trait text must be a non-empty string']);
+  assert.deepEqual(errors, ['character c1: traits[0]: text must be a non-empty string']);
 });
 
 test('a trait with empty text is rejected', () => {
   const d = base();
   d.characters.push(character({ traits: [{ text: '', category: null }] }));
   const { errors } = validate(d);
-  assert.deepEqual(errors, ['character c1: trait text must be a non-empty string']);
+  assert.deepEqual(errors, ['character c1: traits[0]: text must be a non-empty string']);
 });
 
 // A value that is truthy but not a string is what discriminates `typeof
@@ -235,7 +235,7 @@ for (const [label, value] of [['a number', 42], ['an object', {}]]) {
     const d = base();
     d.characters.push(character({ traits: [{ text: value, category: null }] }));
     const { errors } = validate(d);
-    assert.deepEqual(errors, ['character c1: trait text must be a non-empty string']);
+    assert.deepEqual(errors, ['character c1: traits[0]: text must be a non-empty string']);
   });
 }
 
@@ -357,4 +357,129 @@ test('an observation with an unknown gift or invalid reaction is rejected', () =
   const { errors } = validate(d);
   assert.ok(errors.some((e) => /observation o1: unknown gift: ghost/.test(e)));
   assert.ok(errors.some((e) => /observation o1: invalid reaction: meh/.test(e)));
+});
+
+// --- Shape prelude: the five top-level collections must be arrays --------
+
+const FILE_NAMES = ['categories', 'gifts', 'characters', 'observations', 'sources'];
+
+for (const name of FILE_NAMES) {
+  test(`a non-array ${name} collection is rejected`, () => {
+    const d = base();
+    d[name] = 7;
+    const { errors } = validate(d);
+    assert.deepEqual(errors, [`${name} must be an array`]);
+  });
+}
+
+// Pins the early return: without it, a gift naming a category while
+// `categories` is unreadable would still walk the gift loop and add a second,
+// spurious "unknown category" error on top of the real one.
+test('a non-array categories does not cascade into an unknown-category error from a gift', () => {
+  const d = base();
+  d.categories = 7;
+  d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: null, description: '', sources: [] });
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['categories must be an array']);
+});
+
+// --- Shape prelude: each element must be an object -----------------------
+
+for (const name of FILE_NAMES) {
+  test(`a null element in ${name} is rejected by position`, () => {
+    const d = base();
+    d[name] = [null];
+    const { errors } = validate(d);
+    assert.deepEqual(errors, [`${name}[0] must be an object`]);
+  });
+}
+
+// --- Shape prelude: each element needs a non-empty string id -------------
+
+const VALID_ITEM = {
+  categories: () => ({ id: 'x', label: 'L', inGameDescriptor: null, aliases: [] }),
+  gifts: () => ({ id: 'x', name: 'G', category: null, rarity: null, description: '', sources: [] }),
+  characters: () => character({ id: 'x' }),
+  observations: () => ({ id: 'x', gift: 'g', character: 'c', reaction: 'liked', date: '2026-09-20' }),
+  sources: () => ({ id: 'x', title: 'T', author: null, publisher: 'P', url: 'https://e.x', retrieved: '2026-09-20' }),
+};
+
+const BAD_IDS = [
+  ['a number', (item) => { item.id = 7; }], // catches a `!item.id` weakening
+  ['an empty string', (item) => { item.id = ''; }], // catches dropping the length check
+  ['null', (item) => { item.id = null; }],
+  ['a missing key', (item) => { delete item.id; }],
+];
+
+for (const name of FILE_NAMES) {
+  for (const [label, apply] of BAD_IDS) {
+    test(`a ${name} element whose id is ${label} is rejected`, () => {
+      const d = base();
+      const item = VALID_ITEM[name]();
+      apply(item);
+      d[name] = [item];
+      const { errors } = validate(d);
+      assert.deepEqual(errors, [`${name}[0]: id must be a non-empty string`]);
+    });
+  }
+}
+
+test('a character with a bad id and no name produces only the id error', () => {
+  const d = base();
+  const c = character({ id: 7 });
+  delete c.name;
+  d.characters.push(c);
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['characters[0]: id must be a non-empty string']);
+});
+
+test('an id-less observation is rejected, protecting the ingest dedup from colliding on undefined', () => {
+  const d = base();
+  d.observations.push({ gift: 'g', character: 'c', reaction: 'liked', date: '2026-09-20' });
+  const { errors } = validate(d);
+  assert.deepEqual(errors, ['observations[0]: id must be a non-empty string']);
+});
+
+// --- giftable and spoiler must be booleans --------------------------------
+
+for (const field of ['giftable', 'spoiler']) {
+  test(`a character with a missing ${field} is rejected`, () => {
+    const d = base();
+    const c = character();
+    delete c[field];
+    d.characters.push(c);
+    const { errors } = validate(d);
+    assert.deepEqual(errors, [`character c1: ${field} must be a boolean`]);
+  });
+
+  test(`a character whose ${field} is the truthy string "yes" is rejected`, () => {
+    const d = base();
+    d.characters.push(character({ [field]: 'yes' }));
+    const { errors } = validate(d);
+    assert.deepEqual(errors, [`character c1: ${field} must be a boolean`]);
+  });
+
+  test(`a character whose ${field} is true is accepted`, () => {
+    const d = base();
+    d.characters.push(character({ [field]: true }));
+    assert.deepEqual(validate(d).errors, []);
+  });
+
+  test(`a character whose ${field} is false is accepted`, () => {
+    const d = base();
+    d.characters.push(character({ [field]: false }));
+    assert.deepEqual(validate(d).errors, []);
+  });
+}
+
+// --- trait errors carry their position ------------------------------------
+
+test('two bad traits on one character are each reported at their own position', () => {
+  const d = base();
+  d.characters.push(character({ traits: [null, { text: '', category: null }] }));
+  const { errors } = validate(d);
+  assert.deepEqual(errors, [
+    'character c1: traits[0] must be an object',
+    'character c1: traits[1]: text must be a non-empty string',
+  ]);
 });
