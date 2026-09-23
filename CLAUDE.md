@@ -20,8 +20,8 @@
   "dislikes" is a bug — see the spec's "Pair confidence" section.
 - **Observations are anonymous and never seeded.** `data/observations.json`
   entries carry no reporter, name, email, IP, or other identifying field —
-  enforced by `scripts/validate.mjs`. The file ships empty; item-level results
-  come only from real player reports, never from guides.
+  enforced by `scripts/validate.mjs`. Every entry is a real player's in-game
+  result; item-level results never come from guides.
 - **Guide-derived links always carry provenance.** Any character-category
   link imported from a published guide has `state: "guide"` and a non-null
   `source` that exists in `data/sources.json`, so it can be audited or removed
