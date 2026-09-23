@@ -97,7 +97,7 @@
     "id": "bertrand",
     "name": "Bertrand",
     "giftable": true,
-    "spoiler": false,
+    "spoiler": true,
     "traits": [],
     "categories": {},
     "rarityPreference": null,
