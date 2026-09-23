@@ -1,1 +1,814 @@
-[]
+[
+  {
+    "id": "1cb16ecf-7e4b-4272-8870-ab7d1b682ccb",
+    "gift": "arrowhead-gem",
+    "character": "alexandra",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "6c8e51fd-9629-4fc8-98ee-e91a682efdc0",
+    "gift": "eastern-black-silk",
+    "character": "alexandra",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "418de693-17e3-47c2-ad11-0604a98342f1",
+    "gift": "eastern-earrings",
+    "character": "alexandra",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "69829fa0-2aa0-4d0c-9fb1-a95c2b6eb8d0",
+    "gift": "exquisite-ring",
+    "character": "alexandra",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "1e36f25a-ee53-4e52-8c68-56a81c39f433",
+    "gift": "full-sewing-kit",
+    "character": "alexandra",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "b41cbd97-af7b-4405-8200-b7a4020a98c8",
+    "gift": "garum",
+    "character": "alexandra",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "2c1aa8cd-3cf6-43d4-aa29-68a3032ace89",
+    "gift": "gaudy-bangle",
+    "character": "alexandra",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "0f283e24-0ffd-427d-be52-3fcd6a2c9c5e",
+    "gift": "skin-balm",
+    "character": "alexandra",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "14c7121e-3023-4741-a43e-2a8d218967db",
+    "gift": "board-game-tactics",
+    "character": "benditz",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "d225d6be-412c-4fe1-bf34-7b4df9cd02f0",
+    "gift": "common-coffee",
+    "character": "benditz",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "b0b591b6-f5e4-4387-a71f-8c28d74d947e",
+    "gift": "crimson-bull-figure",
+    "character": "benditz",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "2f4d29aa-6da6-4510-80ee-217367b1a438",
+    "gift": "orgus-coffee",
+    "character": "benditz",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "3c5e5a27-48be-4c65-8b39-02637eccbe53",
+    "gift": "select-coffee",
+    "character": "benditz",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "a424ca9a-9f6f-4898-b5f1-07fca9b73ed0",
+    "gift": "solomon-coffee",
+    "character": "benditz",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "b371a9bf-c796-4e46-9fee-4d19aca594ba",
+    "gift": "southern-coffee",
+    "character": "benditz",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "cbe1e1b8-4bb7-41a6-842e-5692d4b2102f",
+    "gift": "spirit-board-game",
+    "character": "benditz",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "4c9d208a-8189-457e-a22f-25faa0dfe08f",
+    "gift": "school-scandal",
+    "character": "dante",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "fb39b9a8-3c28-4170-9056-0febe71a3e37",
+    "gift": "bow-maintenance-kit",
+    "character": "diego",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "ff405344-efb7-45d1-9988-a8c6e2f16ade",
+    "gift": "decorative-arrows",
+    "character": "diego",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "47daf3d8-ba41-446b-86e1-68c9a994e5c0",
+    "gift": "joint-relief-gloves",
+    "character": "diego",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "3396a597-80ad-4537-80fd-ec4eff2a58a9",
+    "gift": "wing-fletching",
+    "character": "diego",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "4fcc1243-8464-47f7-8d81-663650948b2c",
+    "gift": "common-coffee",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "5ba3c90c-7c8d-4059-8233-6ed042fef5c1",
+    "gift": "crimson-ghosh",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "0273ee83-ca24-441d-a53e-3c9081a71846",
+    "gift": "energizing-ghosh",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "fd8c924a-95d7-43a5-9026-fd71ec86577a",
+    "gift": "history-of-a-master",
+    "character": "fabio",
+    "reaction": "favorite",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "9d1d266a-116f-420f-8d25-b9ea8bce8bc1",
+    "gift": "jade-ghosh",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "4055f1f6-716b-4bf7-9b86-62080d7dd3af",
+    "gift": "mature-ghosh",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "670a715f-564f-4e15-9fe1-26a2f951f2cf",
+    "gift": "orgus-coffee",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "82a92ac3-6f9d-4c71-be39-795ab014f1fb",
+    "gift": "rustic-ghosh",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "25b358b7-19e4-4928-bbf1-9c1ed529fbb2",
+    "gift": "secret-ghosh",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "2b213a5b-1621-438e-8bbb-fd2f303fb748",
+    "gift": "select-coffee",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "6b384159-4177-4035-957f-3f2b2a8b0495",
+    "gift": "solomon-coffee",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "a828aad5-bede-471c-88ea-38abfc0079b5",
+    "gift": "southern-coffee",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "b45420b7-5070-410c-8c6f-7c48d355d362",
+    "gift": "southern-ghosh",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "156c363e-de13-4d88-9227-9a539483c8a8",
+    "gift": "sun-ghosh",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "fb73a1c0-a860-40fe-9b8a-60c1c0d75092",
+    "gift": "volcano-ghosh",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "f7b37e43-447d-4b5e-8188-39885acec604",
+    "gift": "young-ghosh",
+    "character": "fabio",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "c09cbe7e-7ba5-4f7e-b8ca-5e9c31eded85",
+    "gift": "morfis-almanac",
+    "character": "fianna",
+    "reaction": "favorite",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "20c6f419-2029-45cd-acc1-f99f485da8d3",
+    "gift": "crimson-ghosh",
+    "character": "goliath",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "22c3cfd7-63a8-4340-b5b7-94976e64c601",
+    "gift": "energizing-ghosh",
+    "character": "goliath",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "80a92f51-ef93-4f46-ac90-e83d660069ae",
+    "gift": "jade-ghosh",
+    "character": "goliath",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "098ebb33-d377-4b4c-b3ca-5a4f5cd1f888",
+    "gift": "mature-ghosh",
+    "character": "goliath",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "497d1c7d-f867-49ce-9858-7318362738c5",
+    "gift": "rustic-ghosh",
+    "character": "goliath",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "112aae6e-97f8-4eb2-b79d-e03f0834073b",
+    "gift": "secret-ghosh",
+    "character": "goliath",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "53c9ab1f-2322-4326-b655-3ade6c307c78",
+    "gift": "southern-ghosh",
+    "character": "goliath",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "3ec24f90-055e-4d64-943c-399241b95156",
+    "gift": "sun-ghosh",
+    "character": "goliath",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "d69d2129-7f28-422c-ab0f-6477fb3594bb",
+    "gift": "volcano-ghosh",
+    "character": "goliath",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "420f7758-d6c9-4d2c-863b-98cbc9320655",
+    "gift": "young-ghosh",
+    "character": "goliath",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "39f03c8f-646e-4540-9af2-3832938fd80d",
+    "gift": "arrowhead-gem",
+    "character": "halvin",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "72b9b71c-0ed9-4b74-808f-3a8c25b2810a",
+    "gift": "eastern-black-silk",
+    "character": "halvin",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "70d73282-8521-4680-8858-181d1d70916d",
+    "gift": "eastern-earrings",
+    "character": "halvin",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "58417e1a-29fb-47dc-91bf-ff5ea3c9ec2f",
+    "gift": "exquisite-ring",
+    "character": "halvin",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "fbb46d47-4d95-42fc-8f80-d36e054cd012",
+    "gift": "fragrant-pastries",
+    "character": "halvin",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "35036f74-9c19-4862-aab6-32b0bd3b21e0",
+    "gift": "full-sewing-kit",
+    "character": "halvin",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "a1221f35-a205-4912-bc54-4974f7d28e92",
+    "gift": "gaudy-bangle",
+    "character": "halvin",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "01179a75-7141-492e-8420-46ea1396c5f2",
+    "gift": "skin-balm",
+    "character": "halvin",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "89c02e70-d791-4944-9cb3-eb6fd0a3bc55",
+    "gift": "ceremonial-spear",
+    "character": "jester",
+    "reaction": "favorite",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "9ec8707b-dae1-40cb-a7a3-151782969c15",
+    "gift": "common-coffee",
+    "character": "jester",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "b69f172f-8521-4767-97ea-25254b5eb8df",
+    "gift": "orgus-coffee",
+    "character": "jester",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "4b922cf8-2792-44b9-8477-6e31db20cbdb",
+    "gift": "select-coffee",
+    "character": "jester",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "ac3dcbda-1d4f-4704-a599-55c6627db473",
+    "gift": "sharp-dagger",
+    "character": "jester",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "057b6f39-dbe9-476b-b7e9-84d5b9ffc61f",
+    "gift": "solomon-coffee",
+    "character": "jester",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "cfb0441f-b63e-4e64-ba3a-93ea330240d5",
+    "gift": "southern-coffee",
+    "character": "jester",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "cb36f221-384c-4474-9888-52975d1cb062",
+    "gift": "school-scandal",
+    "character": "ludia",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "274cb187-92db-4462-9c25-102a8c6a266a",
+    "gift": "dagda-beard-grass",
+    "character": "lysander",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "1d71b428-d386-42d1-9a9c-56c7e3cea4ee",
+    "gift": "imitation-medal",
+    "character": "lysander",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "f3019a87-1ce3-4b4d-8822-3e22690612d4",
+    "gift": "rugged-blade",
+    "character": "lysander",
+    "reaction": "favorite",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "8a05bbad-c9a8-4e93-9f45-3d052d7bb6f5",
+    "gift": "crimson-ghosh",
+    "character": "majide",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "c0e3cb07-22a1-4714-8d2f-1c994f85314d",
+    "gift": "energizing-ghosh",
+    "character": "majide",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "8bdd0bfb-7033-4717-ac05-d63cb87e3ced",
+    "gift": "jade-ghosh",
+    "character": "majide",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "9f4980a3-c948-4ae2-9278-3d2c927023ab",
+    "gift": "mature-ghosh",
+    "character": "majide",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "e82f287b-5860-41db-b4d9-0edd1ae53cd7",
+    "gift": "rustic-ghosh",
+    "character": "majide",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "3f7925c3-ceee-41b8-83c7-f7bfd532a2e7",
+    "gift": "secret-ghosh",
+    "character": "majide",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "c5b8a552-01a7-4494-964a-ba46fd9ae587",
+    "gift": "southern-ghosh",
+    "character": "majide",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "4af0fcb6-d3ac-470c-b2b5-1295d4a26f80",
+    "gift": "sun-ghosh",
+    "character": "majide",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "973d30be-85cd-4565-9110-88817ef4c850",
+    "gift": "volcano-ghosh",
+    "character": "majide",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "3fe1ab0a-18d6-4c59-8378-963fb4827006",
+    "gift": "young-ghosh",
+    "character": "majide",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "aeca4c15-acb8-480c-8368-dae884b37877",
+    "gift": "ceremonial-spear",
+    "character": "nezha",
+    "reaction": "favorite",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "d43a6cf5-770e-4529-8ae3-50ac76fa156c",
+    "gift": "sturdy-rucksack",
+    "character": "nezha",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "0e4c813b-9033-48f7-bd2c-382969f5c89b",
+    "gift": "training-bracelet",
+    "character": "nezha",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "2ce25e9b-44e5-4edb-9ee8-c9e10f2fa424",
+    "gift": "protection-figurine",
+    "character": "noctula",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "6daa9da1-dc9c-4c4c-a3f6-67501789a930",
+    "gift": "training-pillar",
+    "character": "noctula",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "227c2982-2044-4862-b13c-d2ef86faa34b",
+    "gift": "alecto-garum",
+    "character": "nuzzuo",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "a4b3a08a-1292-44f9-ad91-44d68e8ee59d",
+    "gift": "dual-fish-knives",
+    "character": "nuzzuo",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "b8fba25c-49ce-4d4a-b0e6-708feeea5a00",
+    "gift": "garum",
+    "character": "nuzzuo",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "9d9937ce-3655-4488-a38b-6a43f35c7932",
+    "gift": "herbal-recipe-guide",
+    "character": "nuzzuo",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "9957e96c-c45e-4c07-8bc7-879edddd809a",
+    "gift": "home-recipe-book",
+    "character": "nuzzuo",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "87f75c3c-6186-4c47-9b36-dafbed3d67ed",
+    "gift": "legendary-garum",
+    "character": "nuzzuo",
+    "reaction": "favorite",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "5f8e7994-1b7a-439f-8971-653cc9d7e03e",
+    "gift": "niiza-garum",
+    "character": "nuzzuo",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "1651b166-f3de-46de-872e-1ddaf007f0a6",
+    "gift": "outdoor-cooking-set",
+    "character": "nuzzuo",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "dc3a9ebe-38bc-4dd2-9a7f-d8540ef7fc92",
+    "gift": "rancid-garum",
+    "character": "nuzzuo",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "66d6e970-a66f-4d39-b23d-8c303f43cd29",
+    "gift": "smooth-garum",
+    "character": "nuzzuo",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "ffcf14f5-4b93-4fc8-b373-6b24ead70311",
+    "gift": "strong-seasonings",
+    "character": "nuzzuo",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "a6f33403-fce9-4b23-b2d0-979555787670",
+    "gift": "village-recipes",
+    "character": "nuzzuo",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "09f2f4df-9e6d-4e06-a2e9-d2a6f44ce930",
+    "gift": "crimson-bull-figure",
+    "character": "nydine",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "14d8c1b3-961c-4430-b434-9a1733bfbd2b",
+    "gift": "jade-panther-figure",
+    "character": "nydine",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "0f04ca26-b091-4409-8b70-e32baab238bb",
+    "gift": "kitten-figurine",
+    "character": "nydine",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "c9115bc8-a849-4059-a13a-0826a93ef35a",
+    "gift": "sturdy-rucksack",
+    "character": "nydine",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "d8f63171-9ae4-4e57-9f81-cd29121d6203",
+    "gift": "eastern-love-story",
+    "character": "seteth",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "6d672b73-e26d-4dde-ad7c-a16acb94e87b",
+    "gift": "history-of-a-master",
+    "character": "seteth",
+    "reaction": "favorite",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "fded4db1-12a9-4986-b03d-e8510da9ceeb",
+    "gift": "morfis-almanac",
+    "character": "seteth",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "4faa5929-0998-4064-b301-e1234e9825b2",
+    "gift": "poems-of-the-greats",
+    "character": "seteth",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "3b177212-d4c1-43fe-8b5a-6f8961fd68f3",
+    "gift": "school-scandal",
+    "character": "seteth",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "9f3f7028-9545-41fa-b6d9-6e82a1a65d22",
+    "gift": "tales-of-adventure",
+    "character": "seteth",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "b728b41f-5083-4af0-836e-8e5f184e539f",
+    "gift": "tales-of-the-arena",
+    "character": "seteth",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "b64bef10-5dcd-4047-89e1-9d10519c65df",
+    "gift": "the-works-of-dante",
+    "character": "seteth",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "f8744e7d-babb-4ee1-85c0-6f7d9e4b2e79",
+    "gift": "thick-foreign-tome",
+    "character": "seteth",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "8e0bb110-9808-4cc3-ba50-b509a9db5371",
+    "gift": "traders-handbook",
+    "character": "seteth",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "e024918d-471b-41dc-a418-693295994158",
+    "gift": "coffee-pastries",
+    "character": "sha-lan",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "0e2e0a26-b965-4c5c-889d-99e85e08671e",
+    "gift": "common-coffee",
+    "character": "sha-lan",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "1f821006-7309-47aa-b45c-d7f0ddc643a0",
+    "gift": "home-recipe-book",
+    "character": "sha-lan",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "c5f24cd1-c76b-4bb5-b1bb-3a487b4d2e96",
+    "gift": "rare-spices",
+    "character": "sha-lan",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "6afc46bd-ae90-4e30-9bc6-e73e2dec0dc3",
+    "gift": "select-coffee",
+    "character": "sha-lan",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "a96c960b-8987-4f6e-a612-400e6020a47d",
+    "gift": "strong-seasonings",
+    "character": "sha-lan",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "a2a0faca-6c30-4082-ad9e-95f8932b935b",
+    "gift": "pickled-bulbs",
+    "character": "simon",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  },
+  {
+    "id": "2d539375-414e-4ccd-8b80-8bde5bb5261d",
+    "gift": "training-weights",
+    "character": "simon",
+    "reaction": "loved",
+    "date": "2026-09-23"
+  }
+]

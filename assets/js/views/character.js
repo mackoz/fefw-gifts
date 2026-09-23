@@ -164,7 +164,7 @@ function renderProfile(container, index, character) {
   const publishers = [...new Set(chips.map((c) => c.source).filter(Boolean).map((s) => sourceName(index, s)))];
   container.append(el('h3', null, 'Reported to like'), chipList(chips));
   container.append(el('p', 'provenance-note', publishers.length
-    ? `Category preferences carried over from ${publishers.join(' and ')}. Nobody has confirmed them item by item yet.`
+    ? `Category preferences carried over from ${publishers.join(' and ')}. They’re predictions until a player confirms an item.`
     : 'Category preferences are unconfirmed until a player reports an actual result.'));
 }
 

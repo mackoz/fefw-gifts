@@ -980,10 +980,10 @@
     ]
   },
   {
-    "id": "tales-of-a-master",
-    "name": "Tales Of A Master",
+    "id": "history-of-a-master",
+    "name": "History of a Master",
     "category": "books",
-    "rarity": null,
+    "rarity": "rare",
     "description": "",
     "sources": [
       "polygon-2026-09-21"
@@ -1028,5 +1028,61 @@
     "sources": [
       "polygon-2026-09-21"
     ]
+  },
+  {
+    "id": "school-scandal",
+    "name": "School Scandal",
+    "category": "books",
+    "rarity": "common",
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": "morfis-almanac",
+    "name": "Morfis Almanac",
+    "category": "books",
+    "rarity": "uncommon",
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": "sharp-dagger",
+    "name": "Sharp Dagger",
+    "category": "weapons",
+    "rarity": "common",
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": "rugged-blade",
+    "name": "Rugged Blade",
+    "category": "weapons",
+    "rarity": "common",
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": "legendary-garum",
+    "name": "Legendary Garum",
+    "category": "cooking",
+    "rarity": "rare",
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": "crimson-bull-figure",
+    "name": "Crimson Bull Figure",
+    "category": "art",
+    "rarity": "common",
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": "jade-panther-figure",
+    "name": "Jade Panther Figure",
+    "category": "art",
+    "rarity": "common",
+    "description": "",
+    "sources": []
   }
 ]
