@@ -151,6 +151,7 @@ async function main() {
       container: document.getElementById('report-turnstile'),
     }),
     onSubmitted: refreshPending,
+    getFilters: () => state.filters,
   });
 
   openButton.addEventListener('click', () => reportForm.open());

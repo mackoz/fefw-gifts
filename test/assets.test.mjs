@@ -154,6 +154,26 @@ test('the search input is wired through debounce with a positive delay', () => {
   assert.ok(Number(wiring[1]) > 0, `the debounce delay must be a positive number, got ${wiring[1]}`);
 });
 
+// The report dialog's character dropdown must respect the "Hide spoilers"
+// filter, and must keep tracking it at runtime (the filter can be toggled
+// after the dialog was created), not just at page load.
+test('the report form is wired to the live filter state and rebuilds its list on every open', () => {
+  const app = sourceOf('app.js');
+  assert.match(app, /getFilters: \(\) => state\.filters/, 'app.js must pass the live filters into createReportForm');
+
+  const reportForm = sourceOf('report-form.js');
+  const openIndex = reportForm.indexOf('async open(');
+  assert.ok(openIndex >= 0, 'report-form.js must still define open(...)');
+  const keepIdIndex = reportForm.indexOf('keepId: characterId');
+  assert.ok(keepIdIndex > openIndex, 'open(...) must refill the character select with keepId: characterId');
+
+  assert.doesNotMatch(
+    reportForm,
+    /index\.characters\.filter\(\(c\) => c\.giftable\)/,
+    'report-form.js must no longer fill the select with the unfiltered giftable list',
+  );
+});
+
 // A stray closing brace does not fail loudly: CSS error recovery silently
 // discards the NEXT rule, so one extra `}` after a block deletion cost the
 // whole .chip rule -- radius, border and background -- with no error anywhere.

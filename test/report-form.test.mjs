@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildReportPayload, REACTION_PROMPTS } from '../assets/js/report-form.js';
+import { buildReportPayload, REACTION_PROMPTS, reportCharacterOptions } from '../assets/js/report-form.js';
 import { createTurnstile } from '../assets/js/turnstile.js';
 import { REACTIONS } from '../assets/js/confidence.js';
+import { loadDataset } from '../scripts/validate.mjs';
 
 const FIELDS = { character: 'nydine', gift: 'grooming-kit', reaction: 'loved', turnstileToken: 'tok' };
 
@@ -29,6 +30,53 @@ test('each missing field produces its own plain-language message', () => {
 
 test('a failed build yields no payload at all', () => {
   assert.equal(buildReportPayload({}).payload, null);
+});
+
+// --- Character options: the report dropdown must never leak a spoiler ---
+
+const OPTION_FIXTURE = [
+  { id: 'a', giftable: true, spoiler: false },
+  { id: 's', giftable: true, spoiler: true },
+  { id: 'n', giftable: false, spoiler: false },
+  { id: 'ns', giftable: false, spoiler: true },
+];
+
+const ids = (list) => list.map((c) => c.id);
+
+test('by default, spoilers are hidden and non-giftable characters never appear', () => {
+  assert.deepEqual(ids(reportCharacterOptions(OPTION_FIXTURE)), ['a']);
+});
+
+test('hideSpoilers: true hides spoiler characters', () => {
+  assert.deepEqual(ids(reportCharacterOptions(OPTION_FIXTURE, { hideSpoilers: true })), ['a']);
+});
+
+test('hideSpoilers: false lets spoiler characters through', () => {
+  assert.deepEqual(ids(reportCharacterOptions(OPTION_FIXTURE, { hideSpoilers: false })), ['a', 's']);
+});
+
+test('keepId lets an already-open report keep its spoiler preselection', () => {
+  assert.deepEqual(
+    ids(reportCharacterOptions(OPTION_FIXTURE, { hideSpoilers: true, keepId: 's' })),
+    ['a', 's'],
+  );
+});
+
+test('keepId never admits a non-giftable character', () => {
+  assert.deepEqual(
+    ids(reportCharacterOptions(OPTION_FIXTURE, { hideSpoilers: true, keepId: 'ns' })),
+    ['a'],
+  );
+});
+
+test('against the real committed data, hiding spoilers yields only giftable non-spoiler characters', async () => {
+  const { characters } = await loadDataset('data');
+  const options = reportCharacterOptions(characters, { hideSpoilers: true });
+  assert.ok(options.length > 0, 'expected at least one giftable, non-spoiler character');
+  for (const c of options) {
+    assert.equal(c.spoiler, false, `${c.id} must not be a spoiler`);
+    assert.equal(c.giftable, true, `${c.id} must be giftable`);
+  }
 });
 
 // --- Turnstile wrapper ---
