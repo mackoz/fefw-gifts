@@ -89,7 +89,9 @@ export function validate(dataset) {
   // would report "unknown": deleting a single source's id produced 102
   // errors -- the cause on line one and 101 lines of consequence beneath it.
   // Stop here too, so the shape problems come back alone and the references
-  // are worth reading once they are fixed.
+  // are worth reading once they are fixed. An identifying field on an
+  // observation stops here as well, since it is reported in the pass above:
+  // it comes back with any shape errors, and the rest waits for the next run.
   if (errors.length) return { errors };
 
   const { categories, gifts, characters, observations, sources } = dataset;
