@@ -19,9 +19,10 @@ export async function loadDataset(dir) {
 // TypeError, killing the validator with a stack trace instead of printing the
 // error it had already recorded. This covers the list fields inside a
 // character or gift; the five top-level arrays (characters, gifts,
-// observations, categories, sources) are not guarded this way, so a `[null]`
-// among them still throws. Either way the gate holds -- the exit code is 1 --
-// what a top-level throw costs is the diagnostic, not the protection.
+// observations, categories, sources) are guarded separately, by the shape
+// prelude at the top of validate(): it checks each one is an array, and each
+// element within it is an object with a usable id, before any loop below
+// ever runs, so a `[null]` among them is reported rather than thrown.
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -45,7 +46,55 @@ function checkDuplicates(items, kind, errors) {
 
 export function validate(dataset) {
   const errors = [];
-  const { categories, sources, observations } = dataset;
+
+  // Each top-level collection must be an array, checked once here instead of
+  // threading a guard through every loop below. With a collection unreadable
+  // -- say `categories` is `7` -- every cross-reference downstream fires
+  // spuriously: no readable categories means every gift and character naming
+  // one reports "unknown category", burying the one line that actually names
+  // the cause. Returning early trades a later-arriving report of any
+  // unrelated error elsewhere for a readable one now. That trade is
+  // deliberate -- do not "fix" this into a fall-through.
+  for (const name of FILES) {
+    if (!Array.isArray(dataset[name])) errors.push(`${name} must be an array`);
+  }
+  if (errors.length) return { errors };
+
+  // Each element must be an object with a non-empty string id, reported by
+  // position. The privacy check runs here too, for every observations element
+  // that is an object -- including one whose id is bad, so both problems come
+  // back in the same run instead of the identifying field waiting for the id
+  // to be fixed first. Nothing is copied out: the second return below stops
+  // before any loop reads a collection, so every array a loop below actually
+  // sees only ever contains elements that passed both checks here.
+  for (const name of FILES) {
+    dataset[name].forEach((item, i) => {
+      if (item === null || typeof item !== 'object' || Array.isArray(item)) {
+        errors.push(`${name}[${i}] must be an object`);
+        return;
+      }
+      if (typeof item.id !== 'string' || item.id.length === 0) {
+        errors.push(`${name}[${i}]: id must be a non-empty string`);
+      }
+      if (name === 'observations') {
+        for (const field of FORBIDDEN_OBSERVATION_FIELDS) {
+          if (field in item) errors.push(`observations[${i}]: forbidden identifying field: ${field}`);
+        }
+      }
+    });
+  }
+
+  // The same trade as the early return above, one level down. An entity with
+  // a shape error still has things pointing at it, and every one of them
+  // would report "unknown": deleting a single source's id produced 102
+  // errors -- the cause on line one and 101 lines of consequence beneath it.
+  // Stop here too, so the shape problems come back alone and the references
+  // are worth reading once they are fixed. An identifying field on an
+  // observation stops here as well, since it is reported in the pass above:
+  // it comes back with any shape errors, and the rest waits for the next run.
+  if (errors.length) return { errors };
+
+  const { categories, gifts, characters, observations, sources } = dataset;
   const RARITIES = new Set(['common', 'uncommon', 'rare']);
   const categoryIds = new Set(categories.map((c) => c.id));
   const sourceIds = new Set(sources.map((s) => s.id));
@@ -58,9 +107,9 @@ export function validate(dataset) {
     if (!Array.isArray(c.aliases)) errors.push(`category ${c.id}: aliases must be an array`);
   }
 
-  checkDuplicates(dataset.gifts, 'gift', errors);
+  checkDuplicates(gifts, 'gift', errors);
 
-  for (const g of dataset.gifts) {
+  for (const g of gifts) {
     if (!g.name) errors.push(`gift ${g.id}: missing name`);
     if (g.category !== null && !categoryIds.has(g.category)) {
       errors.push(`gift ${g.id}: unknown category: ${g.category}`);
@@ -77,12 +126,14 @@ export function validate(dataset) {
   const STATES = new Set(['guide', 'profile', 'discovered', 'refuted']);
   const RARITY_PREFS = new Set(['any', 'uncommon-plus', 'rare']);
   const REACTIONS = new Set(['none', 'slight', 'liked', 'loved', 'favorite']);
-  const giftIds = new Set(dataset.gifts.map((g) => g.id));
+  const giftIds = new Set(gifts.map((g) => g.id));
 
-  checkDuplicates(dataset.characters, 'character', errors);
+  checkDuplicates(characters, 'character', errors);
 
-  for (const ch of dataset.characters) {
+  for (const ch of characters) {
     if (!ch.name) errors.push(`character ${ch.id}: missing name`);
+    if (typeof ch.giftable !== 'boolean') errors.push(`character ${ch.id}: giftable must be a boolean`);
+    if (typeof ch.spoiler !== 'boolean') errors.push(`character ${ch.id}: spoiler must be a boolean`);
     if (!Array.isArray(ch.traits)) errors.push(`character ${ch.id}: traits must be an array`);
     if (ch.categories === null || typeof ch.categories !== 'object' || Array.isArray(ch.categories)) {
       errors.push(`character ${ch.id}: categories must be an object`);
@@ -111,20 +162,20 @@ export function validate(dataset) {
       }
     }
 
-    for (const t of asArray(ch.traits)) {
+    for (const [i, t] of asArray(ch.traits).entries()) {
       // Same reasoning as the category link above: a null or non-object entry
       // would otherwise reach t.category and throw.
       if (t === null || typeof t !== 'object' || Array.isArray(t)) {
-        errors.push(`character ${ch.id}: trait entries must be objects`);
+        errors.push(`character ${ch.id}: traits[${i}] must be an object`);
         continue;
       }
       if (typeof t.text !== 'string' || t.text.length === 0) {
-        errors.push(`character ${ch.id}: trait text must be a non-empty string`);
+        errors.push(`character ${ch.id}: traits[${i}]: text must be a non-empty string`);
       }
       // Absent and explicit-null both mean "not recorded", so a trait that
       // omits the key reports only what is actually wrong with it.
       if (t.category !== null && t.category !== undefined && !categoryIds.has(t.category)) {
-        errors.push(`character ${ch.id}: trait "${t.text}" names unknown category: ${t.category}`);
+        errors.push(`character ${ch.id}: traits[${i}] names unknown category: ${t.category}`);
       }
     }
 
@@ -138,7 +189,7 @@ export function validate(dataset) {
     }
   }
 
-  const charById = new Map(dataset.characters.map((c) => [c.id, c]));
+  const charById = new Map(characters.map((c) => [c.id, c]));
   checkDuplicates(observations, 'observation', errors);
 
   for (const o of observations) {
@@ -147,12 +198,6 @@ export function validate(dataset) {
     if (!ch) errors.push(`observation ${o.id}: unknown character: ${o.character}`);
     else if (!ch.giftable) errors.push(`observation ${o.id}: character ${o.character} is not giftable`);
     if (!REACTIONS.has(o.reaction)) errors.push(`observation ${o.id}: invalid reaction: ${o.reaction}`);
-  }
-
-  for (const o of observations) {
-    for (const field of FORBIDDEN_OBSERVATION_FIELDS) {
-      if (field in o) errors.push(`observation ${o.id}: forbidden identifying field: ${field}`);
-    }
   }
 
   return { errors };
