@@ -12,7 +12,7 @@
   {
     "id": "ginji-cervi",
     "name": "Ginji Cervi",
-    "category": null,
+    "category": "sweets",
     "rarity": null,
     "description": "",
     "sources": [
@@ -122,8 +122,8 @@
   {
     "id": "eastern-black-silk",
     "name": "Eastern Black Silk",
-    "category": null,
-    "rarity": null,
+    "category": "fashion",
+    "rarity": "uncommon",
     "description": "",
     "sources": [
       "game8-items"

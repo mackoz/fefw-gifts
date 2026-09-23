@@ -36,7 +36,7 @@
       },
       "fortune-telling": {
         "state": "guide",
-        "source": "polygon-2026-09-21"
+        "source": "polygon-2026-09-17"
       }
     },
     "rarityPreference": null,
@@ -478,7 +478,7 @@
     },
     "rarityPreference": null,
     "favorites": [],
-    "notes": "Polygon reports he likes vegetable items such as seeds, bulbs and potted vegetables, but not pickled vegetables."
+    "notes": "Polygon reports he likes vegetable items, but not pickled ones."
   },
   {
     "id": "hong-hua",
@@ -561,10 +561,6 @@
       "fashion": {
         "state": "guide",
         "source": "polygon-2026-09-17"
-      },
-      "sweets": {
-        "state": "guide",
-        "source": "polygon-2026-09-21"
       }
     },
     "rarityPreference": null,
