@@ -31,6 +31,13 @@ export function buildReportPayload({ character, gift, reaction, turnstileToken }
   };
 }
 
+// Pure. Same rule as every view: a spoiler character is left out while
+// spoilers are hidden, and a non-giftable character never appears regardless.
+// Defaults to hiding spoilers (fail closed).
+export function reportCharacterOptions(characters, { hideSpoilers = true } = {}) {
+  return characters.filter((c) => c.giftable && !(hideSpoilers && c.spoiler));
+}
+
 function fillSelect(select, items, placeholder) {
   select.replaceChildren();
   const blank = document.createElement('option');
@@ -60,10 +67,13 @@ function fillReactions(fieldset) {
 
 // Wires the dialog. `elements` is every node the form needs, passed in rather
 // than looked up, so this module keeps no top-level DOM access.
-export function createReportForm({ elements, index, api, turnstile, onSubmitted = () => {} }) {
+export function createReportForm({
+  elements, index, api, turnstile, onSubmitted = () => {},
+  getFilters = () => ({ hideSpoilers: true }),
+}) {
   const { dialog, form, character, gift, reactions, status, cancel, submit } = elements;
 
-  fillSelect(character, index.characters.filter((c) => c.giftable), 'Choose a character…');
+  fillSelect(character, reportCharacterOptions(index.characters, { hideSpoilers: getFilters().hideSpoilers }), 'Choose a character…');
   fillSelect(gift, index.gifts, 'Choose a gift…');
   fillReactions(reactions);
 
@@ -106,6 +116,10 @@ export function createReportForm({ elements, index, api, turnstile, onSubmitted 
 
   return {
     async open(characterId = '', giftId = '') {
+      // Rebuilt on every open rather than once at creation, since the filter
+      // toggle is a runtime control (app.js) and this select must reflect its
+      // current value, not the value at page load.
+      fillSelect(character, reportCharacterOptions(index.characters, { hideSpoilers: getFilters().hideSpoilers }), 'Choose a character…');
       // Reset first, then pre-fill. This covers Cancel, Escape and any other
       // close path at once -- otherwise a cancelled report's reaction survives
       // into the next pair the contributor opens.
