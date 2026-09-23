@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildIndex } from '../assets/js/data.js';
-import { characterRows, characterIndexModel, characterSummary, signalHeading } from '../assets/js/views/character.js';
+import { characterRows, characterIndexModel, characterSummary, signalHeading, provenanceNote } from '../assets/js/views/character.js';
 import { sortByConfidence, stateLabel, partitionRows, categoryChips, chip, reportButton, reportChip } from '../assets/js/views/shared.js';
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
 import { giftRows, giftIndexModel } from '../assets/js/views/gift.js';
@@ -403,6 +403,102 @@ test('characterIndexModel carries the category chips for each character', () => 
   assert.deepEqual(entry.categories.map((c) => c.label), ['Books']);
 });
 
+// A character's category chips mix three different claims -- a guide's guess,
+// an in-game profile listing, and something a player actually found -- and the
+// note must say which is which rather than calling everything "carried over".
+// See CLAUDE.md's "Guide-derived links always carry provenance."
+const provenanceIndex = buildIndex({
+  categories: [
+    { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
+    { id: 'coffee', label: 'Coffee', inGameDescriptor: null, aliases: [] },
+    { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
+    { id: 'drinks', label: 'Fermented Drinks', inGameDescriptor: null, aliases: [] },
+    { id: 'snacks', label: 'Snacks', inGameDescriptor: null, aliases: [] },
+  ],
+  gifts: [],
+  characters: [],
+  observations: [],
+  sources: [
+    { id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' },
+    { id: 'game8-1', title: '', author: null, publisher: 'Game8', url: '', retrieved: '2026-09-23' },
+  ],
+});
+
+const guideChip = (id, label, source) => ({ id, label, state: 'guide', source });
+const discoveredChip = (id, label) => ({ id, label, state: 'discovered', source: null });
+const profileChip = (id, label) => ({ id, label, state: 'profile', source: null });
+
+test('provenanceNote: guide-only, one publisher', () => {
+  const chips = [guideChip('books', 'Books', 'polygon-1')];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Category preferences carried over from Polygon. They’re predictions until a player confirms an item.',
+  );
+});
+
+test('provenanceNote: guide-only, two publishers', () => {
+  const chips = [guideChip('books', 'Books', 'polygon-1'), guideChip('coffee', 'Coffee', 'game8-1')];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Category preferences carried over from Polygon and Game8. They’re predictions until a player confirms an item.',
+  );
+});
+
+test('provenanceNote: guide plus one discovered', () => {
+  const chips = [discoveredChip('drinks', 'Fermented Drinks'), guideChip('books', 'Books', 'polygon-1')];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Fermented Drinks was found through play. The rest are carried over from Polygon and are predictions until a player confirms an item.',
+  );
+});
+
+test('provenanceNote: guide plus two discovered', () => {
+  const chips = [
+    discoveredChip('books', 'Books'),
+    discoveredChip('coffee', 'Coffee'),
+    guideChip('tea', 'Tea', 'polygon-1'),
+  ];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Books and Coffee were found through play. The rest are carried over from Polygon and are predictions until a player confirms an item.',
+  );
+});
+
+test('provenanceNote: guide plus three discovered', () => {
+  const chips = [
+    discoveredChip('books', 'Books'),
+    discoveredChip('coffee', 'Coffee'),
+    discoveredChip('tea', 'Tea'),
+    guideChip('snacks', 'Snacks', 'polygon-1'),
+  ];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Books, Coffee and Tea were found through play. The rest are carried over from Polygon and are predictions until a player confirms an item.',
+  );
+});
+
+test('provenanceNote: discovered only', () => {
+  const chips = [discoveredChip('books', 'Books')];
+  assert.equal(provenanceNote(provenanceIndex, chips), 'Found through play.');
+});
+
+test('provenanceNote: profile only, one', () => {
+  const chips = [profileChip('snacks', 'Snacks')];
+  assert.equal(provenanceNote(provenanceIndex, chips), 'Snacks is on the in-game profile.');
+});
+
+test('provenanceNote: discovered plus profile, no guide', () => {
+  const chips = [discoveredChip('drinks', 'Fermented Drinks'), profileChip('snacks', 'Snacks')];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Fermented Drinks was found through play. Snacks is on the in-game profile.',
+  );
+});
+
+test('provenanceNote: empty chips returns an empty string', () => {
+  assert.equal(provenanceNote(provenanceIndex, []), '');
+});
+
 test('signalHeading never claims knowledge over a table of pure guesswork', () => {
   assert.equal(signalHeading([{ confidence: { state: 'PREDICTED', predicted: 'positive' } }]), 'Worth trying');
   // All guesses, but one says the gift will NOT land: not "worth trying", and
@@ -771,4 +867,34 @@ test('a character with no traits key renders without throwing and omits the Prof
   });
   const heading = findFirst(container, (n) => n.tagName === 'H3' && n.textContent === 'Profile');
   assert.equal(heading, undefined, 'no traits means no Profile heading');
+});
+
+// Render-level check that renderProfile actually wires provenanceNote in,
+// not just that the pure function is correct in isolation.
+test('the character detail view renders the provenance note text from provenanceNote', () => {
+  const idx = buildIndex({
+    categories: [
+      { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
+      { id: 'drinks', label: 'Fermented Drinks', inGameDescriptor: null, aliases: [] },
+    ],
+    gifts: [],
+    characters: [{
+      id: 'c1', name: 'C', giftable: true, spoiler: false, traits: [],
+      categories: {
+        drinks: { state: 'discovered', source: null },
+        books: { state: 'guide', source: 'polygon-1' },
+      },
+      rarityPreference: null, favorites: [], notes: null,
+    }],
+    observations: [],
+    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+  });
+
+  const container = fakeElement('div');
+  characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'c1' });
+  const note = findFirst(container, (n) => (n.className ?? '').includes('provenance-note'));
+  assert.equal(
+    note.textContent,
+    'Fermented Drinks was found through play. The rest are carried over from Polygon and are predictions until a player confirms an item.',
+  );
 });

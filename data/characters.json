@@ -351,6 +351,10 @@
       "coffee": {
         "state": "guide",
         "source": "polygon-2026-09-17"
+      },
+      "fermented-drinks": {
+        "state": "discovered",
+        "source": null
       }
     },
     "rarityPreference": null,
@@ -434,6 +438,10 @@
       "board-games": {
         "state": "guide",
         "source": "polygon-2026-09-17"
+      },
+      "fermented-drinks": {
+        "state": "discovered",
+        "source": null
       }
     },
     "rarityPreference": null,

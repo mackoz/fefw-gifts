@@ -57,8 +57,7 @@ function renderPicker(container, index, state) {
     list.setAttribute('role', 'list');
     for (const gift of group.gifts) {
       const item = el('li');
-      // Rarity rides on the chip where it is recorded. No gift has one today,
-      // so today every chip is just a name.
+      // Rarity rides on the chip where it is recorded; most gifts have none yet.
       const label = gift.rarity ? `${gift.name} (${gift.rarity})` : gift.name;
       item.append(chip(label, { href: `#/gift/${gift.id}` }));
       list.append(item);
@@ -150,7 +149,7 @@ export function render(container, index, state) {
 
   const category = gift.category ? index.byCategoryId.get(gift.category) : null;
   // One fact per line rather than a middle-dot-joined string, and rarity only
-  // when it is recorded -- no gift has one today.
+  // when it is recorded.
   if (category) container.append(el('p', 'meta', `Category: ${category.label}`));
   if (gift.rarity) container.append(el('p', 'meta', `Rarity: ${gift.rarity}`));
   if (category?.inGameDescriptor) {

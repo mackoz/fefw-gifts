@@ -43,8 +43,8 @@ Everything lives under `data/` as hand-edited, validated JSON:
 - `data/characters.json` — the character roster: traits, category links (with
   provenance — guide, profile, discovered, or refuted), rarity preference,
   known favorites.
-- `data/observations.json` — anonymous player reports. Append-only, ships
-  empty, and carries no reporter, name, email, IP, or other identifying field.
+- `data/observations.json` — anonymous player results, never guide data.
+  Append-only, and carries no reporter, name, email, IP, or other identifying field.
   This is enforced by the validator, not just a convention.
 - `data/sources.json` — the published guides and references this project
   credits and cites.

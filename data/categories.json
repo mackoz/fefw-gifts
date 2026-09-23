@@ -22,8 +22,9 @@
   { "id": "sweets",           "label": "Sweets",           "inGameDescriptor": "those who love sweets", "aliases": ["pastries", "candy"] },
   { "id": "children",         "label": "Children",         "inGameDescriptor": "children", "aliases": [] },
   { "id": "fish",             "label": "Fish",             "inGameDescriptor": "fish lovers", "aliases": ["bait"] },
-  { "id": "paintings",        "label": "Paintings",        "inGameDescriptor": "painting lovers", "aliases": ["art"] },
+  { "id": "paintings",        "label": "Paintings",        "inGameDescriptor": "painting lovers", "aliases": [] },
   { "id": "spirituality",     "label": "Spirituality",     "inGameDescriptor": "those who appreciate spirituality", "aliases": [] },
   { "id": "animals",          "label": "Animals",          "inGameDescriptor": "animal lovers", "aliases": [] },
-  { "id": "fortune-telling",  "label": "Fortune Telling",  "inGameDescriptor": "fortune tellers", "aliases": ["divination"] }
+  { "id": "fortune-telling",  "label": "Fortune Telling",  "inGameDescriptor": "fortune tellers", "aliases": ["divination"] },
+  { "id": "art",              "label": "Art",              "inGameDescriptor": "art lovers", "aliases": [] }
 ]
