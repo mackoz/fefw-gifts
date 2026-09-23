@@ -60,36 +60,39 @@ export function validate(dataset) {
   }
   if (errors.length) return { errors };
 
-  // Each element must be an object with a non-empty string id. A bad element
-  // is reported by position and excluded from `clean` -- nothing downstream
-  // ever sees an entity without a usable id, which is what removes the
-  // `character undefined: ...` labels a missing id used to produce, and what
-  // keeps an id-less observation from colliding with every other one on
-  // `undefined` in the ingest dedup.
-  const clean = {};
+  // Each element must be an object with a non-empty string id, reported by
+  // position. The privacy check runs here too, for every observations element
+  // that is an object -- including one whose id is bad, so both problems come
+  // back in the same run instead of the identifying field waiting for the id
+  // to be fixed first. Nothing is copied out: the second return below stops
+  // before any loop reads a collection, so every array a loop below actually
+  // sees only ever contains elements that passed both checks here.
   for (const name of FILES) {
-    clean[name] = [];
     dataset[name].forEach((item, i) => {
       if (item === null || typeof item !== 'object' || Array.isArray(item)) {
         errors.push(`${name}[${i}] must be an object`);
-      } else if (typeof item.id !== 'string' || item.id.length === 0) {
+        return;
+      }
+      if (typeof item.id !== 'string' || item.id.length === 0) {
         errors.push(`${name}[${i}]: id must be a non-empty string`);
-      } else {
-        clean[name].push(item);
+      }
+      if (name === 'observations') {
+        for (const field of FORBIDDEN_OBSERVATION_FIELDS) {
+          if (field in item) errors.push(`observations[${i}]: forbidden identifying field: ${field}`);
+        }
       }
     });
   }
 
-  // The same trade as the early return above, one level down. An excluded
-  // entry still has things pointing at it, and every one of them would report
-  // "unknown": deleting a single source's id produced 102 errors -- the cause
-  // on line one and 101 lines of consequence beneath it. Stop here too, so the
-  // shape problems come back alone and the references are worth reading once
-  // they are fixed. The exclusion above stays as a second layer: if this
-  // return is ever removed, no loop below can meet an entry without an id.
+  // The same trade as the early return above, one level down. An entity with
+  // a shape error still has things pointing at it, and every one of them
+  // would report "unknown": deleting a single source's id produced 102
+  // errors -- the cause on line one and 101 lines of consequence beneath it.
+  // Stop here too, so the shape problems come back alone and the references
+  // are worth reading once they are fixed.
   if (errors.length) return { errors };
 
-  const { categories, sources, observations } = clean;
+  const { categories, gifts, characters, observations, sources } = dataset;
   const RARITIES = new Set(['common', 'uncommon', 'rare']);
   const categoryIds = new Set(categories.map((c) => c.id));
   const sourceIds = new Set(sources.map((s) => s.id));
@@ -102,9 +105,9 @@ export function validate(dataset) {
     if (!Array.isArray(c.aliases)) errors.push(`category ${c.id}: aliases must be an array`);
   }
 
-  checkDuplicates(clean.gifts, 'gift', errors);
+  checkDuplicates(gifts, 'gift', errors);
 
-  for (const g of clean.gifts) {
+  for (const g of gifts) {
     if (!g.name) errors.push(`gift ${g.id}: missing name`);
     if (g.category !== null && !categoryIds.has(g.category)) {
       errors.push(`gift ${g.id}: unknown category: ${g.category}`);
@@ -121,11 +124,11 @@ export function validate(dataset) {
   const STATES = new Set(['guide', 'profile', 'discovered', 'refuted']);
   const RARITY_PREFS = new Set(['any', 'uncommon-plus', 'rare']);
   const REACTIONS = new Set(['none', 'slight', 'liked', 'loved', 'favorite']);
-  const giftIds = new Set(clean.gifts.map((g) => g.id));
+  const giftIds = new Set(gifts.map((g) => g.id));
 
-  checkDuplicates(clean.characters, 'character', errors);
+  checkDuplicates(characters, 'character', errors);
 
-  for (const ch of clean.characters) {
+  for (const ch of characters) {
     if (!ch.name) errors.push(`character ${ch.id}: missing name`);
     if (typeof ch.giftable !== 'boolean') errors.push(`character ${ch.id}: giftable must be a boolean`);
     if (typeof ch.spoiler !== 'boolean') errors.push(`character ${ch.id}: spoiler must be a boolean`);
@@ -184,7 +187,7 @@ export function validate(dataset) {
     }
   }
 
-  const charById = new Map(clean.characters.map((c) => [c.id, c]));
+  const charById = new Map(characters.map((c) => [c.id, c]));
   checkDuplicates(observations, 'observation', errors);
 
   for (const o of observations) {
@@ -193,12 +196,6 @@ export function validate(dataset) {
     if (!ch) errors.push(`observation ${o.id}: unknown character: ${o.character}`);
     else if (!ch.giftable) errors.push(`observation ${o.id}: character ${o.character} is not giftable`);
     if (!REACTIONS.has(o.reaction)) errors.push(`observation ${o.id}: invalid reaction: ${o.reaction}`);
-  }
-
-  for (const o of observations) {
-    for (const field of FORBIDDEN_OBSERVATION_FIELDS) {
-      if (field in o) errors.push(`observation ${o.id}: forbidden identifying field: ${field}`);
-    }
   }
 
   return { errors };

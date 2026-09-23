@@ -394,15 +394,55 @@ for (const name of FILE_NAMES) {
   });
 }
 
+// Pins the two clauses `null` alone cannot. `typeof [] === 'object'`, so an
+// array element only trips `|| Array.isArray(item)`; `typeof 'x' === 'string'`,
+// so a string element only trips `typeof item !== 'object'`. Each case
+// isolates one clause: dropping either from the shape check leaves the other
+// case's error alone unpinned, and null cannot substitute for either.
+for (const name of FILE_NAMES) {
+  for (const [label, value] of [['an array', []], ['a string', 'x']]) {
+    test(`${label} element in ${name} is rejected by position`, () => {
+      const d = base();
+      d[name] = [value];
+      const { errors } = validate(d);
+      assert.deepEqual(errors, [`${name}[0] must be an object`]);
+    });
+  }
+}
+
 // --- Shape prelude: each element needs a non-empty string id -------------
 
+// Each factory returns a fully valid entry for that collection: placed into
+// base() -- together with whatever it references -- the dataset validates
+// with zero errors (see the loop just below). observations needs a real gift
+// and a giftable character to point at, so its factory adds them to the
+// dataset it is handed rather than naming ids ('g', 'c') that exist nowhere;
+// the other factories ignore that argument, having nothing to reference.
 const VALID_ITEM = {
   categories: () => ({ id: 'x', label: 'L', inGameDescriptor: null, aliases: [] }),
   gifts: () => ({ id: 'x', name: 'G', category: null, rarity: null, description: '', sources: [] }),
   characters: () => character({ id: 'x' }),
-  observations: () => ({ id: 'x', gift: 'g', character: 'c', reaction: 'liked', date: '2026-09-20' }),
+  observations: (d) => {
+    d.gifts.push({ id: 'g', name: 'G', category: null, rarity: null, description: '', sources: [] });
+    d.characters.push(character({ id: 'c' }));
+    return { id: 'x', gift: 'g', character: 'c', reaction: 'liked', date: '2026-09-20' };
+  },
   sources: () => ({ id: 'x', title: 'T', author: null, publisher: 'P', url: 'https://e.x', retrieved: '2026-09-20' }),
 };
+
+// Holds the word "VALID" in VALID_ITEM true: each entry, placed into base(),
+// produces no errors at all. This is what a gift named 'g' and a character
+// named 'c' that didn't exist anywhere used to fail silently -- the bad-id
+// tests below never reached far enough to notice, because the corrupted id
+// stopped validation before the reference checks ever ran.
+for (const name of FILE_NAMES) {
+  test(`VALID_ITEM.${name}, placed into base(), validates with zero errors`, () => {
+    const d = base();
+    const item = VALID_ITEM[name](d);
+    d[name] = [...d[name], item];
+    assert.deepEqual(validate(d).errors, []);
+  });
+}
 
 const BAD_IDS = [
   ['a number', (item) => { item.id = 7; }], // catches a `!item.id` weakening
@@ -415,7 +455,7 @@ for (const name of FILE_NAMES) {
   for (const [label, apply] of BAD_IDS) {
     test(`a ${name} element whose id is ${label} is rejected`, () => {
       const d = base();
-      const item = VALID_ITEM[name]();
+      const item = VALID_ITEM[name](d);
       apply(item);
       d[name] = [item];
       const { errors } = validate(d);
@@ -433,7 +473,7 @@ test('a character with a bad id and no name produces only the id error', () => {
   assert.deepEqual(errors, ['characters[0]: id must be a non-empty string']);
 });
 
-test('an id-less observation is rejected, protecting the ingest dedup from colliding on undefined', () => {
+test('an observation with no id is rejected', () => {
   const d = base();
   d.observations.push({ gift: 'g', character: 'c', reaction: 'liked', date: '2026-09-20' });
   const { errors } = validate(d);
@@ -470,6 +510,30 @@ test('a shape error defers unrelated errors to the next run, by design', () => {
   assert.deepEqual(validate(d).errors, ['characters[0]: id must be a non-empty string']);
   d.characters[0].id = 'c1';
   assert.deepEqual(validate(d).errors, ['character c2: giftable must be a boolean']);
+});
+
+// The privacy check runs inside the per-element pass itself, so unlike the
+// reference checks above it is never deferred by an unrelated shape error
+// elsewhere in the dataset -- both problems come back in the same run.
+test('a shape error in one collection does not skip the privacy check on another', () => {
+  const d = base();
+  d.categories.push({ label: 'No id', inGameDescriptor: null, aliases: [] }); // categories[1]: no id
+  d.observations.push({ id: 'o1', gift: 'g', character: 'c', reaction: 'liked', date: '2026-09-20', name: 'someone' });
+  const { errors } = validate(d);
+  assert.deepEqual(errors, [
+    'categories[1]: id must be a non-empty string',
+    'observations[0]: forbidden identifying field: name',
+  ]);
+});
+
+test('an observation with a bad id and a forbidden field reports both, in that order', () => {
+  const d = base();
+  d.observations.push({ gift: 'g', character: 'c', reaction: 'liked', date: '2026-09-20', reporter: 'someone' });
+  const { errors } = validate(d);
+  assert.deepEqual(errors, [
+    'observations[0]: id must be a non-empty string',
+    'observations[0]: forbidden identifying field: reporter',
+  ]);
 });
 
 // --- giftable and spoiler must be booleans --------------------------------
