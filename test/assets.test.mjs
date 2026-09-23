@@ -156,22 +156,13 @@ test('the search input is wired through debounce with a positive delay', () => {
 
 // The report dialog's character dropdown must respect the "Hide spoilers"
 // filter, and must keep tracking it at runtime (the filter can be toggled
-// after the dialog was created), not just at page load.
-test('the report form is wired to the live filter state and rebuilds its list on every open', () => {
+// after the dialog was created), not just at page load. The behavioural
+// tests in report-form.test.mjs cover report-form.js itself; this only
+// pins the one thing they can't see from inside that module -- that app.js
+// actually wires the live filter state in, not a snapshot of it.
+test('app.js wires the live filter state into the report form', () => {
   const app = sourceOf('app.js');
   assert.match(app, /getFilters: \(\) => state\.filters/, 'app.js must pass the live filters into createReportForm');
-
-  const reportForm = sourceOf('report-form.js');
-  const openIndex = reportForm.indexOf('async open(');
-  assert.ok(openIndex >= 0, 'report-form.js must still define open(...)');
-  const keepIdIndex = reportForm.indexOf('keepId: characterId');
-  assert.ok(keepIdIndex > openIndex, 'open(...) must refill the character select with keepId: characterId');
-
-  assert.doesNotMatch(
-    reportForm,
-    /index\.characters\.filter\(\(c\) => c\.giftable\)/,
-    'report-form.js must no longer fill the select with the unfiltered giftable list',
-  );
 });
 
 // A stray closing brace does not fail loudly: CSS error recovery silently

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildReportPayload, REACTION_PROMPTS, reportCharacterOptions } from '../assets/js/report-form.js';
+import { buildReportPayload, REACTION_PROMPTS, reportCharacterOptions, createReportForm } from '../assets/js/report-form.js';
 import { createTurnstile } from '../assets/js/turnstile.js';
 import { REACTIONS } from '../assets/js/confidence.js';
 import { loadDataset } from '../scripts/validate.mjs';
@@ -55,20 +55,6 @@ test('hideSpoilers: false lets spoiler characters through', () => {
   assert.deepEqual(ids(reportCharacterOptions(OPTION_FIXTURE, { hideSpoilers: false })), ['a', 's']);
 });
 
-test('keepId lets an already-open report keep its spoiler preselection', () => {
-  assert.deepEqual(
-    ids(reportCharacterOptions(OPTION_FIXTURE, { hideSpoilers: true, keepId: 's' })),
-    ['a', 's'],
-  );
-});
-
-test('keepId never admits a non-giftable character', () => {
-  assert.deepEqual(
-    ids(reportCharacterOptions(OPTION_FIXTURE, { hideSpoilers: true, keepId: 'ns' })),
-    ['a'],
-  );
-});
-
 test('against the real committed data, hiding spoilers yields only giftable non-spoiler characters', async () => {
   const { characters } = await loadDataset('data');
   const options = reportCharacterOptions(characters, { hideSpoilers: true });
@@ -77,6 +63,102 @@ test('against the real committed data, hiding spoilers yields only giftable non-
     assert.equal(c.spoiler, false, `${c.id} must not be a spoiler`);
     assert.equal(c.giftable, true, `${c.id} must be giftable`);
   }
+  assert.ok(!options.some((c) => c.id === 'bertrand'), 'Bertrand is a spoiler and must be hidden');
+});
+
+// --- createReportForm: behaviour, not just the source, of the character
+// dropdown -- exercised against a minimal stub DOM (no dependencies) rather
+// than a real <select>, since only one thing about a real select matters
+// here: that resetting its children also resets its selected value.
+
+// Shared by every element document.createElement is asked for (options,
+// plus the label/input/text-node plumbing fillReactions() builds). Only
+// .value/.textContent are ever asserted on; .append and .className exist so
+// that unrelated plumbing doesn't throw.
+function stubElement() {
+  return { value: '', textContent: '', className: '', append() {} };
+}
+
+function stubSelect() {
+  return {
+    options: [],
+    _value: '',
+    replaceChildren() {
+      this.options = [];
+      this._value = '';
+    },
+    append(...opts) {
+      this.options.push(...opts);
+    },
+    get value() {
+      return this._value;
+    },
+    set value(v) {
+      this._value = this.options.some((o) => o.value === v) ? v : '';
+    },
+  };
+}
+
+test('createReportForm keeps the character dropdown in sync with the live filter, on every open', async (t) => {
+  const originalDocument = globalThis.document;
+  globalThis.document = { createElement: () => stubElement(), createTextNode: () => stubElement() };
+  t.after(() => {
+    globalThis.document = originalDocument;
+  });
+
+  const character = stubSelect();
+  const gift = stubSelect();
+  const form = {
+    reset() {
+      character.value = '';
+      gift.value = '';
+    },
+    addEventListener() {},
+  };
+  const dialog = { showModal() {}, close() {} };
+  const reactions = { append() {}, querySelector: () => null };
+  const status = { textContent: '' };
+  const cancel = { addEventListener() {} };
+  const submit = { disabled: false };
+  const turnstile = { mount: async () => {}, reset() {}, token: () => '' };
+  const api = { submitReport: async () => ({ ok: true }) };
+
+  const index = {
+    characters: OPTION_FIXTURE.filter((c) => c.id !== 'ns'),
+    gifts: [{ id: 'g1', name: 'G1' }],
+  };
+
+  const filters = { hideSpoilers: true };
+  const reportForm = createReportForm({
+    elements: { dialog, form, character, gift, reactions, status, cancel, submit },
+    index, api, turnstile,
+    getFilters: () => filters,
+  });
+
+  await reportForm.open();
+  assert.deepEqual(
+    character.options.map((o) => o.value), ['', 'a'],
+    'spoilers stay hidden by default',
+  );
+
+  filters.hideSpoilers = false;
+  await reportForm.open();
+  assert.deepEqual(
+    character.options.map((o) => o.value), ['', 'a', 's'],
+    'the filter is read at open time, not at creation time',
+  );
+
+  await reportForm.open('a', 'g1');
+  assert.equal(character.value, 'a', 'the character preselection survives the refill');
+  assert.equal(gift.value, 'g1', 'the gift preselection survives the refill');
+
+  await reportForm.open();
+  await reportForm.open();
+  await reportForm.open();
+  const blanks = character.options.filter((o) => o.value === '');
+  assert.equal(blanks.length, 1, 'repeated opens leave exactly one placeholder option');
+  const nonBlank = character.options.filter((o) => o.value !== '').map((o) => o.value);
+  assert.equal(new Set(nonBlank).size, nonBlank.length, 'repeated opens must not duplicate options');
 });
 
 // --- Turnstile wrapper ---

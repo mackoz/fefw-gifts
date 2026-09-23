@@ -31,14 +31,11 @@ export function buildReportPayload({ character, gift, reaction, turnstileToken }
   };
 }
 
-// Pure. A spoiler character is left out of the dropdown while filters hide
-// spoilers, the same as every other view -- except `keepId`, which lets a
-// report already open on a row that's currently visible keep its
-// preselection (e.g. the filter was toggled after the dialog's list was
-// built). `keepId` never admits a non-giftable character: that gate is
-// absolute, not filter-dependent.
-export function reportCharacterOptions(characters, { hideSpoilers = true, keepId = '' } = {}) {
-  return characters.filter((c) => c.giftable && (!(hideSpoilers && c.spoiler) || c.id === keepId));
+// Pure. Same rule as every view: a spoiler character is left out while
+// spoilers are hidden, and a non-giftable character never appears regardless.
+// Defaults to hiding spoilers (fail closed).
+export function reportCharacterOptions(characters, { hideSpoilers = true } = {}) {
+  return characters.filter((c) => c.giftable && !(hideSpoilers && c.spoiler));
 }
 
 function fillSelect(select, items, placeholder) {
@@ -122,7 +119,7 @@ export function createReportForm({
       // Rebuilt on every open rather than once at creation, since the filter
       // toggle is a runtime control (app.js) and this select must reflect its
       // current value, not the value at page load.
-      fillSelect(character, reportCharacterOptions(index.characters, { hideSpoilers: getFilters().hideSpoilers, keepId: characterId }), 'Choose a character…');
+      fillSelect(character, reportCharacterOptions(index.characters, { hideSpoilers: getFilters().hideSpoilers }), 'Choose a character…');
       // Reset first, then pre-fill. This covers Cancel, Escape and any other
       // close path at once -- otherwise a cancelled report's reaction survives
       // into the next pair the contributor opens.
