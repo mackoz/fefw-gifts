@@ -188,3 +188,43 @@ test('every stylesheet is brace-balanced', () => {
     assert.equal(depth, 0, `${file}: ${depth} unclosed block(s)`);
   }
 });
+
+const MISSING_ITEM_IDS = [
+  'report-character-field', 'report-reactions-legend', 'report-item-fields', 'report-item-name',
+  'report-item-duplicate', 'report-item-category', 'report-item-line-field', 'report-item-line',
+  'report-rarity', 'report-item-character',
+];
+
+test('the report dialog ships the missing-item fields, hidden until chosen', () => {
+  const html = read('../index.html');
+  const dialog = html.slice(html.indexOf('<dialog id="report-dialog"'), html.indexOf('</dialog>'));
+  for (const id of MISSING_ITEM_IDS) assert.match(dialog, new RegExp(`id="${id}"`), `missing #${id}`);
+  // `hidden` only works on a wrapper no rule gives a display.
+  assert.match(dialog, /<div id="report-item-fields" hidden>/, 'the item block must start hidden, on a div');
+  assert.match(dialog, /<div id="report-item-line-field" hidden>/, 'the typed line must start hidden, on a div');
+  assert.match(dialog, /name="rarity" value="" checked/, '"Not sure" must be the default rarity');
+  assert.match(dialog, /Only the site maintainer sees this until it’s approved\./);
+  assert.match(dialog, /id="report-item-name"[^>]*maxlength="40"/);
+  assert.match(dialog, /id="report-item-line"[^>]*maxlength="40"/);
+});
+
+// app.js has no behavioural test, so this pins the wiring report-form.js
+// cannot see from inside: every element is passed in, and the Gifts-tab
+// button reaches openMissingItem with the name it carries.
+test('app.js hands the missing-item elements to the form and wires the Gifts-tab button', () => {
+  const app = sourceOf('app.js');
+  for (const id of MISSING_ITEM_IDS) {
+    assert.match(app, new RegExp(`getElementById\\('${id}'\\)`), `app.js never looks up #${id}`);
+  }
+  assert.match(app, /closest\('\.missing-item-button'\)/, 'the delegated listener must find the Gifts-tab button');
+  assert.match(app, /openMissingItem\(\w+\.dataset\.name\)/, 'and open the dialog with its name');
+  assert.match(app, /state\.searchText = e\.target\.value\.trim\(\)/, 'the typed search must reach the view');
+});
+
+test('the review page ships the missing-items section and hands it to mountReview', () => {
+  const html = read('../review/index.html');
+  for (const id of ['item-review-count', 'item-review-status', 'item-review-list']) {
+    assert.match(html, new RegExp(`id="${id}"`), `review page is missing #${id}`);
+    assert.match(html, new RegExp(`getElementById\\('${id}'\\)`), `mountReview is never given #${id}`);
+  }
+});

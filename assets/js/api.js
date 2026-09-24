@@ -66,11 +66,20 @@ export function createApi({
 
     submitReport: (report) => call('/report', { method: 'POST', body: report }),
     sendVote: (vote) => call('/vote', { method: 'POST', body: vote }),
+    // A missing-item report. It never appears on the site until approved, so
+    // there is nothing to fetch back for the overlay.
+    submitItemReport: (report) => call('/item-report', { method: 'POST', body: report }),
 
     // Admin. Used only by the review page; harmless here without a token.
     fetchReview: () => call('/review', { admin: true }),
     decide: (id, decision) => call(`/review/${encodeURIComponent(id)}`, {
       method: 'POST', body: { decision }, admin: true,
+    }),
+    fetchItemReview: () => call('/item-review', { admin: true }),
+    // `body` is the whole decision ({ decision: 'reject' } or an approval),
+    // sent as given: the Worker validates it with the shared item rules.
+    decideItem: (id, body) => call(`/item-review/${encodeURIComponent(id)}`, {
+      method: 'POST', body, admin: true,
     }),
   };
 }

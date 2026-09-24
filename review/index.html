@@ -39,6 +39,17 @@
 
     <p id="review-status" class="empty-state" role="status" aria-live="polite"></p>
     <ul id="review-list" class="review-list" role="list"></ul>
+
+    <section class="item-review" aria-labelledby="item-review-title">
+      <h2 id="item-review-title">Missing items (<span id="item-review-count">0</span>)</h2>
+      <p class="toggle-note">
+        Items players found that the guide does not list. None of this is
+        public. Fix the name and category before approving: the nightly sync
+        writes exactly what you approve, never what was typed.
+      </p>
+      <p id="item-review-status" class="empty-state" role="status" aria-live="polite"></p>
+      <ul id="item-review-list" class="review-list" role="list"></ul>
+    </section>
   </main>
 
   <script type="module">
@@ -55,6 +66,9 @@
         refresh: document.getElementById('review-refresh'),
         status: document.getElementById('review-status'),
         list: document.getElementById('review-list'),
+        itemCount: document.getElementById('item-review-count'),
+        itemStatus: document.getElementById('item-review-status'),
+        itemList: document.getElementById('item-review-list'),
       },
     });
   </script>

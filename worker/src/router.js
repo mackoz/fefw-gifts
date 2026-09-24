@@ -4,6 +4,13 @@ import {
   validateReport, insertReport, listPending, recordVote,
   listForReview, setStatus, takeApproved,
 } from './reports.js';
+import {
+  insertItemReport, listItemReviews, decideItemReport, takeApprovedItems,
+} from './item-reports.js';
+// Imported from the site's own module so the form, the Worker, the review page
+// and the sync can never disagree about a rule. Wrangler bundles it; see
+// worker/README.md.
+import { validateItemReport, validateItemApproval } from '../../assets/js/item-rules.js';
 
 // The injectable side effects. Handlers never touch the network, the clock or
 // a UUID source directly, so a test can drive every route without any of them.
@@ -185,8 +192,54 @@ async function postIngest(request, env) {
   return json({ reports }, 200, { ...corsHeaders(request, env), ...ADMIN_HEADERS });
 }
 
-// Tasks 4 and 5 push their routes in here. `handle` takes the table as an
-// argument so tests can drive the router with a stub table of their own.
+async function postItemReport(request, env, deps) {
+  const { error, body, cors } = await guard(request, env, deps);
+  if (error) return error;
+
+  const { errors, value } = validateItemReport(body);
+  if (errors.length) return json({ error: errors[0], errors }, 400, cors);
+
+  const id = deps.uuid();
+  await insertItemReport(env.DB, { id, ...value, createdAt: deps.now() });
+  // Never echoes the name or the typed line back.
+  return json({ id, status: 'pending' }, 201, cors);
+}
+
+async function getItemReview(request, env) {
+  const refusal = refuseUnlessAdmin(request, env);
+  if (refusal) return refusal;
+  const reports = await listItemReviews(env.DB);
+  return json({ reports }, 200, { ...corsHeaders(request, env), ...ADMIN_HEADERS });
+}
+
+async function postItemDecision(request, env, deps, params) {
+  const refusal = refuseUnlessAdmin(request, env);
+  if (refusal) return refusal;
+
+  const cors = { ...corsHeaders(request, env), ...ADMIN_HEADERS };
+  const { tooLarge, body } = await readJson(request);
+  if (tooLarge) return json({ error: 'that request is too large' }, 413, cors);
+
+  const { errors, value } = validateItemApproval(body);
+  if (errors.length) return json({ error: errors[0], errors }, 400, cors);
+
+  const changed = await decideItemReport(env.DB, params.id, value);
+  if (!changed) return json({ error: 'no pending item report with that id' }, 404, cors);
+  return json({ id: params.id, status: value.decision === 'approve' ? 'approved' : 'rejected' }, 200, cors);
+}
+
+async function postIngestItems(request, env) {
+  const refusal = refuseUnlessAdmin(request, env);
+  if (refusal) return refusal;
+  const items = await takeApprovedItems(env.DB);
+  return json({ items }, 200, { ...corsHeaders(request, env), ...ADMIN_HEADERS });
+}
+
+// `handle` takes the table as an argument so tests can drive the router with a
+// stub table of their own. The item routes are separate paths on purpose:
+// `/review/items` would be captured by `/review/:id`, and a new field on
+// `/ingest` would be marked ingested and dropped by a sync script that
+// predates it.
 export const ROUTES = [
   { method: 'POST', match: exact('/report'), handler: postReport },
   { method: 'POST', match: exact('/vote'), handler: postVote },
@@ -194,6 +247,10 @@ export const ROUTES = [
   { method: 'GET', match: exact('/review'), handler: getReview },
   { method: 'POST', match: oneParam('/review', 'id'), handler: postDecision },
   { method: 'POST', match: exact('/ingest'), handler: postIngest },
+  { method: 'POST', match: exact('/item-report'), handler: postItemReport },
+  { method: 'GET', match: exact('/item-review'), handler: getItemReview },
+  { method: 'POST', match: oneParam('/item-review', 'id'), handler: postItemDecision },
+  { method: 'POST', match: exact('/ingest-items'), handler: postIngestItems },
 ];
 
 export async function handle(request, env, deps = defaultDeps(), routes = ROUTES) {

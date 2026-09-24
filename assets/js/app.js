@@ -35,6 +35,7 @@ let weaveIndex = null;
 const state = {
   filters: { ...DEFAULT_FILTERS },
   search: '',
+  searchText: '',
   index: null,
   dataset: null,
   api,
@@ -101,6 +102,9 @@ async function main() {
   addEventListener('hashchange', render);
   document.getElementById('search').addEventListener('input', debounce((e) => {
     state.search = e.target.value.trim().toLowerCase();
+    // As typed, for the missing-item pre-fill. The lower-cased copy above is
+    // for matching only.
+    state.searchText = e.target.value.trim();
     render();
   }, 120));
   for (const box of document.querySelectorAll('[data-filter]')) {
@@ -143,6 +147,16 @@ async function main() {
       status: document.getElementById('report-status'),
       cancel: document.getElementById('report-cancel'),
       submit: document.getElementById('report-submit'),
+      characterField: document.getElementById('report-character-field'),
+      reactionsLegend: document.getElementById('report-reactions-legend'),
+      itemFields: document.getElementById('report-item-fields'),
+      itemName: document.getElementById('report-item-name'),
+      itemDuplicate: document.getElementById('report-item-duplicate'),
+      itemCategory: document.getElementById('report-item-category'),
+      itemLineField: document.getElementById('report-item-line-field'),
+      itemLine: document.getElementById('report-item-line'),
+      itemRarity: document.getElementById('report-rarity'),
+      itemCharacter: document.getElementById('report-item-character'),
     },
     index: state.index,
     api,
@@ -160,6 +174,9 @@ async function main() {
   container.addEventListener('click', (event) => {
     const button = event.target.closest('.report-button');
     if (button) reportForm.open(button.dataset.character, button.dataset.gift);
+    // The Gifts tab's "Report ‘…’ as a missing item" (views/gift.js).
+    const missing = event.target.closest('.missing-item-button');
+    if (missing) reportForm.openMissingItem(missing.dataset.name);
   });
 
   const voteDialog = document.getElementById('vote-dialog');

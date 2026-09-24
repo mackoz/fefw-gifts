@@ -14,7 +14,10 @@ const authed = (method, path, body) => new Request(`https://api.test${path}`, {
 });
 
 test('every admin route refuses a missing token', async () => {
-  for (const [method, path] of [['GET', '/review'], ['POST', '/review/r1'], ['POST', '/ingest']]) {
+  for (const [method, path] of [
+    ['GET', '/review'], ['POST', '/review/r1'], ['POST', '/ingest'],
+    ['GET', '/item-review'], ['POST', '/item-review/i1'], ['POST', '/ingest-items'],
+  ]) {
     const res = await handle(new Request(`https://api.test${path}`, { method }), env(fakeD1()), deps);
     assert.equal(res.status, 401, `${method} ${path}`);
   }

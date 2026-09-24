@@ -485,7 +485,8 @@ dialog input[type="text"] {
   font: inherit;
 }
 
-#report-reactions {
+#report-reactions,
+#report-rarity {
   margin-top: 16px;
   padding: 10px 14px;
   border: 1px solid var(--rule);
@@ -510,6 +511,12 @@ dialog input[type="text"] {
   color: var(--warning);
 }
 
+/* A missing-item report changes nothing public, so its confirmation is the
+   only feedback the player gets. It should not look like an error. */
+.dialog-status[data-tone="success"] {
+  color: var(--confirmed);
+}
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -519,7 +526,8 @@ dialog input[type="text"] {
 }
 
 .dialog-actions button,
-.report-button {
+.report-button,
+.missing-item-button {
   padding: 8px 14px;
   border: 1px solid var(--edge);
   background: var(--ground);
@@ -538,6 +546,15 @@ dialog input[type="text"] {
 }
 
 .report-button:hover {
+  border-color: var(--ink);
+}
+
+/* The Gifts tab's "Report ‘…’ as a missing item", under the empty search. */
+.missing-item-button {
+  margin-top: 12px;
+}
+
+.missing-item-button:hover {
   border-color: var(--ink);
 }
 
@@ -621,6 +638,51 @@ dialog input[type="text"] {
 
 .review-approve { color: var(--confirmed); }
 .review-reject  { color: var(--warning); }
+
+/* --- Missing items (maintainer only) ---
+   One card per item, sized for a phone like the rest of this page. */
+
+.item-review {
+  margin-top: 32px;
+}
+
+.item-reports {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.item-report {
+  padding: 6px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.item-field {
+  display: block;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+.item-field input,
+.item-field select {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 8px 11px;
+  border: 1px solid var(--edge);
+  background: var(--raised);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.item-include {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}
 
 /* Scoped to #token-form, not .toolbar: the main page's div.toolbar is only a
    full-bleed band wrapper around .toolbar-inner and must stay unstyled --

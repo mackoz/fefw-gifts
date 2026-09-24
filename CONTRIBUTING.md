@@ -27,12 +27,34 @@ plus any notes worth keeping if you have them. Please don't add your name or
 anything else identifying — reports are anonymous by design, and the
 validator rejects identifying fields in `data/observations.json`.
 
+## Reporting a missing item
+
+The item list is put together from guides and our own play, and it is not
+complete. If you have an item the site does not list, report it from the site.
+You can choose **My item isn’t listed…** at the bottom of the report form's
+gift list, or search for it on the Gifts tab and press
+**Report ‘…’ as a missing item**.
+
+The form asks for:
+
+- the item's name, exactly as the game shows it
+- its "Primarily enjoyed by …" line (type it if it isn't in our list)
+- its rarity, if you know it
+- optionally, who you gave it to and how they reacted
+
+It is anonymous, like a result report: nothing about you is stored. Unlike a
+result report, **nothing you type appears on the site until the maintainer has
+read it**. The maintainer corrects the name and category if needed and approves
+it, and it reaches `data/gifts.json` in the next nightly sync's pull request.
+
 ## Structural changes
 
-Anything that changes the shape or vocabulary of the data — rather than
-reporting a single gift result — goes through a plain GitHub issue or pull
-request:
+Anything that changes the shape or vocabulary of the data goes through a plain
+GitHub issue or pull request — except a missing item, which is reported from
+the site itself, the same as a result:
 
+- **Adding an item the site does not list.** Use the site's missing-item form
+  (above) rather than an issue. It needs no account.
 - **Tagging an item with a category.** Use the
   [category issue form](https://github.com/mackoz/fefw-gifts/issues/new?template=add-category.yml).
   Its dropdown is the whole category list on purpose: free-typed names drift,

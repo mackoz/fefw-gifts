@@ -123,3 +123,67 @@ test('the overlay ignores anything malformed rather than throwing', () => {
   assert.equal(overlay.all.length, 1);
   assert.deepEqual(buildPendingIndex(undefined).all, []);
 });
+
+test('the missing-item calls are answered by a disabled client too', async () => {
+  const api = createApi({ baseUrl: null });
+  for (const result of [
+    await api.submitItemReport({}),
+    await api.fetchItemReview(),
+    await api.decideItem('i1', { decision: 'reject' }),
+  ]) {
+    assert.equal(result.ok, false);
+    assert.equal(result.status, 0);
+    assert.match(result.error, /not set up/i);
+  }
+});
+
+test('submitItemReport posts the payload to /item-report without the admin token', async () => {
+  const fetchImpl = stubFetch(() => new Response(JSON.stringify({ id: 'i1', status: 'pending' }), { status: 201 }));
+  const api = createApi({ baseUrl: 'https://api.test', token: 'sekrit', fetchImpl });
+  const payload = {
+    name: 'Lantern Oil', category: 'horses', categoryLine: null, rarity: null,
+    character: null, reaction: null, turnstileToken: 't',
+  };
+  const result = await api.submitItemReport(payload);
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.data, { id: 'i1', status: 'pending' });
+  const { url, init } = fetchImpl.calls[0];
+  assert.equal(url, 'https://api.test/item-report');
+  assert.equal(init.method, 'POST');
+  assert.equal(init.headers['Content-Type'], 'application/json');
+  assert.equal(init.headers.Authorization, undefined, 'a player call must never carry the admin token');
+  assert.deepEqual(JSON.parse(init.body), payload);
+});
+
+test('the item review calls carry the token, encode the id and send the body as given', async () => {
+  const fetchImpl = stubFetch(() => ok({ reports: [] }));
+  const api = createApi({ baseUrl: 'https://api.test', token: 'sekrit', fetchImpl });
+  const body = { decision: 'approve', name: 'Lantern Oil', category: 'horses', rarity: null, includeResult: true };
+
+  await api.fetchItemReview();
+  await api.decideItem('a/b', body);
+
+  assert.equal(fetchImpl.calls[0].url, 'https://api.test/item-review');
+  assert.equal(fetchImpl.calls[0].init.method, 'GET');
+  assert.equal(fetchImpl.calls[0].init.headers.Authorization, 'Bearer sekrit');
+
+  assert.equal(fetchImpl.calls[1].url, 'https://api.test/item-review/a%2Fb');
+  assert.equal(fetchImpl.calls[1].init.method, 'POST');
+  assert.equal(fetchImpl.calls[1].init.headers.Authorization, 'Bearer sekrit');
+  assert.deepEqual(JSON.parse(fetchImpl.calls[1].init.body), body);
+});
+
+test('a refused item report shows the Worker message as-is', async () => {
+  const fetchImpl = stubFetch(() => new Response(JSON.stringify({ error: 'Pick both who you gave it to and how they reacted, or neither.' }), { status: 400 }));
+  const result = await createApi({ baseUrl: 'https://api.test', fetchImpl }).submitItemReport({});
+  assert.equal(result.ok, false);
+  assert.equal(result.status, 400);
+  assert.match(result.error, /or neither/);
+});
+
+test('an unreachable Worker on an item report reads as a service problem', async () => {
+  const fetchImpl = stubFetch(() => { throw new Error('offline'); });
+  const result = await createApi({ baseUrl: 'https://api.test', fetchImpl }).submitItemReport({});
+  assert.equal(result.ok, false);
+  assert.match(result.error, /could not reach/i);
+});

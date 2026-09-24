@@ -6,24 +6,42 @@ site works without it; nothing here is required to read the guide.
 
 ## What it stores
 
-One table, `reports` (see `schema.sql`). It holds the report content, a status,
-two vote counters and a timestamp. It holds **no** name, email, IP address,
-hashed IP, session id or any other identifier, and Turnstile is called without
-`remoteip`. Adding an identifying column is a design change, not a fix.
+Two tables (see `schema.sql`):
+
+- `reports` holds result reports: the report content, a status, two vote
+  counters and a timestamp.
+- `item_reports` holds missing-item reports: the item name, either a listed
+  category id or the typed in-game line, a rarity, an optional character and
+  reaction, a status, the maintainer's approved values (JSON) and a timestamp.
+  It has no vote columns. Nothing in it is public before approval.
+
+Neither table holds a name, email address, IP address, hashed IP, session id
+or any other identifier, and Turnstile is called without `remoteip`. Adding an
+identifying column is a design change, not a fix.
 
 ## Endpoints
 
 | Route | Access | Purpose |
 |---|---|---|
-| `POST /report` | Turnstile | Insert a pending row. |
+| `POST /report` | Turnstile | Insert a pending result report. |
 | `POST /vote` | Turnstile | Increment one counter on a pending row. |
-| `GET /pending` | Public | Pending rows for the site overlay, **without vote counts**. |
+| `GET /pending` | Public | Pending result reports for the site overlay, **without vote counts**. |
 | `GET /review` | Admin token | Pending rows **with** vote counts, best score first. |
 | `POST /review/:id` | Admin token | `{"decision":"approve"}` or `{"decision":"reject"}`. |
 | `POST /ingest` | Admin token | Return approved rows and mark them ingested. |
+| `POST /item-report` | Turnstile | Insert a pending missing-item report. Never echoes its text. |
+| `GET /item-review` | Admin token | Pending missing-item reports, oldest first. |
+| `POST /item-review/:id` | Admin token | `{"decision":"reject"}` or `{"decision":"approve", name, giftId?, category?, newCategory?, rarity, includeResult}`. |
+| `POST /ingest-items` | Admin token | Return approved missing-item reports and mark them ingested. |
 
-Vote counts are never selected by `GET /pending`. That is enforced in the SQL in
-`src/reports.js`, not in the UI, and a test asserts it. Do not add them.
+Vote counts are never selected by `GET /pending`, and `GET /pending` never reads
+`item_reports`. Both are enforced in the SQL in `src/reports.js` rather than in
+the UI, and tests assert them. Do not add either.
+
+The item rules (text pattern, ids, rarity, both-or-neither) live in
+`assets/js/item-rules.js`, which the Worker imports by relative path. Wrangler
+bundles it into the deployed script, so the site and the Worker cannot drift
+apart.
 
 ## First-time setup
 
@@ -76,6 +94,31 @@ Vote counts are never selected by `GET /pending`. That is enforced in the SQL in
    Settings → Secrets and variables → Actions, add `WORKER_URL` and
    `ADMIN_TOKEN` (the same token as step 4). The nightly sync job needs both.
 
+## Adding missing-item reports to an existing deployment
+
+This change is additive and backward-compatible, but the order matters. From
+the pull request's branch, **before merging**:
+
+1. Create the new table. `schema.sql` only uses `CREATE … IF NOT EXISTS`, so
+   re-running it leaves `reports` and its rows untouched:
+
+   ```sh
+   npx --yes wrangler d1 execute fefw-gifts --remote --file worker/schema.sql --config worker/wrangler.toml
+   ```
+
+2. Deploy the Worker:
+
+   ```sh
+   npm run worker:deploy
+   ```
+
+Then merge. If you merge first, the site shows the missing-item form while
+the Worker returns 404 for `/item-report`. The nightly sync is not affected
+either way: it treats a 404 from `/ingest-items` as a warning.
+
+No Cloudflare dashboard change is needed. The Turnstile widget already covers
+`mackoz.github.io`, and no secret changes.
+
 ## Reviewing
 
 Open `https://mackoz.github.io/fefw-gifts/review/`, paste the admin token once,
@@ -111,6 +154,10 @@ recoverable in that case: open the failed GitHub Actions run for
 `sync-reports.yml`, find that log line, and re-enter the rows by hand (or
 re-run the merge locally against the logged JSON). The log is visible only to
 people with access to the repository.
+
+`POST /ingest-items` makes the same trade for missing-item reports, and the
+sync script logs that batch too (`console.log(JSON.stringify(items, null, 2))`)
+before anything can fail.
 
 ## Local development
 
