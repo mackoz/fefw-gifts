@@ -325,7 +325,7 @@ test('Approve sends one decision per report, with the same values and each repor
   assert.equal(h.itemFetches(), 2, 'the section reloads after a full run');
 });
 
-test('an edited name that is already listed approves as results for that gift', async () => {
+test('an edited name that is already listed approves as results for that gift, once the box is re-ticked', async () => {
   const h = await mountItems([itemRow('a', 'Horse Groming Kit', { category: 'horses', character: 'alexandra', reaction: 'loved' })]);
   const card = h.cards()[0];
   const name = byClass(card, 'item-name')[0];
@@ -334,12 +334,60 @@ test('an edited name that is already listed approves as results for that gift', 
   assert.match(byClass(card, 'item-listed')[0].textContent, /Already listed as Horse-Grooming Kit — approving adds only the results/);
   assert.equal(byClass(card, 'item-category')[0].disabled, true);
 
+  // Landing on an already-listed gift unticks the include box by default (see
+  // the tests below); the maintainer must re-tick it deliberately.
+  const box = byClass(card, 'item-include-box')[0];
+  assert.equal(box.checked, false);
+  box.checked = true;
+
   await byClass(card, 'item-approve')[0].fire('click');
   const [[id, body]] = h.decisions;
   assert.equal(id, 'a');
   assert.equal(body.giftId, 'horse-grooming-kit');
   assert.equal('category' in body, false);
   assert.equal(body.includeResult, true);
+});
+
+// P11: adding a result to a gift that is already listed bypasses the public
+// vote step, so the include box defaults to unticked rather than ticked
+// whenever the card is showing "Already listed as X" -- approving must be a
+// deliberate choice, not a side effect of the usual default.
+test('a card whose suggested name is already listed renders with include unticked, and approving without re-ticking keeps the result out', async () => {
+  const h = await mountItems([itemRow('a', 'Horse-Grooming Kit', { category: 'horses', character: 'alexandra', reaction: 'loved' })]);
+  const card = h.cards()[0];
+  assert.match(byClass(card, 'item-listed')[0].textContent, /Already listed as Horse-Grooming Kit/);
+  const boxes = byClass(card, 'item-include-box');
+  assert.equal(boxes.length, 1);
+  assert.equal(boxes[0].checked, false, 'unticked by default on an already-listed card');
+
+  await byClass(card, 'item-approve')[0].fire('click');
+  const [[, body]] = h.decisions;
+  assert.equal(body.includeResult, false);
+});
+
+test('a card for a new item renders ticked', async () => {
+  const h = await mountItems([itemRow('a', 'Lantern Oil', { category: 'horses', character: 'alexandra', reaction: 'loved' })]);
+  const card = h.cards()[0];
+  assert.equal(byClass(card, 'item-listed')[0].textContent, '');
+  const boxes = byClass(card, 'item-include-box');
+  assert.equal(boxes.length, 1);
+  assert.equal(boxes[0].checked, true, 'ticked by default when the name is not listed');
+});
+
+test('editing a new-item card’s name into a listed name unticks, and editing it back re-ticks', async () => {
+  const h = await mountItems([itemRow('a', 'Lantern Oil', { category: 'horses', character: 'alexandra', reaction: 'loved' })]);
+  const card = h.cards()[0];
+  const name = byClass(card, 'item-name')[0];
+  const box = byClass(card, 'item-include-box')[0];
+  assert.equal(box.checked, true);
+
+  name.value = 'horse grooming kit';
+  await name.fire('input');
+  assert.equal(box.checked, false, 'unticked once the name matches a listed gift');
+
+  name.value = 'Lantern Oil';
+  await name.fire('input');
+  assert.equal(box.checked, true, 're-ticked once the name no longer matches a listed gift');
 });
 
 test('a typed line proposes a new category, and a clashing id is blocked before anything is sent', async () => {

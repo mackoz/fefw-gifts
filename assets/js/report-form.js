@@ -162,8 +162,19 @@ export function createReportForm({
 
   // Only wrappers are hidden, never a label: `dialog label` sets a display,
   // which beats the hidden attribute.
+  //
+  // `mode` remembers the dialog's item/result state across calls so a genuine
+  // flip can be told apart from a same-mode refresh. A success message left
+  // over from an item report (ITEM_SUCCESS, tone "success") would otherwise
+  // linger once the player switches the gift select to a listed gift and the
+  // dialog moves into result mode; an error is left alone; `mode` starts
+  // `null` so the very first call -- before there is a "previous" mode --
+  // never clears anything.
+  let mode = null;
   function syncMode() {
     const missing = missingMode();
+    if (mode !== null && missing !== mode && status.dataset.tone === 'success') setStatus('');
+    mode = missing;
     itemFields.hidden = !missing;
     characterField.hidden = missing;
     notGiven.hidden = !missing;

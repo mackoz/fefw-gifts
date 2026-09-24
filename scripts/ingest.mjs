@@ -77,6 +77,7 @@ export function applyItemReports(dataset, items) {
   const gifts = [...dataset.gifts];
   const summary = { newGifts: [], newCategories: [], reusedCategories: [], results: 0 };
   const skipped = [];
+  const droppedResults = [];
 
   const structurallyValid = [];
   for (const item of Array.isArray(items) ? items : []) {
@@ -85,41 +86,54 @@ export function applyItemReports(dataset, items) {
       ? validateItemApproval({ ...approved, decision: 'approve' })
       : { errors: ['no approval'], value: null };
     if (typeof item?.id !== 'string' || item.id === '' || check.errors.length) {
-      skipped.push(item);
+      skipped.push({ item, reason: 'no usable approval' });
       continue;
     }
     structurallyValid.push({ item, approved: check.value });
   }
 
   // A structurally valid approval can still be stale: it may have been made
-  // on a phone days before this sync, naming a gift, category or character
-  // that a maintainer has since renamed or removed by hand. Exactly like an
-  // invalid approval, a stale one is set aside rather than failing the whole
-  // night -- checked against both the dataset on disk and the categories this
-  // same batch is about to create.
+  // on a phone days before this sync, naming a gift or category that a
+  // maintainer has since renamed or removed by hand -- checked against both
+  // the dataset on disk and the categories this same batch is about to
+  // create. Unlike an invalid approval, staleness here is resolved by a fixed
+  // point rather than a single pass: an approval only "creates" a new
+  // category if it itself survives, so a category proposed by an approval
+  // that is dropped for some other reason (an unknown giftId, say) is not
+  // available to excuse a later approval that names it. Re-screening after
+  // each removal catches that chain. A stale character is different -- see
+  // the results loop below -- and never removes an approval, so it plays no
+  // part in this loop.
   const originalCategoryIds = new Set(categories.map((category) => category.id));
-  const batchNewCategoryIds = new Set(
-    structurallyValid.map(({ approved }) => approved.newCategory?.id).filter((id) => id != null),
-  );
   const originalGiftIds = new Set(gifts.map((gift) => gift.id));
   const charactersById = new Map(dataset.characters.map((character) => [character.id, character]));
 
-  const approvals = [];
-  for (const entry of structurallyValid) {
-    const { item, approved } = entry;
-    const staleGift = approved.giftId !== null && !originalGiftIds.has(approved.giftId);
-    const staleCategory = approved.category !== null
-      && !originalCategoryIds.has(approved.category)
-      && !batchNewCategoryIds.has(approved.category);
-    const wantsResult = approved.includeResult && item.character && item.reaction;
-    const character = wantsResult ? charactersById.get(item.character) : undefined;
-    const staleCharacter = wantsResult && (!character || !character.giftable);
-    if (staleGift || staleCategory || staleCharacter) {
-      skipped.push(item);
-      continue;
+  let kept = structurallyValid;
+  for (;;) {
+    const batchNewCategoryIds = new Set(
+      kept.map(({ approved }) => approved.newCategory?.id).filter((id) => id != null),
+    );
+    const survivors = [];
+    const removed = [];
+    for (const entry of kept) {
+      const { approved } = entry;
+      const staleGift = approved.giftId !== null && !originalGiftIds.has(approved.giftId);
+      const staleCategory = approved.category !== null
+        && !originalCategoryIds.has(approved.category)
+        && !batchNewCategoryIds.has(approved.category);
+      if (staleGift) {
+        removed.push({ item: entry.item, reason: `unknown gift ${approved.giftId}` });
+      } else if (staleCategory) {
+        removed.push({ item: entry.item, reason: `unknown category ${approved.category}` });
+      } else {
+        survivors.push(entry);
+      }
     }
-    approvals.push(entry);
+    if (removed.length === 0) { kept = survivors; break; }
+    skipped.push(...removed);
+    kept = survivors;
   }
+  const approvals = kept;
 
   // 1. Categories. An id that already exists -- in data/ or created a moment
   // ago by an earlier report in this same batch -- is reused rather than
@@ -158,9 +172,19 @@ export function applyItemReports(dataset, items) {
       }
     }
 
-    // 3. Results: only when the maintainer kept one and both halves exist.
+    // 3. Results: only when the maintainer kept one and both halves exist. The
+    // gift and category above are written regardless -- a result naming a
+    // character that has since been renamed, removed or made non-giftable by
+    // hand loses only the result, never the item report itself.
     if (approved.includeResult && item.character && item.reaction) {
-      results.push({ id: item.id, gift: giftId, character: item.character, reaction: item.reaction, created_at: item.created_at });
+      const character = charactersById.get(item.character);
+      if (!character) {
+        droppedResults.push({ item, reason: `unknown character ${item.character}` });
+      } else if (!character.giftable) {
+        droppedResults.push({ item, reason: `character ${item.character} can't be given gifts` });
+      } else {
+        results.push({ id: item.id, gift: giftId, character: item.character, reaction: item.reaction, created_at: item.created_at });
+      }
     }
   }
 
@@ -168,7 +192,7 @@ export function applyItemReports(dataset, items) {
   // so a re-run cannot duplicate a row.
   const merged = mergeObservations(dataset.observations, results);
   summary.results = merged.added.length;
-  return { categories, gifts, observations: merged.observations, summary, skipped };
+  return { categories, gifts, observations: merged.observations, summary, skipped, droppedResults };
 }
 
 const ITEMS_NOT_SYNCED = '::warning title=Missing items not synced::';
@@ -203,8 +227,12 @@ export async function fetchItemBatch(workerUrl, adminToken, fetchImpl = (...args
   return { items: Array.isArray(body?.items) ? body.items : [], warning: null };
 }
 
-export function itemSkippedWarning(item) {
-  return `::warning title=Missing item skipped::approved item report ${escapeWorkflowValue(item?.id)} has no usable approval and was not synced; the logged batch above is the only copy`;
+export function itemSkippedWarning(item, reason) {
+  return `::warning title=Missing item skipped::approved item report ${escapeWorkflowValue(item?.id)} was not synced (${escapeWorkflowValue(reason)}); the logged batch above is the only copy`;
+}
+
+export function itemResultDroppedWarning(item, reason) {
+  return `::warning title=Missing-item result dropped::the result on approved item report ${escapeWorkflowValue(item?.id)} was not synced (${escapeWorkflowValue(reason)}); the item itself was`;
 }
 
 // categories.json is aligned by hand, so it is never re-serialised: new
@@ -281,7 +309,8 @@ async function main() {
   }
 
   const applied = applyItemReports({ ...dataset, observations: merged.observations }, items);
-  for (const item of applied.skipped) console.log(itemSkippedWarning(item));
+  for (const { item, reason } of applied.skipped) console.log(itemSkippedWarning(item, reason));
+  for (const { item, reason } of applied.droppedResults) console.log(itemResultDroppedWarning(item, reason));
 
   const { summary } = applied;
   const itemChanges = summary.newGifts.length + summary.newCategories.length + summary.results;

@@ -234,7 +234,6 @@ function renderItemCard(group, { gifts, categories, now, decideItems }) {
     if (row.character && row.reaction) {
       const box = el('input', 'item-include-box');
       box.type = 'checkbox';
-      box.checked = true;
       includes.set(row.id, box);
       const label = el('label', 'item-include');
       label.append(box, ' Include result');
@@ -271,12 +270,23 @@ function renderItemCard(group, { gifts, categories, now, decideItems }) {
     if (!idEdited) newId.value = slugify(newLabel.value);
   });
 
+  // Adding a result to a gift that is already listed bypasses the public vote
+  // step, so it takes a deliberate tick rather than a default: every include
+  // box is reset to !listed each time the listed/not-listed state changes
+  // (including this first call), and the maintainer's own choices hold until
+  // it changes again.
+  let lastListed = null;
   function sync() {
     const listed = findListedGift(gifts, name.value);
     listedNote.textContent = listed ? `Already listed as ${listed.name} — approving adds only the results.` : '';
     category.disabled = Boolean(listed);
     rarity.disabled = Boolean(listed);
     newFields.hidden = Boolean(listed) || category.value !== NEW_CATEGORY;
+    const isListed = Boolean(listed);
+    if (isListed !== lastListed) {
+      for (const box of includes.values()) box.checked = !isListed;
+      lastListed = isListed;
+    }
   }
   name.addEventListener('input', sync);
   category.addEventListener('change', sync);

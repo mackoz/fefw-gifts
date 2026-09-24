@@ -461,6 +461,36 @@ test('result mode still sends a result report, closes, and refreshes the overlay
   assert.equal(h.calls.refreshed, 1);
 });
 
+// A leftover ITEM_SUCCESS from a previous find must not still be showing once
+// the player has moved on to reporting a result against a listed gift --
+// switching modes is as good a sign as any that the message is stale.
+test('an item success message is cleared once the player switches to a listed gift', async (t) => {
+  const h = formHarness(t);
+  await h.reportForm.openMissingItem('lantern oil');
+  h.el.itemCategory.value = 'horses';
+  await h.submit();
+  assert.equal(h.el.status.textContent, ITEM_SUCCESS);
+  assert.equal(h.el.status.dataset.tone, 'success');
+
+  h.el.gift.value = 'horse-grooming-kit';
+  await h.el.gift.fire('change');
+  assert.equal(h.el.status.textContent, '');
+  assert.notEqual(h.el.status.dataset.tone, 'success');
+});
+
+test('an error status is not cleared by a mode change', async (t) => {
+  const h = formHarness(t, { submitItemReport: async () => ({ ok: false, status: 403, data: null, error: 'could not verify that you are human' }) });
+  await h.reportForm.openMissingItem('Lantern Oil');
+  h.el.itemCategory.value = 'horses';
+  await h.submit();
+  assert.equal(h.el.status.textContent, 'could not verify that you are human');
+  assert.notEqual(h.el.status.dataset.tone, 'success');
+
+  h.el.gift.value = 'horse-grooming-kit';
+  await h.el.gift.fire('change');
+  assert.equal(h.el.status.textContent, 'could not verify that you are human', 'an error message survives a mode change');
+});
+
 // --- Turnstile wrapper ---
 
 function fakeTurnstile() {

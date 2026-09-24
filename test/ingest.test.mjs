@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
   toObservation, mergeObservations, skippedRowWarning,
-  applyItemReports, fetchItemBatch, itemSkippedWarning, appendCategoryLines, ingestSummary,
+  applyItemReports, fetchItemBatch, itemSkippedWarning, itemResultDroppedWarning, appendCategoryLines, ingestSummary,
 } from '../scripts/ingest.mjs';
 import { validate } from '../scripts/validate.mjs';
 
@@ -217,7 +217,7 @@ test('an item with no usable approval is set aside and does not block the rest',
     approvedItem('two-targets', { category: 'horses', giftId: 'horse-grooming-kit' }),
   ];
   const out = applyItemReports(DATASET, [...bad, approvedItem('good')]);
-  assert.deepEqual(out.skipped, bad);
+  assert.deepEqual(out.skipped, bad.map((item) => ({ item, reason: 'no usable approval' })));
   assert.deepEqual(out.gifts.map((g) => g.id), ['horse-grooming-kit', 'lantern-oil']);
 });
 
@@ -229,14 +229,14 @@ test('an item with no usable approval is set aside and does not block the rest',
 test('an approval naming a gift that no longer exists is set aside and does not block the rest', () => {
   const bad = approvedItem('bad-gift', { giftId: 'no-such-gift' });
   const out = applyItemReports(DATASET, [bad, approvedItem('good')]);
-  assert.deepEqual(out.skipped, [bad]);
+  assert.deepEqual(out.skipped, [{ item: bad, reason: 'unknown gift no-such-gift' }]);
   assert.deepEqual(out.gifts.map((g) => g.id), ['horse-grooming-kit', 'lantern-oil']);
 });
 
 test('an approval naming a category that no longer exists, and is not created in this batch, is set aside', () => {
   const bad = approvedItem('bad-cat', { category: 'no-such-category' });
   const out = applyItemReports(DATASET, [bad, approvedItem('good')]);
-  assert.deepEqual(out.skipped, [bad]);
+  assert.deepEqual(out.skipped, [{ item: bad, reason: 'unknown category no-such-category' }]);
   assert.deepEqual(out.gifts.map((g) => g.id), ['horse-grooming-kit', 'lantern-oil']);
 });
 
@@ -249,21 +249,47 @@ test('an approval whose category is created by a newCategory in the same batch i
   assert.equal(out.gifts.at(-1).category, 'lanterns');
 });
 
-test('a result naming a character that no longer exists is set aside and does not block the rest', () => {
+// P10 (revised): a category proposed by an approval that never became a real
+// approval at all -- here, one whose body is itself malformed -- must not be
+// treated as "created in this batch" for a later approval that names it. The
+// new-category id set is recomputed from the survivors, so this is caught in
+// the same pass rather than requiring a special case.
+test('a category proposed only by an approval that is itself set aside does not excuse another approval naming it', () => {
+  const a = approvedItem('a', { newCategory: LANTERNS, giftId: 'no-such-gift' });
+  const b = approvedItem('b', { name: 'Something Else', category: 'lanterns' });
+  const out = applyItemReports(DATASET, [a, b]);
+  assert.deepEqual(out.skipped, [
+    { item: a, reason: 'no usable approval' },
+    { item: b, reason: 'unknown category lanterns' },
+  ]);
+  assert.deepEqual(out.categories, DATASET.categories);
+  assert.deepEqual(validate({ ...DATASET, categories: out.categories, gifts: out.gifts, observations: out.observations }).errors, []);
+});
+
+// P10: a result can be stale even when the rest of the approval is not -- the
+// character it names may have been renamed, removed or made non-giftable by
+// hand since the maintainer approved it. Unlike a stale gift or category,
+// this drops only the result: the gift (and any category it created) is
+// still written, because the item itself was real and approved.
+test('a result naming a character that no longer exists drops only the result, and the gift is still created', () => {
   const bad = approvedItem('bad-char', { category: 'horses', includeResult: true }, { character: 'ghost', reaction: 'loved' });
   const out = applyItemReports(DATASET, [bad, approvedItem('good')]);
-  assert.deepEqual(out.skipped, [bad]);
+  assert.deepEqual(out.skipped, []);
+  assert.deepEqual(out.droppedResults, [{ item: bad, reason: 'unknown character ghost' }]);
+  assert.deepEqual(out.observations, []);
   assert.deepEqual(out.gifts.map((g) => g.id), ['horse-grooming-kit', 'lantern-oil']);
 });
 
-test('a result naming a character that is no longer giftable is set aside and does not block the rest', () => {
+test('a result naming a character that is no longer giftable drops only the result, and the gift is still created', () => {
   const dataset = { ...DATASET, characters: [...DATASET.characters, {
     id: 'ghost-npc', name: 'Ghost', giftable: false, spoiler: false, traits: [],
     categories: {}, rarityPreference: null, favorites: [], notes: null,
   }] };
   const bad = approvedItem('bad-giftable', { category: 'horses', includeResult: true }, { character: 'ghost-npc', reaction: 'loved' });
   const out = applyItemReports(dataset, [bad, approvedItem('good')]);
-  assert.deepEqual(out.skipped, [bad]);
+  assert.deepEqual(out.skipped, []);
+  assert.deepEqual(out.droppedResults, [{ item: bad, reason: "character ghost-npc can't be given gifts" }]);
+  assert.deepEqual(out.observations, []);
   assert.deepEqual(out.gifts.map((g) => g.id), ['horse-grooming-kit', 'lantern-oil']);
 });
 
@@ -316,11 +342,22 @@ test('every other item-batch failure is a warning too, so results still sync', a
   assert.deepEqual(items, []);
 });
 
-test('itemSkippedWarning escapes its interpolated id', () => {
-  const warning = itemSkippedWarning({ id: 'a\nb%' });
-  assert.ok(!warning.includes('\n'));
+test('itemSkippedWarning escapes its interpolated id and reason, leaving no raw newline', () => {
+  const warning = itemSkippedWarning({ id: 'a\nb%' }, 'unknown gift x\ry%');
+  assert.ok(!warning.includes('\n'), 'result must contain no raw newline');
+  assert.ok(!warning.includes('\r'), 'result must contain no raw carriage return');
   assert.ok(warning.includes('a%0Ab%25'));
+  assert.ok(warning.includes('unknown gift x%0Dy%25'));
   assert.match(warning, /^::warning title=Missing item skipped::/);
+});
+
+test('itemResultDroppedWarning escapes its interpolated id and reason, leaving no raw newline', () => {
+  const warning = itemResultDroppedWarning({ id: 'a\nb%' }, 'unknown character x\ry%');
+  assert.ok(!warning.includes('\n'), 'result must contain no raw newline');
+  assert.ok(!warning.includes('\r'), 'result must contain no raw carriage return');
+  assert.ok(warning.includes('a%0Ab%25'));
+  assert.ok(warning.includes('unknown character x%0Dy%25'));
+  assert.match(warning, /^::warning title=Missing-item result dropped::/);
 });
 
 // --- Writing ---
