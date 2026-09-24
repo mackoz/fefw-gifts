@@ -252,8 +252,8 @@ test('an approval whose category is created by a newCategory in the same batch i
 // P10 (revised): a category proposed by an approval that never became a real
 // approval at all -- here, one whose body is itself malformed -- must not be
 // treated as "created in this batch" for a later approval that names it. The
-// new-category id set is recomputed from the survivors, so this is caught in
-// the same pass rather than requiring a special case.
+// new-category id set is built from the structurally valid approvals only,
+// so a malformed proposer's category was never counted in the first place.
 test('a category proposed only by an approval that is itself set aside does not excuse another approval naming it', () => {
   const a = approvedItem('a', { newCategory: LANTERNS, giftId: 'no-such-gift' });
   const b = approvedItem('b', { name: 'Something Else', category: 'lanterns' });

@@ -96,44 +96,40 @@ export function applyItemReports(dataset, items) {
   // on a phone days before this sync, naming a gift or category that a
   // maintainer has since renamed or removed by hand -- checked against both
   // the dataset on disk and the categories this same batch is about to
-  // create. Unlike an invalid approval, staleness here is resolved by a fixed
-  // point rather than a single pass: an approval only "creates" a new
-  // category if it itself survives, so a category proposed by an approval
-  // that is dropped for some other reason (an unknown giftId, say) is not
-  // available to excuse a later approval that names it. Re-screening after
-  // each removal catches that chain. A stale character is different -- see
-  // the results loop below -- and never removes an approval, so it plays no
-  // part in this loop.
+  // create. A category id counts as "created in this batch" only if the
+  // approval proposing it is itself kept -- but one pass is enough to get
+  // that right, because the only way an approval is *not* kept here is
+  // structural invalidity (checked above, before this set exists at all) or
+  // a stale giftId/category (checked below, which never touches a
+  // newCategory-proposing approval, since validateItemApproval allows at
+  // most one of giftId, category and newCategory on a single approval). So a
+  // proposer that makes it into `structurallyValid` always survives this
+  // pass, and `batchNewCategoryIds` computed from `structurallyValid` is
+  // already exactly the survivors' set. (A stale character is different --
+  // see the results loop below -- and never removes an approval, so it
+  // plays no part here either.)
   const originalCategoryIds = new Set(categories.map((category) => category.id));
   const originalGiftIds = new Set(gifts.map((gift) => gift.id));
   const charactersById = new Map(dataset.characters.map((character) => [character.id, character]));
 
-  let kept = structurallyValid;
-  for (;;) {
-    const batchNewCategoryIds = new Set(
-      kept.map(({ approved }) => approved.newCategory?.id).filter((id) => id != null),
-    );
-    const survivors = [];
-    const removed = [];
-    for (const entry of kept) {
-      const { approved } = entry;
-      const staleGift = approved.giftId !== null && !originalGiftIds.has(approved.giftId);
-      const staleCategory = approved.category !== null
-        && !originalCategoryIds.has(approved.category)
-        && !batchNewCategoryIds.has(approved.category);
-      if (staleGift) {
-        removed.push({ item: entry.item, reason: `unknown gift ${approved.giftId}` });
-      } else if (staleCategory) {
-        removed.push({ item: entry.item, reason: `unknown category ${approved.category}` });
-      } else {
-        survivors.push(entry);
-      }
+  const batchNewCategoryIds = new Set(
+    structurallyValid.map(({ approved }) => approved.newCategory?.id).filter((id) => id != null),
+  );
+  const approvals = [];
+  for (const entry of structurallyValid) {
+    const { approved } = entry;
+    const staleGift = approved.giftId !== null && !originalGiftIds.has(approved.giftId);
+    const staleCategory = approved.category !== null
+      && !originalCategoryIds.has(approved.category)
+      && !batchNewCategoryIds.has(approved.category);
+    if (staleGift) {
+      skipped.push({ item: entry.item, reason: `unknown gift ${approved.giftId}` });
+    } else if (staleCategory) {
+      skipped.push({ item: entry.item, reason: `unknown category ${approved.category}` });
+    } else {
+      approvals.push(entry);
     }
-    if (removed.length === 0) { kept = survivors; break; }
-    skipped.push(...removed);
-    kept = survivors;
   }
-  const approvals = kept;
 
   // 1. Categories. An id that already exists -- in data/ or created a moment
   // ago by an earlier report in this same batch -- is reused rather than
