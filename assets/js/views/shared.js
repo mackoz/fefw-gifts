@@ -1,3 +1,5 @@
+import { POSITIVE_REACTIONS } from '../confidence.js';
+
 // PENDING sits between the observed states and the guesses: a real player
 // reported it, but nobody has reviewed it yet.
 const STATE_RANK = { FAVORITE: 0, CONFIRMED: 1, CONTESTED: 2, PENDING: 3, PREDICTED: 4, UNTESTED: 5 };
@@ -119,18 +121,62 @@ export function partitionRows(rows) {
   return { signal, untested };
 }
 
-// A character's guide-derived category links, with refuted ones removed: a
-// refuted link is not a like, and rendering it as one would invent a
-// preference nobody reported.
+// A category is "tested" for a character when at least one gift in it has an
+// approved observation that actually shows the gift worked: a FAVORITE, or a
+// CONFIRMED reaction that is positive. CONTESTED, PENDING and PREDICTED are
+// all real signal elsewhere in the app, but none of them is an approved,
+// positive result, so none of them may promote a category here -- see
+// CLAUDE.md's "A pending report is not a confirmation." A character with no
+// `id` (some tests, and any caller that has not resolved one yet) has no
+// tested categories rather than crashing on confidenceFor.
+function testedCategoryIds(index, character) {
+  const ids = new Set();
+  if (character.id === undefined) return ids;
+  for (const gift of index.gifts) {
+    if (gift.category === null || gift.category === undefined) continue;
+    if (ids.has(gift.category)) continue;
+    const confidence = index.confidenceFor(character.id, gift.id);
+    const tested = confidence.state === 'FAVORITE'
+      || (confidence.state === 'CONFIRMED' && POSITIVE_REACTIONS.includes(confidence.reaction));
+    if (tested) ids.add(gift.category);
+  }
+  return ids;
+}
+
+// A character's category chips, merging two sources that make very different
+// claims: a stored link (a guide's guess, an in-game profile listing, or
+// something discovered through play) and a category an approved test result
+// has actually confirmed. Testing outranks a stored link -- an observed
+// result is stronger evidence than any prediction, including a refuted one --
+// so a tested category always renders with state 'tested', carrying whatever
+// source its stored link has (or null if it has none), and tested chips sort
+// first, in categories.json order. A refuted link on a category nobody has
+// tested is still dropped: a refuted link alone is not a like, and rendering
+// it as one would invent a preference nobody reported.
 export function categoryChips(index, character) {
-  return Object.entries(character.categories ?? {})
-    .filter(([, link]) => link.state !== 'refuted')
+  const links = character.categories ?? {};
+  const testedIds = testedCategoryIds(index, character);
+  const categoryPosition = new Map(index.categories.map((c, i) => [c.id, i]));
+
+  const testedChips = [...testedIds]
+    .sort((a, b) => (categoryPosition.get(a) ?? 0) - (categoryPosition.get(b) ?? 0))
+    .map((id) => ({
+      id,
+      label: index.byCategoryId.get(id)?.label ?? id,
+      state: 'tested',
+      source: links[id]?.source ?? null,
+    }));
+
+  const linkChips = Object.entries(links)
+    .filter(([id, link]) => link.state !== 'refuted' && !testedIds.has(id))
     .map(([id, link]) => ({
       id,
       label: index.byCategoryId.get(id)?.label ?? id,
       state: link.state,
       source: link.source,
     }));
+
+  return [...testedChips, ...linkChips];
 }
 
 // A small inline token: a category, a gift name, a suggestion. It renders as a

@@ -121,23 +121,35 @@ function joinList(labels) {
   return `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
 }
 
-// The chips under "Reported to like" mix three very different claims: a guide's
-// guess (carried over, unconfirmed), an in-game profile listing, and something
-// a player actually found through play. Saying "carried over" about all three
-// -- the bug this replaces -- overclaims for the two that are not guesses.
-// Each group gets its own sentence, and the guide sentence is demoted to "the
-// rest" once something stronger sits above it.
+// The chips under "Reported to like" mix four very different claims: a
+// category with an approved test result behind it, a guide's guess (carried
+// over, unconfirmed), an in-game profile listing, and something a player
+// actually found through play. Saying "carried over" about all four -- the
+// bug this replaces -- overclaims for the three that are not guesses. Each
+// group gets its own sentence, tested first since it is the strongest claim
+// a chip can make, and the guide sentence is demoted to "the rest" once
+// something stronger sits above it.
 export function provenanceNote(index, chips) {
   if (chips.length === 0) return '';
 
+  const tested = chips.filter((c) => c.state === 'tested');
   const discovered = chips.filter((c) => c.state === 'discovered');
   const profile = chips.filter((c) => c.state === 'profile');
   const guide = chips.filter((c) => c.state === 'guide');
 
   const sentences = [];
 
+  if (tested.length > 0) {
+    if (discovered.length === 0 && profile.length === 0 && guide.length === 0) {
+      sentences.push('Confirmed through testing.');
+    } else {
+      const verb = tested.length === 1 ? 'has' : 'have';
+      sentences.push(`${joinList(tested.map((c) => c.label))} ${verb} gifts confirmed through testing.`);
+    }
+  }
+
   if (discovered.length > 0) {
-    if (guide.length === 0 && profile.length === 0) {
+    if (guide.length === 0 && profile.length === 0 && tested.length === 0) {
       sentences.push('Found through play.');
     } else {
       const verb = discovered.length === 1 ? 'was' : 'were';
@@ -152,7 +164,7 @@ export function provenanceNote(index, chips) {
 
   if (guide.length > 0) {
     const publishers = [...new Set(guide.map((c) => sourceName(index, c.source)))];
-    sentences.push(discovered.length === 0 && profile.length === 0
+    sentences.push(discovered.length === 0 && profile.length === 0 && tested.length === 0
       ? `Category preferences carried over from ${publishers.join(' and ')}. They’re predictions until a player confirms an item.`
       : `The rest are carried over from ${publishers.join(' and ')} and are predictions until a player confirms an item.`);
   }
