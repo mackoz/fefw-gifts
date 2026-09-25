@@ -163,7 +163,7 @@
     "id": "potted-vegetables",
     "name": "Potted Vegetables",
     "category": "vegetables",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -473,7 +473,7 @@
     "id": "select-coffee",
     "name": "Select Coffee",
     "category": "coffee",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -753,7 +753,7 @@
     "id": "joint-relief-gloves",
     "name": "Joint-Relief Gloves",
     "category": "archery",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -863,7 +863,7 @@
     "id": "crimson-ghosh",
     "name": "Crimson Ghosh",
     "category": "fermented-drinks",
-    "rarity": null,
+    "rarity": "uncommon",
     "description": "",
     "sources": [
       "game8-items"
@@ -963,7 +963,7 @@
     "id": "ceremonial-spear",
     "name": "Ceremonial Spear",
     "category": "weapons",
-    "rarity": null,
+    "rarity": "uncommon",
     "description": "",
     "sources": [
       "game8-items"

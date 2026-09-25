@@ -853,6 +853,18 @@
       "training": {
         "state": "guide",
         "source": "polygon-2026-09-17"
+      },
+      "weapons": {
+        "state": "discovered",
+        "source": null
+      },
+      "vegetables": {
+        "state": "discovered",
+        "source": null
+      },
+      "archery": {
+        "state": "discovered",
+        "source": null
       }
     },
     "rarityPreference": null,
