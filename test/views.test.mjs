@@ -5,6 +5,7 @@ import { characterRows, characterIndexModel, characterSummary, signalHeading, pr
 import { sortByConfidence, stateLabel, partitionRows, categoryChips, chip, reportButton, reportChip } from '../assets/js/views/shared.js';
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
 import { giftRows, giftIndexModel, missingItemButton } from '../assets/js/views/gift.js';
+import { loadDataset } from '../scripts/validate.mjs';
 
 const dataset = {
   categories: [
@@ -284,6 +285,170 @@ test('categoryChips tolerates a character with no categories key', () => {
   assert.deepEqual(categoryChips(idx, {}), []);
 });
 
+// A category is "confirmed" when an approved observation shows the gift
+// actually worked, independent of any stored link. `tea` carries no link at
+// all here.
+const testedBase = {
+  categories: [{ id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] }],
+  gifts: [{ id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] }],
+  characters: [],
+  observations: [],
+  sources: [],
+};
+
+function testedCharacter(overrides = {}) {
+  return {
+    id: 'p1', name: 'P', giftable: true, spoiler: false, traits: [],
+    categories: {}, rarityPreference: null, favorites: [], notes: null,
+    ...overrides,
+  };
+}
+
+test('categoryChips promotes a category to tested on a loved observation, even unlinked', () => {
+  const idx = buildIndex({
+    ...testedBase,
+    characters: [testedCharacter()],
+    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
+  });
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
+    { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
+  ]);
+});
+
+test('categoryChips promotes a category to tested on a FAVORITE observation', () => {
+  const idx = buildIndex({
+    ...testedBase,
+    characters: [testedCharacter()],
+    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'favorite', date: '2026-09-23' }],
+  });
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')).map((c) => c.state), ['confirmed']);
+});
+
+// The report form's first option is "They didn't like it": a CONFIRMED "none"
+// reaction is a real, reviewed result, but not a positive one, so it must
+// never promote the category -- and with no stored link, no chip at all.
+test('a CONFIRMED "none" reaction never counts as tested', () => {
+  const idx = buildIndex({
+    ...testedBase,
+    characters: [testedCharacter()],
+    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'none', date: '2026-09-23' }],
+  });
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
+});
+
+// A `slight` reaction is the borderline positive case: it is the weakest
+// entry in POSITIVE_REACTIONS, but it is still a positive, approved result,
+// so it must promote the category exactly like `loved` or `favorite` do.
+test('a slight reaction counts as confirmed, the borderline positive case', () => {
+  const idx = buildIndex({
+    ...testedBase,
+    characters: [testedCharacter()],
+    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'slight', date: '2026-09-23' }],
+  });
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')).map((c) => c.state), ['confirmed']);
+});
+
+// A gift with no category (e.g. `rock` in the main fixture) can never be
+// promoted, no matter how positive the result on it is -- there is no
+// category to add to the confirmed set.
+test('a gift with no category is never promoted, even with an approved loved result', () => {
+  const idx = buildIndex({
+    categories: [],
+    gifts: [{ id: 'mystery', name: 'Mystery', category: null, rarity: null, description: '', sources: [] }],
+    characters: [testedCharacter()],
+    observations: [{ id: 'o1', character: 'p1', gift: 'mystery', reaction: 'loved', date: '2026-09-23' }],
+    sources: [],
+  });
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
+});
+
+test('a contested pair never counts as tested', () => {
+  const idx = buildIndex({
+    ...testedBase,
+    characters: [testedCharacter()],
+    observations: [
+      { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o2', character: 'p1', gift: 'chamomile', reaction: 'none', date: '2026-09-23' },
+    ],
+  });
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
+});
+
+// A pending report is a real player's result, but nobody has reviewed it yet
+// -- see CLAUDE.md's "A pending report is not a confirmation." It must not be
+// able to promote a category on its own.
+test('a pending report never counts as tested', () => {
+  const idx = buildIndex(
+    { ...testedBase, characters: [testedCharacter()] },
+    [{ id: 'r1', character: 'p1', gift: 'chamomile', reaction: 'loved', created_at: '2026-09-23' }],
+  );
+  assert.equal(idx.confidenceFor('p1', 'chamomile').state, 'PENDING');
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
+});
+
+test('a tested category with a guide link keeps the link’s source and is not duplicated', () => {
+  const idx = buildIndex({
+    ...testedBase,
+    characters: [testedCharacter({ categories: { tea: { state: 'guide', source: 'polygon-1' } } })],
+    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
+    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+  });
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
+    { id: 'tea', label: 'Tea', state: 'confirmed', source: 'polygon-1' },
+  ]);
+});
+
+// A refuted link is a guide's guess that the gift will NOT land -- but an
+// approved observation that it actually worked outranks that guess.
+test('a refuted link with an approved positive result shows as tested, not dropped', () => {
+  const idx = buildIndex({
+    ...testedBase,
+    characters: [testedCharacter({ categories: { tea: { state: 'refuted', source: 'polygon-1' } } })],
+    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
+    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+  });
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
+    { id: 'tea', label: 'Tea', state: 'confirmed', source: 'polygon-1' },
+  ]);
+});
+
+// Categories are deliberately out of alphabetical/insertion order here so the
+// tested group's ordering (categories.json position) can't be confused with
+// either. `books` is both linked and tested, so it must appear once, in the
+// tested group, ahead of `coffee`, which stays a plain link chip.
+test('tested chips are ordered by categories.json position and precede link-only chips', () => {
+  const orderedDataset = {
+    categories: [
+      { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
+      { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
+      { id: 'coffee', label: 'Coffee', inGameDescriptor: null, aliases: [] },
+    ],
+    gifts: [
+      { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
+      { id: 'novel', name: 'Novel', category: 'books', rarity: 'common', description: '', sources: [] },
+      { id: 'espresso', name: 'Espresso', category: 'coffee', rarity: 'common', description: '', sources: [] },
+    ],
+    characters: [testedCharacter({
+      categories: {
+        books: { state: 'guide', source: 'polygon-1' },
+        coffee: { state: 'guide', source: 'polygon-1' },
+      },
+    })],
+    observations: [
+      { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o2', character: 'p1', gift: 'novel', reaction: 'loved', date: '2026-09-23' },
+    ],
+    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+  };
+  const idx = buildIndex(orderedDataset);
+  const chips = categoryChips(idx, idx.byCharacterId.get('p1'));
+  assert.deepEqual(chips.map((c) => ({ id: c.id, state: c.state })), [
+    { id: 'tea', state: 'confirmed' },
+    { id: 'books', state: 'confirmed' },
+    { id: 'coffee', state: 'guide' },
+  ]);
+});
+
 // chip() and reportChip() are the only DOM-touching exports under test here,
 // so `document` gets just enough of a stand-in to construct an element and
 // read back what el() sets on it -- no dependency, no real DOM.
@@ -400,7 +565,12 @@ test('characterIndexModel hides non-giftable characters and honours search', () 
 test('characterIndexModel carries the category chips for each character', () => {
   const idx = buildIndex(dataset);
   const [entry] = characterIndexModel(idx, DEFAULT_FILTERS, '');
-  assert.deepEqual(entry.categories.map((c) => c.label), ['Books']);
+  // c1's one observation is a FAVORITE on `brew` (coffee), so coffee is now
+  // tested and sorts first; the profile-linked `books` chip is unaffected.
+  assert.deepEqual(entry.categories.map((c) => ({ label: c.label, state: c.state })), [
+    { label: 'Coffee', state: 'confirmed' },
+    { label: 'Books', state: 'profile' },
+  ]);
 });
 
 // A character's category chips mix three different claims -- a guide's guess,
@@ -427,6 +597,7 @@ const provenanceIndex = buildIndex({
 const guideChip = (id, label, source) => ({ id, label, state: 'guide', source });
 const discoveredChip = (id, label) => ({ id, label, state: 'discovered', source: null });
 const profileChip = (id, label) => ({ id, label, state: 'profile', source: null });
+const confirmedChip = (id, label, source = null) => ({ id, label, state: 'confirmed', source });
 
 test('provenanceNote: guide-only, one publisher', () => {
   const chips = [guideChip('books', 'Books', 'polygon-1')];
@@ -497,6 +668,64 @@ test('provenanceNote: discovered plus profile, no guide', () => {
 
 test('provenanceNote: empty chips returns an empty string', () => {
   assert.equal(provenanceNote(provenanceIndex, []), '');
+});
+
+test('provenanceNote: confirmed only, one category', () => {
+  const chips = [confirmedChip('books', 'Books')];
+  assert.equal(provenanceNote(provenanceIndex, chips), 'Books has at least one gift confirmed through testing.');
+});
+
+test('provenanceNote: confirmed only, two categories', () => {
+  const chips = [confirmedChip('books', 'Books'), confirmedChip('coffee', 'Coffee')];
+  assert.equal(provenanceNote(provenanceIndex, chips), 'Each has at least one gift confirmed through testing.');
+});
+
+test('provenanceNote: confirmed plus guide demotes the guide sentence to "the rest"', () => {
+  const chips = [confirmedChip('books', 'Books'), guideChip('coffee', 'Coffee', 'polygon-1')];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Books has at least one gift confirmed through testing. The rest are carried over from Polygon and are predictions until a player confirms an item.',
+  );
+});
+
+test('provenanceNote: confirmed plus discovered no longer says "Found through play."', () => {
+  const chips = [confirmedChip('books', 'Books'), discoveredChip('coffee', 'Coffee')];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Books has at least one gift confirmed through testing. Coffee was found through play.',
+  );
+});
+
+// M-2: the confirmed-only sentence's "only group" check must actually look at
+// profile chips, not just discovered/guide -- otherwise a confirmed category
+// sitting next to a profile one would wrongly take the bare "Each has..."
+// form instead of naming the category.
+test('provenanceNote: confirmed plus profile', () => {
+  const chips = [confirmedChip('books', 'Books'), profileChip('snacks', 'Snacks')];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Books has at least one gift confirmed through testing. Snacks is on the in-game profile.',
+  );
+});
+
+test('provenanceNote: two confirmed categories plus guide uses "each have"', () => {
+  const chips = [confirmedChip('books', 'Books'), confirmedChip('coffee', 'Coffee'), guideChip('tea', 'Tea', 'polygon-1')];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Books and Coffee each have at least one gift confirmed through testing. The rest are carried over from Polygon and are predictions until a player confirms an item.',
+  );
+});
+
+// Same "each have" form, but the other group present is profile rather than
+// guide -- pins that the "only group" check for 2+ confirmed chips reads
+// profile too, not just discovered/guide (see the M-2 test above for the
+// 1-chip case).
+test('provenanceNote: two confirmed categories plus profile uses "each have"', () => {
+  const chips = [confirmedChip('books', 'Books'), confirmedChip('coffee', 'Coffee'), profileChip('snacks', 'Snacks')];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Books and Coffee each have at least one gift confirmed through testing. Snacks is on the in-game profile.',
+  );
 });
 
 test('signalHeading never claims knowledge over a table of pure guesswork', () => {
@@ -897,6 +1126,18 @@ test('the character detail view renders the provenance note text from provenance
     note.textContent,
     'Fermented Drinks was found through play. The rest are carried over from Polygon and are predictions until a player confirms an item.',
   );
+});
+
+// Against the real committed dataset, not a fixture: Alexandra has seven
+// approved loved results on Fashion items, and Seteth has approved loved and
+// favorite results on Books items -- both categories should show as tested,
+// which is the bug this feature fixes (see the brief's example).
+test('the real dataset marks Alexandra’s fashion chip and Seteth’s books chip as tested', async () => {
+  const idx = buildIndex(await loadDataset('data'));
+  const alexandraFashion = categoryChips(idx, idx.byCharacterId.get('alexandra')).find((c) => c.id === 'fashion');
+  const setethBooks = categoryChips(idx, idx.byCharacterId.get('seteth')).find((c) => c.id === 'books');
+  assert.equal(alexandraFashion?.state, 'confirmed');
+  assert.equal(setethBooks?.state, 'confirmed');
 });
 
 // The Gifts tab's second entry point into a missing-item report. Like the

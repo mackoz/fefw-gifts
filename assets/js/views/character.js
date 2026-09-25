@@ -121,23 +121,40 @@ function joinList(labels) {
   return `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
 }
 
-// The chips under "Reported to like" mix three very different claims: a guide's
-// guess (carried over, unconfirmed), an in-game profile listing, and something
-// a player actually found through play. Saying "carried over" about all three
-// -- the bug this replaces -- overclaims for the two that are not guesses.
-// Each group gets its own sentence, and the guide sentence is demoted to "the
-// rest" once something stronger sits above it.
+// The chips under "Reported to like" mix four very different claims: a
+// category with an approved test result behind it, a guide's guess (carried
+// over, unconfirmed), an in-game profile listing, and something a player
+// actually found through play. The bug this replaces said "carried over"
+// about all three stored-link kinds, which overclaimed for the profile and
+// discovered ones -- only the guide sentence is actually a guess. Each group
+// gets its own sentence, and a fourth group -- confirmed through testing --
+// now leads, since it is the strongest claim a chip can make; the guide
+// sentence is demoted to "the rest" once something stronger sits above it.
 export function provenanceNote(index, chips) {
   if (chips.length === 0) return '';
 
+  const confirmed = chips.filter((c) => c.state === 'confirmed');
   const discovered = chips.filter((c) => c.state === 'discovered');
   const profile = chips.filter((c) => c.state === 'profile');
   const guide = chips.filter((c) => c.state === 'guide');
 
   const sentences = [];
 
+  // At exactly one confirmed chip, the sentence names the category and reads
+  // the same whether or not other groups are present, so that case is
+  // resolved before the "only group" check even runs.
+  if (confirmed.length === 1) {
+    sentences.push(`${confirmed[0].label} has at least one gift confirmed through testing.`);
+  } else if (confirmed.length > 1) {
+    if (discovered.length === 0 && profile.length === 0 && guide.length === 0) {
+      sentences.push('Each has at least one gift confirmed through testing.');
+    } else {
+      sentences.push(`${joinList(confirmed.map((c) => c.label))} each have at least one gift confirmed through testing.`);
+    }
+  }
+
   if (discovered.length > 0) {
-    if (guide.length === 0 && profile.length === 0) {
+    if (guide.length === 0 && profile.length === 0 && confirmed.length === 0) {
       sentences.push('Found through play.');
     } else {
       const verb = discovered.length === 1 ? 'was' : 'were';
@@ -152,7 +169,7 @@ export function provenanceNote(index, chips) {
 
   if (guide.length > 0) {
     const publishers = [...new Set(guide.map((c) => sourceName(index, c.source)))];
-    sentences.push(discovered.length === 0 && profile.length === 0
+    sentences.push(discovered.length === 0 && profile.length === 0 && confirmed.length === 0
       ? `Category preferences carried over from ${publishers.join(' and ')}. They’re predictions until a player confirms an item.`
       : `The rest are carried over from ${publishers.join(' and ')} and are predictions until a player confirms an item.`);
   }

@@ -406,7 +406,8 @@ main#view > p,
 }
 
 
-.provenance-discovered {
+.provenance-discovered,
+.provenance-confirmed {
   font-weight: 600;
 }
 
