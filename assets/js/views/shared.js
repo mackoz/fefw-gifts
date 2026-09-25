@@ -121,24 +121,24 @@ export function partitionRows(rows) {
   return { signal, untested };
 }
 
-// A category is "tested" for a character when at least one gift in it has an
-// approved observation that actually shows the gift worked: a FAVORITE, or a
-// CONFIRMED reaction that is positive. CONTESTED, PENDING and PREDICTED are
+// A category is "confirmed" for a character when at least one gift in it has
+// an approved observation that actually shows the gift worked: a FAVORITE, or
+// a CONFIRMED reaction that is positive. CONTESTED, PENDING and PREDICTED are
 // all real signal elsewhere in the app, but none of them is an approved,
 // positive result, so none of them may promote a category here -- see
 // CLAUDE.md's "A pending report is not a confirmation." A character with no
-// `id` (some tests, and any caller that has not resolved one yet) has no
-// tested categories rather than crashing on confidenceFor.
-function testedCategoryIds(index, character) {
+// `id` (not yet resolved) has no confirmed categories rather than crashing on
+// confidenceFor.
+function confirmedCategoryIds(index, character) {
   const ids = new Set();
   if (character.id === undefined) return ids;
   for (const gift of index.gifts) {
     if (gift.category === null || gift.category === undefined) continue;
     if (ids.has(gift.category)) continue;
     const confidence = index.confidenceFor(character.id, gift.id);
-    const tested = confidence.state === 'FAVORITE'
+    const confirmed = confidence.state === 'FAVORITE'
       || (confidence.state === 'CONFIRMED' && POSITIVE_REACTIONS.includes(confidence.reaction));
-    if (tested) ids.add(gift.category);
+    if (confirmed) ids.add(gift.category);
   }
   return ids;
 }
@@ -148,27 +148,27 @@ function testedCategoryIds(index, character) {
 // something discovered through play) and a category an approved test result
 // has actually confirmed. Testing outranks a stored link -- an observed
 // result is stronger evidence than any prediction, including a refuted one --
-// so a tested category always renders with state 'tested', carrying whatever
-// source its stored link has (or null if it has none), and tested chips sort
-// first, in categories.json order. A refuted link on a category nobody has
-// tested is still dropped: a refuted link alone is not a like, and rendering
-// it as one would invent a preference nobody reported.
+// so a confirmed category always renders with state 'confirmed', carrying
+// whatever source its stored link has (or null if it has none), and confirmed
+// chips sort first, in categories.json order. A refuted link on a category
+// nobody has confirmed is still dropped: a refuted link alone is not a like,
+// and rendering it as one would invent a preference nobody reported.
 export function categoryChips(index, character) {
   const links = character.categories ?? {};
-  const testedIds = testedCategoryIds(index, character);
+  const confirmedIds = confirmedCategoryIds(index, character);
   const categoryPosition = new Map(index.categories.map((c, i) => [c.id, i]));
 
-  const testedChips = [...testedIds]
+  const confirmedChips = [...confirmedIds]
     .sort((a, b) => (categoryPosition.get(a) ?? 0) - (categoryPosition.get(b) ?? 0))
     .map((id) => ({
       id,
       label: index.byCategoryId.get(id)?.label ?? id,
-      state: 'tested',
+      state: 'confirmed',
       source: links[id]?.source ?? null,
     }));
 
   const linkChips = Object.entries(links)
-    .filter(([id, link]) => link.state !== 'refuted' && !testedIds.has(id))
+    .filter(([id, link]) => link.state !== 'refuted' && !confirmedIds.has(id))
     .map(([id, link]) => ({
       id,
       label: index.byCategoryId.get(id)?.label ?? id,
@@ -176,7 +176,7 @@ export function categoryChips(index, character) {
       source: link.source,
     }));
 
-  return [...testedChips, ...linkChips];
+  return [...confirmedChips, ...linkChips];
 }
 
 // A small inline token: a category, a gift name, a suggestion. It renders as a
