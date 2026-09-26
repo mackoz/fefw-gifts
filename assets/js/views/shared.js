@@ -1,5 +1,3 @@
-import { POSITIVE_REACTIONS } from '../confidence.js';
-
 // PENDING sits between the observed states and the guesses: a real player
 // reported it, but nobody has reviewed it yet.
 const STATE_RANK = { FAVORITE: 0, CONFIRMED: 1, CONTESTED: 2, PENDING: 3, PREDICTED: 4, UNTESTED: 5 };
@@ -122,13 +120,16 @@ export function partitionRows(rows) {
 }
 
 // A category is "confirmed" for a character when at least one gift in it has
-// an approved observation that actually shows the gift worked: a FAVORITE, or
-// a CONFIRMED reaction that is positive. CONTESTED, PENDING and PREDICTED are
-// all real signal elsewhere in the app, but none of them is an approved,
-// positive result, so none of them may promote a category here -- see
-// CLAUDE.md's "A pending report is not a confirmation." A character with no
-// `id` (not yet resolved) has no confirmed categories rather than crashing on
-// confidenceFor.
+// an approved observation with a LOVED reaction. A favourite reaction only
+// happens on an uncommon/rare item, so a FAVORITE result says something about
+// that item, not its category -- and a common item in the same category may
+// not even be loved. Liked and slight are real, approved, positive results,
+// but they don't establish a category either: only loved does. CONTESTED,
+// PENDING and PREDICTED are all real signal elsewhere in the app, but none of
+// them is an approved loved result, so none of them may promote a category
+// here -- see CLAUDE.md's "A pending report is not a confirmation." A
+// character with no `id` (not yet resolved) has no confirmed categories
+// rather than crashing on confidenceFor.
 function confirmedCategoryIds(index, character) {
   const ids = new Set();
   if (character.id === undefined) return ids;
@@ -136,8 +137,7 @@ function confirmedCategoryIds(index, character) {
     if (gift.category === null || gift.category === undefined) continue;
     if (ids.has(gift.category)) continue;
     const confidence = index.confidenceFor(character.id, gift.id);
-    const confirmed = confidence.state === 'FAVORITE'
-      || (confidence.state === 'CONFIRMED' && POSITIVE_REACTIONS.includes(confidence.reaction));
+    const confirmed = confidence.state === 'CONFIRMED' && confidence.reaction === 'loved';
     if (confirmed) ids.add(gift.category);
   }
   return ids;
@@ -145,10 +145,12 @@ function confirmedCategoryIds(index, character) {
 
 // A character's category chips, merging two sources that make very different
 // claims: a stored link (a guide's guess, an in-game profile listing, or
-// something discovered through play) and a category an approved test result
-// has actually confirmed. Testing outranks a stored link -- an observed
-// result is stronger evidence than any prediction, including a refuted one --
-// so a confirmed category always renders with state 'confirmed', carrying
+// something discovered through play) and a category a loved result has
+// actually confirmed. A FAVORITE, and a liked or slight reaction, are real
+// approved results, but none of them confirms a category on their own -- see
+// confirmedCategoryIds. Testing outranks a stored link -- a loved result is
+// stronger evidence than any prediction, including a refuted one -- so a
+// confirmed category always renders with state 'confirmed', carrying
 // whatever source its stored link has (or null if it has none), and confirmed
 // chips sort first, in categories.json order. A refuted link on a category
 // nobody has confirmed is still dropped: a refuted link alone is not a like,
@@ -177,6 +179,21 @@ export function categoryChips(index, character) {
     }));
 
   return [...confirmedChips, ...linkChips];
+}
+
+// A character's favourite gifts: the same union favoritesModel builds for the
+// Favourites tab, so a card or profile can never disagree with that tab about
+// which items are known favourites. Two independent ways to know one -- a
+// player report that came back FAVORITE, and the character's own `favorites`
+// list -- combined with no gift listed twice, observed ones first in
+// index.gifts order, then declared ones not already present. A character with
+// no `id` (not yet resolved) can't be looked up by confidenceFor, so only its
+// declared favourites count.
+export function favouriteGifts(index, character) {
+  const declared = (character.favorites ?? []).map((id) => index.byGiftId.get(id)).filter(Boolean);
+  if (character.id === undefined) return declared;
+  const observed = index.gifts.filter((gift) => index.confidenceFor(character.id, gift.id).state === 'FAVORITE');
+  return [...new Map([...observed, ...declared].map((gift) => [gift.id, gift])).values()];
 }
 
 // A small inline token: a category, a gift name, a suggestion. It renders as a

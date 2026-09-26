@@ -2,7 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildIndex } from '../assets/js/data.js';
 import { characterRows, characterIndexModel, characterSummary, signalHeading, provenanceNote } from '../assets/js/views/character.js';
-import { sortByConfidence, stateLabel, partitionRows, categoryChips, chip, reportButton, reportChip } from '../assets/js/views/shared.js';
+import {
+  sortByConfidence, stateLabel, partitionRows, categoryChips, favouriteGifts, chip, reportButton, reportChip,
+} from '../assets/js/views/shared.js';
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
 import { giftRows, giftIndexModel, missingItemButton } from '../assets/js/views/gift.js';
 import { loadDataset } from '../scripts/validate.mjs';
@@ -315,13 +317,16 @@ test('categoryChips promotes a category to tested on a loved observation, even u
   ]);
 });
 
-test('categoryChips promotes a category to tested on a FAVORITE observation', () => {
+// A favourite reaction only happens on an uncommon/rare item -- it says
+// something about that ITEM, not its category, so it must never promote the
+// whole category to confirmed. See CLAUDE.md: a favourite is about the item.
+test('categoryChips does not promote a category on a FAVORITE observation', () => {
   const idx = buildIndex({
     ...testedBase,
     characters: [testedCharacter()],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'favorite', date: '2026-09-23' }],
   });
-  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')).map((c) => c.state), ['confirmed']);
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
 });
 
 // The report form's first option is "They didn't like it": a CONFIRMED "none"
@@ -336,16 +341,27 @@ test('a CONFIRMED "none" reaction never counts as tested', () => {
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
 });
 
-// A `slight` reaction is the borderline positive case: it is the weakest
-// entry in POSITIVE_REACTIONS, but it is still a positive, approved result,
-// so it must promote the category exactly like `loved` or `favorite` do.
-test('a slight reaction counts as confirmed, the borderline positive case', () => {
+// A `slight` reaction is a real, approved, positive result, but it is weaker
+// than `loved` and must not promote the category on its own -- only `loved`
+// does. See confirmedCategoryIds in shared.js.
+test('a slight reaction does not count as confirmed', () => {
   const idx = buildIndex({
     ...testedBase,
     characters: [testedCharacter()],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'slight', date: '2026-09-23' }],
   });
-  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')).map((c) => c.state), ['confirmed']);
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
+});
+
+// Same as `slight`: a real, approved, positive result that still stops short
+// of confirming the whole category.
+test('a liked reaction does not count as confirmed', () => {
+  const idx = buildIndex({
+    ...testedBase,
+    characters: [testedCharacter()],
+    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'liked', date: '2026-09-23' }],
+  });
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
 });
 
 // A gift with no category (e.g. `rock` in the main fixture) can never be
@@ -447,6 +463,55 @@ test('tested chips are ordered by categories.json position and precede link-only
     { id: 'books', state: 'confirmed' },
     { id: 'coffee', state: 'guide' },
   ]);
+});
+
+// favouriteGifts mirrors favoritesModel's found-list union, one character at
+// a time, so a card or profile can never disagree with the Favourites tab.
+test('favouriteGifts: observed only', () => {
+  const idx = buildIndex(dataset);
+  // c1's one observation is a FAVORITE on `brew`.
+  assert.deepEqual(favouriteGifts(idx, idx.byCharacterId.get('c1')).map((g) => g.id), ['brew']);
+});
+
+test('favouriteGifts: declared only', () => {
+  const idx = buildIndex({
+    ...dataset,
+    observations: [],
+    characters: [{ ...dataset.characters[0], favorites: ['book'] }],
+  });
+  assert.deepEqual(favouriteGifts(idx, idx.byCharacterId.get('c1')).map((g) => g.id), ['book']);
+});
+
+test('favouriteGifts: observed and declared overlap without duplicating', () => {
+  const idx = buildIndex({
+    ...dataset,
+    characters: [{ ...dataset.characters[0], favorites: ['brew', 'book'] }],
+  });
+  // 'brew' is both observed FAVORITE and declared: it must appear exactly once.
+  assert.deepEqual(favouriteGifts(idx, idx.byCharacterId.get('c1')).map((g) => g.id), ['brew', 'book']);
+});
+
+test('favouriteGifts drops an unknown declared id rather than crashing', () => {
+  const idx = buildIndex({
+    ...dataset,
+    observations: [],
+    characters: [{ ...dataset.characters[0], favorites: ['no-such-gift'] }],
+  });
+  assert.deepEqual(favouriteGifts(idx, idx.byCharacterId.get('c1')), []);
+});
+
+test('favouriteGifts on a character with no id counts only declared favourites', () => {
+  const idx = buildIndex(dataset);
+  assert.deepEqual(favouriteGifts(idx, { favorites: ['book'] }).map((g) => g.id), ['book']);
+});
+
+// A pending report is a real player's result, but nobody has reviewed it
+// yet -- see CLAUDE.md's "A pending report is not a confirmation." It must
+// not be able to make a favourite on its own.
+test('a pending favourite report is not a favourite', () => {
+  const idx = buildIndex(OVERLAY_DATASET, [{ id: 'r1', character: 'c1', gift: 'book', reaction: 'favorite' }]);
+  assert.equal(idx.confidenceFor('c1', 'book').state, 'PENDING');
+  assert.deepEqual(favouriteGifts(idx, idx.byCharacterId.get('c1')), []);
 });
 
 // chip() and reportChip() are the only DOM-touching exports under test here,
@@ -565,12 +630,68 @@ test('characterIndexModel hides non-giftable characters and honours search', () 
 test('characterIndexModel carries the category chips for each character', () => {
   const idx = buildIndex(dataset);
   const [entry] = characterIndexModel(idx, DEFAULT_FILTERS, '');
-  // c1's one observation is a FAVORITE on `brew` (coffee), so coffee is now
-  // tested and sorts first; the profile-linked `books` chip is unaffected.
+  // c1's one observation is a FAVORITE on `brew` (coffee) -- a favourite is
+  // about that item, not its category, so coffee stays unconfirmed and
+  // unlinked, leaving only the profile-linked `books` chip.
   assert.deepEqual(entry.categories.map((c) => ({ label: c.label, state: c.state })), [
-    { label: 'Coffee', state: 'confirmed' },
     { label: 'Books', state: 'profile' },
   ]);
+});
+
+test('characterIndexModel carries the favourite gifts for each character, in order', () => {
+  const idx = buildIndex({
+    ...dataset,
+    characters: [{ ...dataset.characters[0], favorites: ['book'] }],
+  });
+  const [entry] = characterIndexModel(idx, DEFAULT_FILTERS, '');
+  // Observed 'brew' (FAVORITE) leads, since it comes first in index.gifts
+  // order; the declared 'book' follows.
+  assert.deepEqual(entry.favourites.map((g) => g.id), ['brew', 'book']);
+});
+
+// Render-level check on the index card: c1's favourite ('brew', observed
+// FAVORITE) must render first, ahead of its one category chip ('books',
+// profile-linked), inside a single list carrying both the chip-list and
+// character-chips classes.
+test('the index card renders favourite chips before category chips, in one character-chips list', () => {
+  const idx = buildIndex(dataset);
+  const container = fakeElement('div');
+  characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false });
+
+  const list = findFirst(container, (n) => (n.className ?? '').includes('character-chips'));
+  assert.ok(list, 'the card should render a character-chips list');
+  assert.match(list.className, /\bchip-list\b/);
+
+  const chips = list.children.map((li) => li.children[0]);
+  assert.deepEqual(chips.map((c) => c.textContent), ['Brew', 'Books']);
+  assert.match(chips[0].className, /\bchip-favourite\b/, 'the favourite chip leads');
+  assert.equal(chips[0].href, '#/gift/brew');
+  assert.doesNotMatch(chips[1].className, /\bchip-favourite\b/, 'a category chip is not a favourite chip');
+});
+
+// Render-level check on the detail page: the Favourites heading and list must
+// come before "Reported to like", and the favourite chip must carry the same
+// chip-favourite class the Favourites tab uses.
+test('the character detail page renders a Favourites block before Reported to like', () => {
+  const idx = buildIndex(dataset);
+  const container = fakeElement('div');
+  characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'c1' });
+
+  const headings = collect(container, (n) => n.tagName === 'H3').map((n) => n.textContent);
+  assert.deepEqual(
+    headings.filter((h) => h === 'Favourites' || h === 'Reported to like'),
+    ['Favourites', 'Reported to like'],
+    'Favourites must precede Reported to like',
+  );
+
+  const favouriteChip = findFirst(container, (n) => (n.className ?? '').includes('chip-favourite'));
+  assert.ok(favouriteChip, 'the page should render a favourite chip');
+  assert.equal(favouriteChip.textContent, 'Brew');
+  assert.equal(favouriteChip.href, '#/gift/brew');
+
+  const favouritesList = findFirst(container, (n) => (n.className ?? '').includes('character-chips')
+    && n.children.some((li) => li.children[0]?.className?.includes('chip-favourite')));
+  assert.equal(favouritesList.getAttribute('role'), 'list');
 });
 
 // A character's category chips mix three different claims -- a guide's guess,
@@ -1138,6 +1259,36 @@ test('the real dataset marks Alexandra’s fashion chip and Seteth’s books chi
   const setethBooks = categoryChips(idx, idx.byCharacterId.get('seteth')).find((c) => c.id === 'books');
   assert.equal(alexandraFashion?.state, 'confirmed');
   assert.equal(setethBooks?.state, 'confirmed');
+});
+
+// Against the real committed dataset: this is the maintainer's rule from
+// play, in the data that motivated it. Ninae has a FAVORITE (double points)
+// on a fashion item plus several liked/slight results elsewhere, none of
+// which is a loved reaction -- so no category she's been tested on is
+// confirmed, and only her guide-linked categories render, all unconfirmed.
+// Fabio's FAVORITE sits on a books item, but he has no loved result on any
+// books item, so books stays unconfirmed even though his favourite is a book;
+// his loved results elsewhere confirm coffee and fermented-drinks normally.
+// Lysander has no FAVORITE at all, but a loved result confirms weapons.
+test('the real dataset confirms categories from loved results only, keeping favourites about the item', async () => {
+  const idx = buildIndex(await loadDataset('data'));
+
+  const ninae = idx.byCharacterId.get('ninae');
+  assert.deepEqual(favouriteGifts(idx, ninae).map((g) => g.id), ['eastern-black-silk']);
+  const ninaeChips = categoryChips(idx, ninae);
+  assert.ok(ninaeChips.every((c) => c.state !== 'confirmed'), 'no confirmed chip without a loved result');
+  assert.deepEqual([...ninaeChips.map((c) => c.id)].sort(), ['fashion', 'flowers', 'paintings']);
+
+  const fabio = idx.byCharacterId.get('fabio');
+  assert.deepEqual(favouriteGifts(idx, fabio).map((g) => g.id), ['history-of-a-master']);
+  const fabioConfirmedIds = categoryChips(idx, fabio).filter((c) => c.state === 'confirmed').map((c) => c.id);
+  assert.ok(fabioConfirmedIds.includes('coffee'));
+  assert.ok(fabioConfirmedIds.includes('fermented-drinks'));
+  assert.ok(!fabioConfirmedIds.includes('books'), 'a FAVORITE on a books item must not confirm books');
+
+  const lysander = idx.byCharacterId.get('lysander');
+  assert.deepEqual(favouriteGifts(idx, lysander), []);
+  assert.ok(categoryChips(idx, lysander).some((c) => c.id === 'weapons' && c.state === 'confirmed'));
 });
 
 // The Gifts tab's second entry point into a missing-item report. Like the

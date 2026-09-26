@@ -1208,3 +1208,5 @@ main#view.view-matrix {
   border-color: currentColor;
   background: var(--favorite-bg);
 }
+
+.character-chips .chip-favourite::before { content: "\2605\00a0"; }
