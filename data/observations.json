@@ -950,5 +950,19 @@
     "character": "seteth",
     "reaction": "loved",
     "date": "2026-09-24"
+  },
+  {
+    "id": "954ac4d2-c722-466d-b3a9-5ff672c7f3f8",
+    "gift": "flexible-fishing-rod",
+    "character": "inyoni",
+    "reaction": "loved",
+    "date": "2026-09-25"
+  },
+  {
+    "id": "0cdacad3-4398-4384-b991-b2d71a168093",
+    "gift": "sharp-fishhook",
+    "character": "inyoni",
+    "reaction": "loved",
+    "date": "2026-09-25"
   }
 ]
