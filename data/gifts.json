@@ -13,7 +13,7 @@
     "id": "ginji-cervi",
     "name": "Ginji Cervi",
     "category": "sweets",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -43,7 +43,7 @@
     "id": "wing-fletching",
     "name": "Wing Fletching",
     "category": "archery",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -83,7 +83,7 @@
     "id": "rare-spices",
     "name": "Rare Spices",
     "category": "spicy-foods",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -93,7 +93,7 @@
     "id": "kitten-figurine",
     "name": "Kitten Figurine",
     "category": "animals",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -223,7 +223,7 @@
     "id": "weak-cervi",
     "name": "Weak Cervi",
     "category": "children",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -253,7 +253,7 @@
     "id": "mature-shosh",
     "name": "Mature Shosh",
     "category": "fermented-drinks",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -312,8 +312,8 @@
   {
     "id": "pack-of-pastels",
     "name": "Pack Of Pastels",
-    "category": null,
-    "rarity": null,
+    "category": "crafting",
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -463,7 +463,7 @@
     "id": "common-coffee",
     "name": "Common Coffee",
     "category": "coffee",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -803,7 +803,7 @@
     "id": "magic-trick-set",
     "name": "Magic-Trick Set",
     "category": "spirituality",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -1081,6 +1081,14 @@
     "id": "jade-panther-figure",
     "name": "Jade Panther Figure",
     "category": "art",
+    "rarity": "common",
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": "the-knights-suitors",
+    "name": "The Knight's Suitors",
+    "category": "books",
     "rarity": "common",
     "description": "",
     "sources": []

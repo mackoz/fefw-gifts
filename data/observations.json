@@ -964,5 +964,103 @@
     "character": "inyoni",
     "reaction": "loved",
     "date": "2026-09-25"
+  },
+  {
+    "id": "29b39be9-86bb-4b69-814b-48ab96a5cc68",
+    "gift": "eastern-black-silk",
+    "character": "ninae",
+    "reaction": "favorite",
+    "date": "2026-09-26"
+  },
+  {
+    "id": "411178f3-534b-43b8-9528-83e6322e9198",
+    "gift": "magic-trick-set",
+    "character": "halvin",
+    "reaction": "loved",
+    "date": "2026-09-26"
+  },
+  {
+    "id": "fd66ca8d-19c7-4969-b8c7-c881199d064f",
+    "gift": "pack-of-pastels",
+    "character": "ninae",
+    "reaction": "liked",
+    "date": "2026-09-26"
+  },
+  {
+    "id": "98ddbb2b-474f-4aa6-9eff-7a145fd3ebfd",
+    "gift": "rare-spices",
+    "character": "ninae",
+    "reaction": "liked",
+    "date": "2026-09-26"
+  },
+  {
+    "id": "c8f48896-46d0-4978-babc-43370dc7106d",
+    "gift": "wing-fletching",
+    "character": "ninae",
+    "reaction": "liked",
+    "date": "2026-09-26"
+  },
+  {
+    "id": "032be358-fd76-4edc-a078-c79727eb774d",
+    "gift": "potted-vegetables",
+    "character": "ninae",
+    "reaction": "slight",
+    "date": "2026-09-26"
+  },
+  {
+    "id": "2eee7bb3-91ad-46db-bbf1-fb3d30f4b9d2",
+    "gift": "ginji-cervi",
+    "character": "ninae",
+    "reaction": "slight",
+    "date": "2026-09-26"
+  },
+  {
+    "id": "c0fbc592-d00c-4147-8726-f792a34011ce",
+    "gift": "weak-cervi",
+    "character": "ninae",
+    "reaction": "slight",
+    "date": "2026-09-26"
+  },
+  {
+    "id": "50f16682-ebda-40c6-a33e-72233acfee13",
+    "gift": "common-coffee",
+    "character": "ninae",
+    "reaction": "slight",
+    "date": "2026-09-26"
+  },
+  {
+    "id": "c04cf87a-679d-41ea-b1fc-e12402ab3dab",
+    "gift": "mature-shosh",
+    "character": "ninae",
+    "reaction": "slight",
+    "date": "2026-09-26"
+  },
+  {
+    "id": "4ace6f9a-a70b-4de4-8d1c-e0c639708322",
+    "gift": "kitten-figurine",
+    "character": "ninae",
+    "reaction": "slight",
+    "date": "2026-09-26"
+  },
+  {
+    "id": "1912efc6-25cf-4ed6-b6a8-42c40d06b7e5",
+    "gift": "the-knights-suitors",
+    "character": "ninae",
+    "reaction": "liked",
+    "date": "2026-09-26"
+  },
+  {
+    "id": "d8df7e43-d633-4d43-95bc-7c1d1286598a",
+    "gift": "ginji-cervi",
+    "character": "halvin",
+    "reaction": "loved",
+    "date": "2026-09-26"
+  },
+  {
+    "id": "2f0a7533-fe30-4609-be37-e30df7244287",
+    "gift": "weak-cervi",
+    "character": "halvin",
+    "reaction": "loved",
+    "date": "2026-09-26"
   }
 ]
