@@ -103,7 +103,7 @@
     "id": "flexible-fishing-rod",
     "name": "Flexible Fishing Rod",
     "category": "fishing",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -533,7 +533,7 @@
     "id": "sharp-fishhook",
     "name": "Sharp Fishhook",
     "category": "fishing",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
