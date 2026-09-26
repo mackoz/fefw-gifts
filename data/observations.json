@@ -1048,5 +1048,19 @@
     "character": "ninae",
     "reaction": "liked",
     "date": "2026-09-26"
+  },
+  {
+    "id": "d8df7e43-d633-4d43-95bc-7c1d1286598a",
+    "gift": "ginji-cervi",
+    "character": "halvin",
+    "reaction": "loved",
+    "date": "2026-09-26"
+  },
+  {
+    "id": "2f0a7533-fe30-4609-be37-e30df7244287",
+    "gift": "weak-cervi",
+    "character": "halvin",
+    "reaction": "loved",
+    "date": "2026-09-26"
   }
 ]
