@@ -1,5 +1,7 @@
 import { RARITY_ORDER } from '../confidence.js';
-import { el, emptyState, chip, reportChip } from './shared.js';
+import {
+  el, emptyState, chip, reportChip, favouriteGifts,
+} from './shared.js';
 
 function suggestionsFor(index, character) {
   return index.gifts
@@ -19,12 +21,10 @@ export function favoritesModel(index, filters) {
     if (!character.giftable) continue;
     if (filters.hideSpoilers && character.spoiler) continue;
 
-    // Two independent ways to know a favourite: a player report that came back
-    // FAVORITE, and the character's own `favorites` list. Either one solves the
-    // character; the list shown is their union, with no gift listed twice.
-    const observed = index.gifts.filter((gift) => index.confidenceFor(character.id, gift.id).state === 'FAVORITE');
-    const declared = (character.favorites ?? []).map((id) => index.byGiftId.get(id)).filter(Boolean);
-    const gifts = [...new Map([...observed, ...declared].map((gift) => [gift.id, gift])).values()];
+    // The same union favouriteGifts builds in shared.js, so this tab can
+    // never disagree with a character card or page about which gifts are
+    // known favourites.
+    const gifts = favouriteGifts(index, character);
 
     if (gifts.length) found.push({ character, gifts });
     else unknown.push({ character, suggestions: suggestionsFor(index, character) });

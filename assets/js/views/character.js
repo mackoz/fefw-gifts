@@ -1,7 +1,7 @@
 import { passesFilters } from '../filters.js';
 import {
   sortByConfidence, badge, el, emptyState, sourceName, reportButton, reportChip,
-  partitionRows, categoryChips, chip,
+  partitionRows, categoryChips, favouriteGifts, chip,
 } from './shared.js';
 import { POSITIVE_REACTIONS } from '../confidence.js';
 import { voteControl, voteControlModel } from '../vote-control.js';
@@ -26,11 +26,9 @@ export function detailStatus(character, filters) {
 // implies a negative: a character nobody has tested reads as untested, not as
 // one whose gifts fail.
 export function characterSummary(index, character) {
-  // Union by gift id, exactly as favoritesModel does, so this and the
-  // Favourites tab can never disagree about whether a favourite is known.
-  const favourites = new Set(
-    (character.favorites ?? []).map((id) => index.byGiftId.get(id)).filter(Boolean).map((g) => g.id),
-  );
+  // Same favouriteGifts union shared.js exports, so this and the Favourites
+  // tab can never disagree about whether a favourite is known.
+  const favouriteCount = favouriteGifts(index, character).length;
   let confirmed = 0;
   let tested = 0;
   let contested = 0;
@@ -39,14 +37,13 @@ export function characterSummary(index, character) {
 
   for (const gift of index.gifts) {
     const confidence = index.confidenceFor(character.id, gift.id);
-    if (confidence.state === 'FAVORITE') favourites.add(gift.id);
     // A CONFIRMED row is only a "confirmed" gift when the reaction is
     // positive. The report form's first option is "They didn't like it", so
     // a CONFIRMED "none" reaction is common -- and reporting it as one of "N
     // confirmed" would read as N gifts that work, the opposite of what
     // happened. "Tested" is deliberately neutral: it neither claims the gift
     // worked nor implies the character dislikes things (see CLAUDE.md).
-    else if (confidence.state === 'CONFIRMED' && POSITIVE_REACTIONS.includes(confidence.reaction)) confirmed += 1;
+    if (confidence.state === 'CONFIRMED' && POSITIVE_REACTIONS.includes(confidence.reaction)) confirmed += 1;
     else if (confidence.state === 'CONFIRMED') tested += 1;
     else if (confidence.state === 'CONTESTED') contested += 1;
     else if (confidence.state === 'PENDING') pending += 1;
@@ -56,7 +53,7 @@ export function characterSummary(index, character) {
     else if (confidence.state === 'PREDICTED' && confidence.predicted === 'positive') predicted += 1;
   }
 
-  if (favourites.size > 0) return `${favourites.size} favourite${favourites.size === 1 ? '' : 's'} found`;
+  if (favouriteCount > 0) return `${favouriteCount} favourite${favouriteCount === 1 ? '' : 's'} found`;
   if (confirmed > 0) return `${confirmed} confirmed`;
   if (tested > 0) return `${tested} tested`;
   // CONTESTED and PENDING sit between confirmed and predicted, and they are
@@ -80,6 +77,7 @@ export function characterIndexModel(index, filters, search) {
     .map((character) => ({
       character,
       categories: categoryChips(index, character),
+      favourites: favouriteGifts(index, character),
       summary: characterSummary(index, character),
     }));
 }
@@ -100,11 +98,21 @@ export function signalHeading(rows) {
   return rows.every((row) => row.confidence.predicted === 'positive') ? 'Worth trying' : 'Predictions';
 }
 
-function chipList(entries) {
-  const list = el('ul', 'chip-list');
+// Favourite chips render first, then category chips -- a favourite is
+// stronger evidence about that one item than any category link, so it leads.
+// `favourites` defaults to none, which is all the "Reported to like" list on
+// the page ever passes; the card and the page's own Favourites block are the
+// two callers that pass gifts through it.
+function chipList(entries, favourites = []) {
+  const list = el('ul', 'chip-list character-chips');
   // Safari/VoiceOver drops role="list" implicit in <ul> once list-style: none
   // meets display: grid/flex, so it has to be set back explicitly.
   list.setAttribute('role', 'list');
+  for (const gift of favourites) {
+    const item = el('li');
+    item.append(chip(gift.name, { href: `#/gift/${gift.id}`, className: 'chip-favourite' }));
+    list.append(item);
+  }
   for (const entry of entries) {
     const item = el('li');
     item.append(chip(entry.label, { className: `provenance-${entry.state}` }));
@@ -144,12 +152,12 @@ export function provenanceNote(index, chips) {
   // the same whether or not other groups are present, so that case is
   // resolved before the "only group" check even runs.
   if (confirmed.length === 1) {
-    sentences.push(`${confirmed[0].label} has at least one gift confirmed through testing.`);
+    sentences.push(`${confirmed[0].label} has at least one gift loved in testing.`);
   } else if (confirmed.length > 1) {
     if (discovered.length === 0 && profile.length === 0 && guide.length === 0) {
-      sentences.push('Each has at least one gift confirmed through testing.');
+      sentences.push('Each has at least one gift loved in testing.');
     } else {
-      sentences.push(`${joinList(confirmed.map((c) => c.label))} each have at least one gift confirmed through testing.`);
+      sentences.push(`${joinList(confirmed.map((c) => c.label))} each have at least one gift loved in testing.`);
     }
   }
 
@@ -170,8 +178,8 @@ export function provenanceNote(index, chips) {
   if (guide.length > 0) {
     const publishers = [...new Set(guide.map((c) => sourceName(index, c.source)))];
     sentences.push(discovered.length === 0 && profile.length === 0 && confirmed.length === 0
-      ? `Category preferences carried over from ${publishers.join(' and ')}. They’re predictions until a player confirms an item.`
-      : `The rest are carried over from ${publishers.join(' and ')} and are predictions until a player confirms an item.`);
+      ? `Category preferences carried over from ${publishers.join(' and ')}. They’re predictions until a player reports loving an item in that category.`
+      : `The rest are carried over from ${publishers.join(' and ')} and are predictions until a player reports loving an item in that category.`);
   }
 
   return sentences.join(' ');
@@ -195,7 +203,7 @@ function renderPicker(container, index, state) {
     const link = el('a', 'tessera-name', entry.character.name);
     link.href = `#/character/${entry.character.id}`;
     item.append(link);
-    if (entry.categories.length) item.append(chipList(entry.categories));
+    if (entry.favourites.length || entry.categories.length) item.append(chipList(entry.categories, entry.favourites));
     item.append(el('p', 'tessera-summary', entry.summary));
     grid.append(item);
   }
@@ -220,6 +228,14 @@ function renderProfile(container, index, character) {
   if (character.rarityPreference) {
     // Guide-derived and still unresolved in the spec: never stated as fact.
     container.append(el('p', 'rarity-pref', `Reported to prefer ${character.rarityPreference === 'rare' ? 'rare' : 'uncommon or rare'} items — unconfirmed.`));
+  }
+
+  // Favourites lead the page, ahead of "Reported to like": a favourite is a
+  // confirmed double-points item, the strongest claim this page can make about
+  // a gift, and it says nothing about that item's category (see shared.js).
+  const favourites = favouriteGifts(index, character);
+  if (favourites.length > 0) {
+    container.append(el('h3', null, 'Favourites'), chipList([], favourites));
   }
 
   const chips = categoryChips(index, character);

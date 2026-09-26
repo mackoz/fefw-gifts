@@ -7,23 +7,13 @@
 // reading as scan lines. The sentence says the same thing and can be read.
 // `marks` survives on the model because it costs nothing and describes the
 // data honestly, but nothing renders it today.
-import { el } from './shared.js';
+import { el, favouriteGifts } from './shared.js';
 import { POSITIVE_REACTIONS } from '../confidence.js';
 
 // Every state that carries a signal. UNTESTED is deliberately absent: it is
 // the ground itself, and drawing it would cost thousands of nodes to say
 // nothing.
 const MARKED = new Set(['FAVORITE', 'CONFIRMED', 'CONTESTED', 'PENDING', 'PREDICTED']);
-
-// Mirrors favoritesModel. A favourite is found when a player observed one OR
-// the character declares one; deriveConfidence never returns FAVORITE for a
-// declared-but-unobserved gift, so counting states alone would make the
-// masthead and the Favourites tab report different totals from one dataset.
-function hasFavourite(index, character, gifts) {
-  const declared = (character.favorites ?? []).map((id) => index.byGiftId.get(id)).filter(Boolean);
-  if (declared.length > 0) return true;
-  return gifts.some((gift) => index.confidenceFor(character.id, gift.id).state === 'FAVORITE');
-}
 
 export function weaveModel(index, filters) {
   const characters = index.characters
@@ -55,7 +45,9 @@ export function weaveModel(index, filters) {
       }
       if (MARKED.has(state)) marks.push({ x, y, state });
     });
-    if (hasFavourite(index, character, gifts)) favouritesFound += 1;
+    // Mirrors favouriteGifts in shared.js, so the masthead and the Favourites
+    // tab can never disagree about which characters have a known favourite.
+    if (favouriteGifts(index, character).length > 0) favouritesFound += 1;
   });
 
   return {

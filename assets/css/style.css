@@ -1208,3 +1208,13 @@ main#view.view-matrix {
   border-color: currentColor;
   background: var(--favorite-bg);
 }
+
+/* The star is generated content, so a screen reader that speaks it would read
+   "black star" with no context. The alt-text syntax gives it a real label;
+   the plain content declaration is a fallback for engines that don't support
+   alt text on generated content, which paints the star with no spoken text
+   alongside it (Chrome/VoiceOver/NVDA support the alt-text form and use it). */
+.character-chips .chip-favourite::before {
+  content: "\2605\00a0";
+  content: "\2605\00a0" / "Favourite: ";
+}
