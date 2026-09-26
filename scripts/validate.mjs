@@ -127,6 +127,7 @@ export function validate(dataset) {
   const RARITY_PREFS = new Set(['any', 'uncommon-plus', 'rare']);
   const REACTIONS = new Set(['none', 'slight', 'liked', 'loved', 'favorite']);
   const giftIds = new Set(gifts.map((g) => g.id));
+  const giftById = new Map(gifts.map((g) => [g.id, g]));
 
   checkDuplicates(characters, 'character', errors);
 
@@ -181,7 +182,14 @@ export function validate(dataset) {
 
     if (!Array.isArray(ch.favorites)) errors.push(`character ${ch.id}: favorites must be an array`);
     for (const f of asArray(ch.favorites)) {
-      if (!giftIds.has(f)) errors.push(`character ${ch.id}: unknown favorite gift: ${f}`);
+      if (!giftIds.has(f)) { errors.push(`character ${ch.id}: unknown favorite gift: ${f}`); continue; }
+      // A favourite (double support points) only ever happens on an uncommon
+      // or rare item, per the maintainer's rule from play -- a common item
+      // can never be a declared favourite. `rarity: null` (not yet recorded)
+      // is allowed through; only a known-common gift is rejected.
+      if (giftById.get(f).rarity === 'common') {
+        errors.push(`character ${ch.id}: favorite gift ${f} is common (only uncommon or rare items can be favourites)`);
+      }
     }
 
     if (ch.rarityPreference !== null && !RARITY_PREFS.has(ch.rarityPreference)) {
@@ -194,6 +202,14 @@ export function validate(dataset) {
 
   for (const o of observations) {
     if (!giftIds.has(o.gift)) errors.push(`observation ${o.id}: unknown gift: ${o.gift}`);
+    // Same game rule as the declared-favorites check above: a `favorite`
+    // reaction only happens on an uncommon or rare item, so one reported
+    // against a known-common gift is impossible and must be an error, not a
+    // silent acceptance. Gated on giftIds.has() so an unknown gift keeps only
+    // its "unknown gift" error above, instead of also crashing this check.
+    else if (o.reaction === 'favorite' && giftById.get(o.gift).rarity === 'common') {
+      errors.push(`observation ${o.id}: favorite reaction on common gift ${o.gift} (only uncommon or rare items can be favourites)`);
+    }
     const ch = charById.get(o.character);
     if (!ch) errors.push(`observation ${o.id}: unknown character: ${o.character}`);
     else if (!ch.giftable) errors.push(`observation ${o.id}: character ${o.character} is not giftable`);

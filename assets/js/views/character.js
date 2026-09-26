@@ -152,12 +152,12 @@ export function provenanceNote(index, chips) {
   // the same whether or not other groups are present, so that case is
   // resolved before the "only group" check even runs.
   if (confirmed.length === 1) {
-    sentences.push(`${confirmed[0].label} has at least one gift confirmed through testing.`);
+    sentences.push(`${confirmed[0].label} has at least one gift loved in testing.`);
   } else if (confirmed.length > 1) {
     if (discovered.length === 0 && profile.length === 0 && guide.length === 0) {
-      sentences.push('Each has at least one gift confirmed through testing.');
+      sentences.push('Each has at least one gift loved in testing.');
     } else {
-      sentences.push(`${joinList(confirmed.map((c) => c.label))} each have at least one gift confirmed through testing.`);
+      sentences.push(`${joinList(confirmed.map((c) => c.label))} each have at least one gift loved in testing.`);
     }
   }
 
@@ -178,8 +178,8 @@ export function provenanceNote(index, chips) {
   if (guide.length > 0) {
     const publishers = [...new Set(guide.map((c) => sourceName(index, c.source)))];
     sentences.push(discovered.length === 0 && profile.length === 0 && confirmed.length === 0
-      ? `Category preferences carried over from ${publishers.join(' and ')}. They’re predictions until a player confirms an item.`
-      : `The rest are carried over from ${publishers.join(' and ')} and are predictions until a player confirms an item.`);
+      ? `Category preferences carried over from ${publishers.join(' and ')}. They’re predictions until a player reports loving an item in that category.`
+      : `The rest are carried over from ${publishers.join(' and ')} and are predictions until a player reports loving an item in that category.`);
   }
 
   return sentences.join(' ');

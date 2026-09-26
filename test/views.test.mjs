@@ -319,7 +319,8 @@ test('categoryChips promotes a category to tested on a loved observation, even u
 
 // A favourite reaction only happens on an uncommon/rare item -- it says
 // something about that ITEM, not its category, so it must never promote the
-// whole category to confirmed. See CLAUDE.md: a favourite is about the item.
+// whole category to confirmed. See confirmedCategoryIds's comment in
+// shared.js.
 test('categoryChips does not promote a category on a FAVORITE observation', () => {
   const idx = buildIndex({
     ...testedBase,
@@ -694,6 +695,53 @@ test('the character detail page renders a Favourites block before Reported to li
   assert.equal(favouritesList.getAttribute('role'), 'list');
 });
 
+// M-1: renderPicker's card guard is `entry.favourites.length || entry.categories.length`.
+// No other fixture pairs a declared favourite with zero category chips, so a
+// mutant that drops the favourites half of the guard (rendering the chip list
+// only when there is a category chip) passed every other test in this file.
+test('the index card renders a favourite chip even when it has no category chips', () => {
+  const idx = buildIndex({
+    ...dataset,
+    characters: [{ ...dataset.characters[0], categories: {}, favorites: ['book'] }],
+    observations: [],
+  });
+  const container = fakeElement('div');
+  characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false });
+
+  const list = findFirst(container, (n) => (n.className ?? '').includes('character-chips'));
+  assert.ok(list, 'a favourite with zero category chips must still render the chip list');
+  const chips = list.children.map((li) => li.children[0]);
+  assert.deepEqual(chips.map((c) => c.textContent), ['Book']);
+  assert.match(chips[0].className, /\bchip-favourite\b/);
+});
+
+// M-1: renderProfile's Favourites block is guarded by `favourites.length > 0`.
+// A mutant that weakens this to `>= 0` renders an empty Favourites heading and
+// list on every character page, and no existing test caught it.
+test('a character detail page with no favourites renders no Favourites heading', () => {
+  const idx = buildIndex({ ...dataset, observations: [] });
+  const container = fakeElement('div');
+  characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'c1' });
+
+  const heading = findFirst(container, (n) => n.tagName === 'H3' && n.textContent === 'Favourites');
+  assert.equal(heading, undefined, 'no favourites means no Favourites heading');
+});
+
+// M-1: renderProfile calls chipList(chips) with no favourites argument for
+// "Reported to like" -- a mutant that passes favourites through as well would
+// duplicate the star chip(s) under that heading, and no existing test caught it.
+test('the "Reported to like" list carries no favourite chips, even when the page has some', () => {
+  const idx = buildIndex(dataset);
+  const container = fakeElement('div');
+  characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'c1' });
+
+  const lists = collect(container, (n) => (n.className ?? '').includes('character-chips'));
+  assert.equal(lists.length, 2, 'a Favourites list and a Reported-to-like list');
+  const reportedToLike = lists[1];
+  const hasFavouriteChip = reportedToLike.children.some((li) => li.children[0]?.className?.includes('chip-favourite'));
+  assert.equal(hasFavouriteChip, false, 'the Reported to like list must not duplicate favourite chips');
+});
+
 // A character's category chips mix three different claims -- a guide's guess,
 // an in-game profile listing, and something a player actually found -- and the
 // note must say which is which rather than calling everything "carried over".
@@ -724,7 +772,7 @@ test('provenanceNote: guide-only, one publisher', () => {
   const chips = [guideChip('books', 'Books', 'polygon-1')];
   assert.equal(
     provenanceNote(provenanceIndex, chips),
-    'Category preferences carried over from Polygon. They’re predictions until a player confirms an item.',
+    'Category preferences carried over from Polygon. They’re predictions until a player reports loving an item in that category.',
   );
 });
 
@@ -732,7 +780,7 @@ test('provenanceNote: guide-only, two publishers', () => {
   const chips = [guideChip('books', 'Books', 'polygon-1'), guideChip('coffee', 'Coffee', 'game8-1')];
   assert.equal(
     provenanceNote(provenanceIndex, chips),
-    'Category preferences carried over from Polygon and Game8. They’re predictions until a player confirms an item.',
+    'Category preferences carried over from Polygon and Game8. They’re predictions until a player reports loving an item in that category.',
   );
 });
 
@@ -740,7 +788,7 @@ test('provenanceNote: guide plus one discovered', () => {
   const chips = [discoveredChip('drinks', 'Fermented Drinks'), guideChip('books', 'Books', 'polygon-1')];
   assert.equal(
     provenanceNote(provenanceIndex, chips),
-    'Fermented Drinks was found through play. The rest are carried over from Polygon and are predictions until a player confirms an item.',
+    'Fermented Drinks was found through play. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
   );
 });
 
@@ -752,7 +800,7 @@ test('provenanceNote: guide plus two discovered', () => {
   ];
   assert.equal(
     provenanceNote(provenanceIndex, chips),
-    'Books and Coffee were found through play. The rest are carried over from Polygon and are predictions until a player confirms an item.',
+    'Books and Coffee were found through play. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
   );
 });
 
@@ -765,7 +813,7 @@ test('provenanceNote: guide plus three discovered', () => {
   ];
   assert.equal(
     provenanceNote(provenanceIndex, chips),
-    'Books, Coffee and Tea were found through play. The rest are carried over from Polygon and are predictions until a player confirms an item.',
+    'Books, Coffee and Tea were found through play. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
   );
 });
 
@@ -793,19 +841,19 @@ test('provenanceNote: empty chips returns an empty string', () => {
 
 test('provenanceNote: confirmed only, one category', () => {
   const chips = [confirmedChip('books', 'Books')];
-  assert.equal(provenanceNote(provenanceIndex, chips), 'Books has at least one gift confirmed through testing.');
+  assert.equal(provenanceNote(provenanceIndex, chips), 'Books has at least one gift loved in testing.');
 });
 
 test('provenanceNote: confirmed only, two categories', () => {
   const chips = [confirmedChip('books', 'Books'), confirmedChip('coffee', 'Coffee')];
-  assert.equal(provenanceNote(provenanceIndex, chips), 'Each has at least one gift confirmed through testing.');
+  assert.equal(provenanceNote(provenanceIndex, chips), 'Each has at least one gift loved in testing.');
 });
 
 test('provenanceNote: confirmed plus guide demotes the guide sentence to "the rest"', () => {
   const chips = [confirmedChip('books', 'Books'), guideChip('coffee', 'Coffee', 'polygon-1')];
   assert.equal(
     provenanceNote(provenanceIndex, chips),
-    'Books has at least one gift confirmed through testing. The rest are carried over from Polygon and are predictions until a player confirms an item.',
+    'Books has at least one gift loved in testing. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
   );
 });
 
@@ -813,7 +861,7 @@ test('provenanceNote: confirmed plus discovered no longer says "Found through pl
   const chips = [confirmedChip('books', 'Books'), discoveredChip('coffee', 'Coffee')];
   assert.equal(
     provenanceNote(provenanceIndex, chips),
-    'Books has at least one gift confirmed through testing. Coffee was found through play.',
+    'Books has at least one gift loved in testing. Coffee was found through play.',
   );
 });
 
@@ -825,7 +873,7 @@ test('provenanceNote: confirmed plus profile', () => {
   const chips = [confirmedChip('books', 'Books'), profileChip('snacks', 'Snacks')];
   assert.equal(
     provenanceNote(provenanceIndex, chips),
-    'Books has at least one gift confirmed through testing. Snacks is on the in-game profile.',
+    'Books has at least one gift loved in testing. Snacks is on the in-game profile.',
   );
 });
 
@@ -833,7 +881,7 @@ test('provenanceNote: two confirmed categories plus guide uses "each have"', () 
   const chips = [confirmedChip('books', 'Books'), confirmedChip('coffee', 'Coffee'), guideChip('tea', 'Tea', 'polygon-1')];
   assert.equal(
     provenanceNote(provenanceIndex, chips),
-    'Books and Coffee each have at least one gift confirmed through testing. The rest are carried over from Polygon and are predictions until a player confirms an item.',
+    'Books and Coffee each have at least one gift loved in testing. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
   );
 });
 
@@ -845,7 +893,7 @@ test('provenanceNote: two confirmed categories plus profile uses "each have"', (
   const chips = [confirmedChip('books', 'Books'), confirmedChip('coffee', 'Coffee'), profileChip('snacks', 'Snacks')];
   assert.equal(
     provenanceNote(provenanceIndex, chips),
-    'Books and Coffee each have at least one gift confirmed through testing. Snacks is on the in-game profile.',
+    'Books and Coffee each have at least one gift loved in testing. Snacks is on the in-game profile.',
   );
 });
 
@@ -1245,7 +1293,7 @@ test('the character detail view renders the provenance note text from provenance
   const note = findFirst(container, (n) => (n.className ?? '').includes('provenance-note'));
   assert.equal(
     note.textContent,
-    'Fermented Drinks was found through play. The rest are carried over from Polygon and are predictions until a player confirms an item.',
+    'Fermented Drinks was found through play. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
   );
 });
 
