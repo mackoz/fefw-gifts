@@ -30,8 +30,9 @@ export function buildEvent({ key, distinctId, event, properties = {} }) {
 }
 
 // Local runs and file previews send nothing, so they never show up as usage.
-export function telemetryEnabled({ key, location }) {
+export function telemetryEnabled({ key, host, location }) {
   return typeof key === 'string' && key.length > 0
+    && typeof host === 'string' && host.startsWith('https://')
     && location?.protocol === 'https:'
     && !LOCAL_HOSTNAMES.has(location.hostname);
 }
@@ -51,7 +52,7 @@ function postJson(url, body) {
 export function createTelemetry({
   key, host, location, send = postJson, randomId = () => crypto.randomUUID(),
 } = {}) {
-  if (!telemetryEnabled({ key, location })) return DISABLED;
+  if (!telemetryEnabled({ key, host, location })) return DISABLED;
   let distinctId;
   try {
     distinctId = randomId();
@@ -81,13 +82,15 @@ export function referrerDomain(referrer) {
 
 // The hash route doubles as the path, so PostHog's page reports read as
 // /character/seteth rather than one page with a changing fragment. Only the
-// referrer's hostname is kept, and only on the first pageview of a load.
+// referrer's hostname is kept, and only on the first pageview of a load. The
+// query string is dropped from $current_url because ad click ids (fbclid,
+// gclid) are per-click identifiers, and GitHub Pages ignores it anyway.
 export function pageviewProperties({ location, referrer, first }) {
   const { view, id } = parseRoute(location.hash);
   const properties = {
     view,
     id,
-    $current_url: location.href,
+    $current_url: `${location.origin}${location.pathname}${location.hash}`,
     $host: location.host,
     $pathname: id ? `/${view}/${id}` : `/${view}`,
   };

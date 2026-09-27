@@ -171,6 +171,18 @@ test('app.js wires the live filter state into the report form', () => {
   assert.match(app, /getFilters: \(\) => state\.filters/, 'app.js must pass the live filters into createReportForm');
 });
 
+// "Votes never reach the published site" and "Peer validation by voting" both
+// forbid any tally of votes reaching a public view; a vote direction sent as
+// telemetry would hand PostHog exactly that tally under a different name. This
+// pins the voteCast event to an outcome only, with no direction anywhere near it.
+test('the voteCast telemetry event carries no vote direction', () => {
+  const app = sourceOf('app.js');
+  const call = app.match(/telemetry\.track\('voteCast',\s*\{([^}]*)\}\)/);
+  assert.ok(call, "app.js must call telemetry.track('voteCast', { ... })");
+  assert.match(call[1], /outcome/, 'voteCast must still report its outcome');
+  assert.doesNotMatch(call[1], /direction|pendingVote|vote\./, 'voteCast must not carry a vote direction');
+});
+
 // A stray closing brace does not fail loudly: CSS error recovery silently
 // discards the NEXT rule, so one extra `}` after a block deletion cost the
 // whole .chip rule -- radius, border and background -- with no error anywhere.

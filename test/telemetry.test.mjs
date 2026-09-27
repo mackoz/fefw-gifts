@@ -10,6 +10,8 @@ const SITE = {
   protocol: 'https:',
   hostname: 'mackoz.github.io',
   host: 'mackoz.github.io',
+  origin: 'https://mackoz.github.io',
+  pathname: '/fefw-gifts/',
   href: 'https://mackoz.github.io/fefw-gifts/#/character/seteth',
   hash: '#/character/seteth',
 };
@@ -28,6 +30,11 @@ function enabled(overrides = {}) {
     ...overrides,
   });
   return { telemetry, sent: r.sent };
+}
+
+function saveFetch(t) {
+  const original = globalThis.fetch;
+  t.after(() => { globalThis.fetch = original; });
 }
 
 // --- buildEvent
@@ -54,9 +61,9 @@ test('the privacy properties cannot be overridden by a caller', () => {
 // --- telemetryEnabled
 
 test('telemetry runs only with a key, over https, off local hosts', () => {
-  assert.equal(telemetryEnabled({ key: 'phc_x', location: SITE }), true);
+  assert.equal(telemetryEnabled({ key: 'phc_x', host: 'https://t.example', location: SITE }), true);
   for (const key of [null, undefined, '']) {
-    assert.equal(telemetryEnabled({ key, location: SITE }), false, `key ${key}`);
+    assert.equal(telemetryEnabled({ key, host: 'https://t.example', location: SITE }), false, `key ${key}`);
   }
   for (const location of [
     { ...SITE, protocol: 'http:' },
@@ -66,7 +73,13 @@ test('telemetry runs only with a key, over https, off local hosts', () => {
     { ...SITE, hostname: '[::1]' },
     undefined,
   ]) {
-    assert.equal(telemetryEnabled({ key: 'phc_x', location }), false, JSON.stringify(location));
+    assert.equal(telemetryEnabled({ key: 'phc_x', host: 'https://t.example', location }), false, JSON.stringify(location));
+  }
+});
+
+test('telemetryEnabled also requires host to be an https:// URL', () => {
+  for (const host of [null, '', 'http://t.example']) {
+    assert.equal(telemetryEnabled({ key: 'phc_x', host, location: SITE }), false, `host ${JSON.stringify(host)}`);
   }
 });
 
@@ -107,6 +120,13 @@ test('a throwing send never reaches the caller', () => {
   assert.doesNotThrow(() => telemetry.track('search', { query: 'seteth' }));
 });
 
+test('createTelemetry is disabled when host is not an https:// URL', () => {
+  const { telemetry, sent } = enabled({ host: null });
+  assert.equal(telemetry.enabled, false);
+  telemetry.track('search', { query: 'seteth' });
+  assert.deepEqual(sent, []);
+});
+
 test('an id that cannot be generated switches telemetry off instead of throwing', () => {
   const { telemetry, sent } = enabled({ randomId: () => { throw new Error('no crypto'); } });
   assert.equal(telemetry.enabled, false);
@@ -122,16 +142,86 @@ test('the module never touches browser storage or loads a script', async () => {
   }
 });
 
+// --- postJson (the real default send)
+
+test('the default send does not throw when fetch is unavailable', (t) => {
+  saveFetch(t);
+  globalThis.fetch = undefined;
+  const telemetry = createTelemetry({
+    key: 'phc_x', host: 'https://t.example', location: SITE, randomId: () => 'id-1',
+  });
+  assert.doesNotThrow(() => telemetry.track('search', { query: 'seteth' }));
+});
+
+test('the default send does not throw when fetch throws synchronously', (t) => {
+  saveFetch(t);
+  globalThis.fetch = () => { throw new Error('blocked'); };
+  const telemetry = createTelemetry({
+    key: 'phc_x', host: 'https://t.example', location: SITE, randomId: () => 'id-1',
+  });
+  assert.doesNotThrow(() => telemetry.track('search', { query: 'seteth' }));
+});
+
+test('a rejected fetch promise from the default send never surfaces as an unhandled rejection', async (t) => {
+  saveFetch(t);
+  globalThis.fetch = () => Promise.reject(new Error('blocked'));
+  let unhandled = false;
+  const onUnhandledRejection = () => { unhandled = true; };
+  process.on('unhandledRejection', onUnhandledRejection);
+  t.after(() => process.removeListener('unhandledRejection', onUnhandledRejection));
+  const telemetry = createTelemetry({
+    key: 'phc_x', host: 'https://t.example', location: SITE, randomId: () => 'id-1',
+  });
+  assert.doesNotThrow(() => telemetry.track('search', { query: 'seteth' }));
+  await new Promise((resolve) => { setImmediate(resolve); });
+  assert.equal(unhandled, false);
+});
+
+test('the default send posts to the capture endpoint with the exact fetch options', (t) => {
+  saveFetch(t);
+  const calls = [];
+  globalThis.fetch = (url, options) => { calls.push({ url, options }); return Promise.resolve(); };
+  const telemetry = createTelemetry({
+    key: 'phc_x', host: 'https://t.example', location: SITE, randomId: () => 'id-1',
+  });
+  telemetry.track('search', { query: 'seteth' });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, 'https://t.example/i/v0/e/');
+  assert.deepEqual(calls[0].options, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(buildEvent({
+      key: 'phc_x', distinctId: 'id-1', event: 'search', properties: { query: 'seteth' },
+    })),
+    keepalive: true,
+    credentials: 'omit',
+  });
+});
+
 // --- pageviews
 
 test('a pageview names the route as a path, with no referrer after the first', () => {
   assert.deepEqual(pageviewProperties({ location: SITE, referrer: 'https://www.reddit.com/r/fe', first: false }), {
     view: 'character',
     id: 'seteth',
-    $current_url: SITE.href,
+    $current_url: 'https://mackoz.github.io/fefw-gifts/#/character/seteth',
     $host: 'mackoz.github.io',
     $pathname: '/character/seteth',
   });
+});
+
+test('the pageview URL drops the query string, so ad click ids never reach PostHog', () => {
+  const location = {
+    ...SITE,
+    href: 'https://mackoz.github.io/fefw-gifts/?fbclid=abc&utm_source=x#/character/seteth',
+    search: '?fbclid=abc&utm_source=x',
+  };
+  const props = pageviewProperties({ location, first: true, referrer: '' });
+  assert.equal(props.$current_url, 'https://mackoz.github.io/fefw-gifts/#/character/seteth');
+  assert.ok(
+    !Object.values(props).some((v) => String(v).includes('fbclid') || String(v).includes('utm_')),
+    'no property may carry the query string',
+  );
 });
 
 test('the first pageview carries the referring domain and nothing more of the referrer', () => {

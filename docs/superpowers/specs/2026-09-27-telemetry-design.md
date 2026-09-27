@@ -1,7 +1,7 @@
 # Anonymous Usage Telemetry
 
 **Date:** 2026-09-27
-**Status:** Approved design, awaiting spec review
+**Status:** Approved design
 
 ## Problem
 
@@ -54,8 +54,8 @@ traffic through the Worker for no gain once the proxy is reused).
   IP data"**, which the maintainer turns on when creating the project. Code
   cannot enforce this; the setup step is documented in `README.md`.
 - The telemetry id is **never** attached to a report, a vote, or any request to
-  the Worker, and no report id is ever attached to a telemetry event. Browsing
-  and contributing cannot be joined.
+  the Worker, and no report id is ever attached to a telemetry event. No
+  identifier links browsing to contributing.
 
 Consequence, accepted: PostHog cannot count unique or returning visitors,
 sessions or bounce rate. It counts page loads and events.
@@ -66,7 +66,7 @@ Event names are camelCase, matching uma-tools.
 
 | Event | When | Properties |
 |---|---|---|
-| `$pageview` | First render, and every `hashchange` | `view`, `id` (from `parseRoute`), `$current_url`, `$host`, `$pathname` (the hash route as a path, e.g. `/character/seteth`); on the first pageview of a page load only, `$referring_domain` (hostname of `document.referrer`, or `$direct`) |
+| `$pageview` | First render, and every `hashchange` | `view`, `id` (from `parseRoute`), `$current_url` (origin, path and hash; the query string is dropped), `$host`, `$pathname` (the hash route as a path, e.g. `/character/seteth`); on the first pageview of a page load only, `$referring_domain` (hostname of `document.referrer`, or `$direct`) |
 | `search` | Search box idle for 1500 ms with a trimmed value of 2+ characters that differs from the last one sent | `query`: lower-cased, trimmed, cut to 60 characters |
 | `filterToggled` | A `[data-filter]` checkbox changes | `filter` (its `data-filter` name), `on` (boolean) |
 | `reportOpened` | The report dialog opens | none |
@@ -103,9 +103,9 @@ export function createTelemetry({ key, host, location, send, randomId }) → { t
   `$process_person_profile: false`, `$geoip_disable: true` and
   `$lib: 'fefw-gifts'`. Fixed keys win over caller keys.
 - `telemetryEnabled` is true only when `key` is a non-empty string **and**
-  `location.protocol === 'https:'` **and** `location.hostname` is not
-  `localhost`, `127.0.0.1` or `[::1]`. Local development and file previews
-  therefore send nothing.
+  `host` is an `https://` URL **and** `location.protocol === 'https:'` **and**
+  `location.hostname` is not `localhost`, `127.0.0.1` or `[::1]`. Local
+  development and file previews therefore send nothing.
 - `send(url, body)` is injected. The browser default is
   `fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' },
   body, keepalive: true, credentials: 'omit' })`, with the promise's rejection
@@ -140,7 +140,7 @@ on and autocapture, heatmaps and web vitals off, as of 2026-09-27.
   callback; they do not import telemetry.
 - `review/index.html` does not load telemetry. Maintainer activity is not
   usage.
-- Telemetry is created after the first render is scheduled and never awaited,
+- Telemetry is created synchronously with no I/O and `track` is never awaited,
   so it cannot delay committed data from rendering.
 
 ## Failure behaviour
