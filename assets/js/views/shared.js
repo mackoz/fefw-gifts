@@ -119,58 +119,79 @@ export function partitionRows(rows) {
   return { signal, untested };
 }
 
-// A category is "confirmed" for a character when at least one gift in it has
-// an approved observation with a LOVED reaction. A favourite reaction only
-// happens on an uncommon/rare item, so a FAVORITE result says something about
-// that item, not its category -- and a common item in the same category may
-// not even be loved. Liked and slight are real, approved, positive results,
-// but they don't establish a category either: only loved does. CONTESTED,
-// PENDING and PREDICTED are all real signal elsewhere in the app, but none of
-// them is an approved loved result, so none of them may promote a category
-// here -- see CLAUDE.md's "A pending report is not a confirmation." A
-// character with no `id` (not yet resolved) has no confirmed categories
-// rather than crashing on confidenceFor.
-function confirmedCategoryIds(index, character) {
-  const ids = new Set();
-  if (character.id === undefined) return ids;
+// A category's verdict for a character rests only on approved observations,
+// read through confidenceFor -- never a stored link and never an unreviewed
+// report. A favourite reaction only happens on an uncommon/rare item, so a
+// FAVORITE result says something about that item, not its category -- it
+// counts toward neither loved nor below-loved, and a common item in the same
+// category may not even be loved. CONTESTED, PENDING and PREDICTED are all
+// real signal elsewhere in the app, but none of them is an approved result,
+// so none of them may promote or demote a category here -- see CLAUDE.md's
+// "A pending report is not a confirmation." A liked, slight or "none"
+// reaction is a real, approved CONFIRMED result, just not a loved one: on its
+// own it establishes nothing (see CLAUDE.md's "Absence of a match is never a
+// dislike" -- there is no absence here, but the same caution against reading
+// too much into a lesser result applies), but once the category also has a
+// loved result, it downgrades that category from confirmed to mixed rather
+// than being silently dropped. A category with zero loved results is neither
+// confirmed nor mixed, however many below-loved results it has. A character
+// with no `id` (not yet resolved) has no verdicts rather than crashing on
+// confidenceFor.
+function categoryVerdicts(index, character) {
+  const confirmed = new Set();
+  const mixed = new Set();
+  if (character.id === undefined) return { confirmed, mixed };
+
+  const loved = new Set();
+  const belowLoved = new Set();
   for (const gift of index.gifts) {
     if (gift.category === null || gift.category === undefined) continue;
-    if (ids.has(gift.category)) continue;
     const confidence = index.confidenceFor(character.id, gift.id);
-    const confirmed = confidence.state === 'CONFIRMED' && confidence.reaction === 'loved';
-    if (confirmed) ids.add(gift.category);
+    if (confidence.state !== 'CONFIRMED') continue;
+    if (confidence.reaction === 'loved') loved.add(gift.category);
+    else belowLoved.add(gift.category); // liked, slight or none
   }
-  return ids;
+  for (const id of loved) {
+    if (belowLoved.has(id)) mixed.add(id); else confirmed.add(id);
+  }
+  return { confirmed, mixed };
 }
 
 // A character's category chips, merging two sources that make very different
 // claims: a stored link (a guide's guess, an in-game profile listing, or
-// something discovered through play) and a category a loved result has
-// actually confirmed. A FAVORITE, and a liked or slight reaction, are real
-// approved results, but none of them confirms a category on their own -- see
-// confirmedCategoryIds. Testing outranks a stored link -- a loved result is
-// stronger evidence than any prediction, including a refuted one -- so a
-// confirmed category always renders with state 'confirmed', carrying
-// whatever source its stored link has (or null if it has none), and confirmed
-// chips sort first, in categories.json order. A refuted link on a category
-// nobody has confirmed is still dropped: a refuted link alone is not a like,
-// and rendering it as one would invent a preference nobody reported.
+// something discovered through play) and a verdict testing has actually
+// reached. A FAVORITE, and a liked, slight or "none" reaction on their own,
+// are real approved results, but none of them confirms a category by itself
+// -- see categoryVerdicts. Testing outranks a stored link -- even one loved
+// result is stronger evidence than any prediction, including a refuted one --
+// so a confirmed or mixed category always renders with that state, carrying
+// whatever source its stored link has (or null if it has none). A category
+// with at least one loved result and nothing weaker renders 'confirmed'; one
+// with a loved result *and* a liked, slight or "none" result in the same
+// category renders 'mixed' instead, since the category is not uniformly a
+// hit -- see CLAUDE.md's "A favourite is about the item; only loved results
+// confirm a category." Chips sort confirmed first, then mixed, both in
+// categories.json order, then the remaining stored links. A refuted link on a
+// category nobody has confirmed or mixed is still dropped: a refuted link
+// alone is not a like, and rendering it as one would invent a preference
+// nobody reported.
 export function categoryChips(index, character) {
   const links = character.categories ?? {};
-  const confirmedIds = confirmedCategoryIds(index, character);
+  const { confirmed: confirmedIds, mixed: mixedIds } = categoryVerdicts(index, character);
   const categoryPosition = new Map(index.categories.map((c, i) => [c.id, i]));
+  const byPosition = (a, b) => (categoryPosition.get(a) ?? 0) - (categoryPosition.get(b) ?? 0);
+  const testedChip = (id, state) => ({
+    id,
+    label: index.byCategoryId.get(id)?.label ?? id,
+    state,
+    source: links[id]?.source ?? null,
+  });
 
-  const confirmedChips = [...confirmedIds]
-    .sort((a, b) => (categoryPosition.get(a) ?? 0) - (categoryPosition.get(b) ?? 0))
-    .map((id) => ({
-      id,
-      label: index.byCategoryId.get(id)?.label ?? id,
-      state: 'confirmed',
-      source: links[id]?.source ?? null,
-    }));
+  const confirmedChips = [...confirmedIds].sort(byPosition).map((id) => testedChip(id, 'confirmed'));
+  const mixedChips = [...mixedIds].sort(byPosition).map((id) => testedChip(id, 'mixed'));
 
   const linkChips = Object.entries(links)
-    .filter(([id, link]) => link.state !== 'refuted' && !confirmedIds.has(id))
+    .filter(([id, link]) => link.state !== 'refuted' && !confirmedIds.has(id) && !mixedIds.has(id))
     .map(([id, link]) => ({
       id,
       label: index.byCategoryId.get(id)?.label ?? id,
@@ -178,7 +199,7 @@ export function categoryChips(index, character) {
       source: link.source,
     }));
 
-  return [...confirmedChips, ...linkChips];
+  return [...confirmedChips, ...mixedChips, ...linkChips];
 }
 
 // A character's favourite gifts: the same union favoritesModel builds for the

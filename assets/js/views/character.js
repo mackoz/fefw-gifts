@@ -129,19 +129,24 @@ function joinList(labels) {
   return `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
 }
 
-// The chips under "Reported to like" mix four very different claims: a
-// category with an approved test result behind it, a guide's guess (carried
-// over, unconfirmed), an in-game profile listing, and something a player
-// actually found through play. The bug this replaces said "carried over"
-// about all three stored-link kinds, which overclaimed for the profile and
-// discovered ones -- only the guide sentence is actually a guess. Each group
-// gets its own sentence, and a fourth group -- confirmed through testing --
-// now leads, since it is the strongest claim a chip can make; the guide
-// sentence is demoted to "the rest" once something stronger sits above it.
+// The chips under "Reported to like" mix five very different claims: a
+// category confirmed outright by testing, one that testing has left mixed, a
+// guide's guess (carried over, unconfirmed), an in-game profile listing, and
+// something a player actually found through play. The bug this replaces said
+// "carried over" about all three stored-link kinds, which overclaimed for the
+// profile and discovered ones -- only the guide sentence is actually a guess.
+// Each group gets its own sentence, in strength order: confirmed leads, since
+// it is the strongest claim a chip can make, then mixed -- also testing, but
+// not a uniform hit -- then discovered, profile, and guide, demoted to "the
+// rest" once something stronger sits above it. Every "is this the only group"
+// check below has to treat mixed as a group too, exactly like discovered,
+// profile and guide, or a mixed chip sitting next to a confirmed-only or
+// guide-only sentence would silently vanish from the note.
 export function provenanceNote(index, chips) {
   if (chips.length === 0) return '';
 
   const confirmed = chips.filter((c) => c.state === 'confirmed');
+  const mixed = chips.filter((c) => c.state === 'mixed');
   const discovered = chips.filter((c) => c.state === 'discovered');
   const profile = chips.filter((c) => c.state === 'profile');
   const guide = chips.filter((c) => c.state === 'guide');
@@ -154,15 +159,24 @@ export function provenanceNote(index, chips) {
   if (confirmed.length === 1) {
     sentences.push(`${confirmed[0].label} has at least one gift loved in testing.`);
   } else if (confirmed.length > 1) {
-    if (discovered.length === 0 && profile.length === 0 && guide.length === 0) {
+    if (mixed.length === 0 && discovered.length === 0 && profile.length === 0 && guide.length === 0) {
       sentences.push('Each has at least one gift loved in testing.');
     } else {
       sentences.push(`${joinList(confirmed.map((c) => c.label))} each have at least one gift loved in testing.`);
     }
   }
 
+  // A mixed category is still testing, not a guess, but it is not a uniform
+  // hit either -- see CLAUDE.md's "A favourite is about the item; only loved
+  // results confirm a category." The sentence always names the category (or
+  // categories), since "mixed" alone says nothing about which one.
+  if (mixed.length > 0) {
+    const verb = mixed.length === 1 ? 'has' : 'have';
+    sentences.push(`${joinList(mixed.map((c) => c.label))} ${verb} mixed results: at least one gift was loved, others less so.`);
+  }
+
   if (discovered.length > 0) {
-    if (guide.length === 0 && profile.length === 0 && confirmed.length === 0) {
+    if (mixed.length === 0 && guide.length === 0 && profile.length === 0 && confirmed.length === 0) {
       sentences.push('Found through play.');
     } else {
       const verb = discovered.length === 1 ? 'was' : 'were';
@@ -177,7 +191,7 @@ export function provenanceNote(index, chips) {
 
   if (guide.length > 0) {
     const publishers = [...new Set(guide.map((c) => sourceName(index, c.source)))];
-    sentences.push(discovered.length === 0 && profile.length === 0 && confirmed.length === 0
+    sentences.push(mixed.length === 0 && discovered.length === 0 && profile.length === 0 && confirmed.length === 0
       ? `Category preferences carried over from ${publishers.join(' and ')}. They’re predictions until a player reports loving an item in that category.`
       : `The rest are carried over from ${publishers.join(' and ')} and are predictions until a player reports loving an item in that category.`);
   }

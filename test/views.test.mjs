@@ -319,8 +319,9 @@ test('categoryChips promotes a category to tested on a loved observation, even u
 
 // A favourite reaction only happens on an uncommon/rare item -- it says
 // something about that ITEM, not its category, so it must never promote the
-// whole category to confirmed. See confirmedCategoryIds's comment in
-// shared.js.
+// whole category to confirmed. See categoryVerdicts's comment in shared.js,
+// and CLAUDE.md's "A favourite is about the item; only loved results confirm
+// a category."
 test('categoryChips does not promote a category on a FAVORITE observation', () => {
   const idx = buildIndex({
     ...testedBase,
@@ -344,7 +345,7 @@ test('a CONFIRMED "none" reaction never counts as tested', () => {
 
 // A `slight` reaction is a real, approved, positive result, but it is weaker
 // than `loved` and must not promote the category on its own -- only `loved`
-// does. See confirmedCategoryIds in shared.js.
+// does. See categoryVerdicts in shared.js.
 test('a slight reaction does not count as confirmed', () => {
   const idx = buildIndex({
     ...testedBase,
@@ -462,6 +463,178 @@ test('tested chips are ordered by categories.json position and precede link-only
   assert.deepEqual(chips.map((c) => ({ id: c.id, state: c.state })), [
     { id: 'tea', state: 'confirmed' },
     { id: 'books', state: 'confirmed' },
+    { id: 'coffee', state: 'guide' },
+  ]);
+});
+
+// A category with two gifts, so a loved result on one and something weaker
+// on the other can coexist -- the single-gift `testedBase` fixture above
+// cannot produce a mixed verdict at all.
+const mixedBase = {
+  categories: [{ id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] }],
+  gifts: [
+    { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
+    { id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'uncommon', description: '', sources: [] },
+  ],
+  characters: [],
+  observations: [],
+  sources: [],
+};
+
+// A category with a loved result and something weaker is not a uniform hit,
+// but it is not nothing either -- see CLAUDE.md's "A favourite is about the
+// item; only loved results confirm a category." One test per weaker reaction
+// the report form can produce.
+for (const weaker of ['slight', 'liked', 'none']) {
+  test(`loved plus ${weaker} in the same category shows as mixed`, () => {
+    const idx = buildIndex({
+      ...mixedBase,
+      characters: [testedCharacter()],
+      observations: [
+        { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
+        { id: 'o2', character: 'p1', gift: 'green-tea', reaction: weaker, date: '2026-09-23' },
+      ],
+    });
+    assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
+      { id: 'tea', label: 'Tea', state: 'mixed', source: null },
+    ]);
+  });
+}
+
+// A FAVORITE result is about the item, not the category (see favouriteGifts),
+// so it must never drag a loved category down to mixed.
+test('loved plus favorite in the same category stays confirmed, not mixed', () => {
+  const idx = buildIndex({
+    ...mixedBase,
+    characters: [testedCharacter()],
+    observations: [
+      { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'favorite', date: '2026-09-23' },
+    ],
+  });
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
+    { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
+  ]);
+});
+
+// A pending or contested pair is real signal elsewhere, but neither is an
+// approved result -- see CLAUDE.md's "A pending report is not a
+// confirmation." Alongside a loved result, it must not turn the category
+// mixed.
+test('loved plus a pending report in the same category stays confirmed', () => {
+  const idx = buildIndex(
+    {
+      ...mixedBase,
+      characters: [testedCharacter()],
+      observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
+    },
+    [{ id: 'r1', character: 'p1', gift: 'green-tea', reaction: 'none' }],
+  );
+  assert.equal(idx.confidenceFor('p1', 'green-tea').state, 'PENDING');
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
+    { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
+  ]);
+});
+
+test('loved plus a contested pair in the same category stays confirmed', () => {
+  const idx = buildIndex({
+    ...mixedBase,
+    characters: [testedCharacter()],
+    observations: [
+      { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o3', character: 'p1', gift: 'green-tea', reaction: 'none', date: '2026-09-23' },
+    ],
+  });
+  assert.equal(idx.confidenceFor('p1', 'green-tea').state, 'CONTESTED');
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
+    { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
+  ]);
+});
+
+// The second gift in the category has no observation at all -- an untested
+// pair is not evidence of anything, so it must not pull a loved category
+// down to mixed either.
+test('loved plus an untested gift in the same category stays confirmed', () => {
+  const idx = buildIndex({
+    ...mixedBase,
+    characters: [testedCharacter()],
+    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
+  });
+  assert.equal(idx.confidenceFor('p1', 'green-tea').state, 'UNTESTED');
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
+    { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
+  ]);
+});
+
+// Testing outranks a stored link the same way it does for a confirmed
+// category (see the guide/refuted tests above): a mixed verdict still keeps
+// the link's source rather than discarding it.
+test('a mixed category with a guide link keeps the link’s source', () => {
+  const idx = buildIndex({
+    ...mixedBase,
+    characters: [testedCharacter({ categories: { tea: { state: 'guide', source: 'polygon-1' } } })],
+    observations: [
+      { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'slight', date: '2026-09-23' },
+    ],
+    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+  });
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
+    { id: 'tea', label: 'Tea', state: 'mixed', source: 'polygon-1' },
+  ]);
+});
+
+// A refuted link is a guide's guess that the gift will NOT land -- but a
+// mixed verdict is still testing, and testing outranks a refuted guess the
+// same way a confirmed verdict does.
+test('a mixed verdict replaces a refuted link rather than being dropped', () => {
+  const idx = buildIndex({
+    ...mixedBase,
+    characters: [testedCharacter({ categories: { tea: { state: 'refuted', source: 'polygon-1' } } })],
+    observations: [
+      { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'liked', date: '2026-09-23' },
+    ],
+    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+  });
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
+    { id: 'tea', label: 'Tea', state: 'mixed', source: 'polygon-1' },
+  ]);
+});
+
+// Confirmed leads, then mixed, then whatever stored links are left over --
+// each group sorted by categories.json position, never by insertion order.
+test('categoryChips orders confirmed chips, then mixed chips, then stored links', () => {
+  const orderedDataset = {
+    categories: [
+      { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
+      { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
+      { id: 'herbs', label: 'Herbs', inGameDescriptor: null, aliases: [] },
+      { id: 'coffee', label: 'Coffee', inGameDescriptor: null, aliases: [] },
+    ],
+    gifts: [
+      { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
+      { id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'uncommon', description: '', sources: [] },
+      { id: 'novel', name: 'Novel', category: 'books', rarity: 'common', description: '', sources: [] },
+      { id: 'basil', name: 'Basil', category: 'herbs', rarity: 'common', description: '', sources: [] },
+      { id: 'espresso', name: 'Espresso', category: 'coffee', rarity: 'common', description: '', sources: [] },
+    ],
+    characters: [testedCharacter({ categories: { coffee: { state: 'guide', source: 'polygon-1' } } })],
+    observations: [
+      { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'slight', date: '2026-09-23' },
+      { id: 'o3', character: 'p1', gift: 'novel', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o4', character: 'p1', gift: 'basil', reaction: 'loved', date: '2026-09-23' },
+    ],
+    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+  };
+  const idx = buildIndex(orderedDataset);
+  const chips = categoryChips(idx, idx.byCharacterId.get('p1'));
+  assert.deepEqual(chips.map((c) => ({ id: c.id, state: c.state })), [
+    { id: 'books', state: 'confirmed' },
+    { id: 'herbs', state: 'confirmed' },
+    { id: 'tea', state: 'mixed' },
     { id: 'coffee', state: 'guide' },
   ]);
 });
@@ -894,6 +1067,61 @@ test('provenanceNote: two confirmed categories plus profile uses "each have"', (
   assert.equal(
     provenanceNote(provenanceIndex, chips),
     'Books and Coffee each have at least one gift loved in testing. Snacks is on the in-game profile.',
+  );
+});
+
+const mixedChip = (id, label) => ({ id, label, state: 'mixed', source: null });
+
+test('provenanceNote: mixed only, one category', () => {
+  const chips = [mixedChip('books', 'Books')];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Books has mixed results: at least one gift was loved, others less so.',
+  );
+});
+
+test('provenanceNote: mixed only, two categories', () => {
+  const chips = [mixedChip('books', 'Books'), mixedChip('coffee', 'Coffee')];
+  const note = provenanceNote(provenanceIndex, chips);
+  assert.equal(note, 'Books and Coffee have mixed results: at least one gift was loved, others less so.');
+  // A mixed-only note is neither an "Each has..." confirmed note nor a bare
+  // discovered one -- mixed is its own group with its own sentence.
+  assert.doesNotMatch(note, /Each has/);
+  assert.doesNotMatch(note, /Found through play/);
+});
+
+// The spec's own worked example: confirmed Cooking, mixed Books, guide
+// Fishing -- pins the exact sentence order and wording across all three
+// groups at once.
+test('provenanceNote: confirmed plus mixed plus guide reads in strength order', () => {
+  const chips = [confirmedChip('cooking', 'Cooking'), mixedChip('books', 'Books'), guideChip('fishing', 'Fishing', 'polygon-1')];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Cooking has at least one gift loved in testing. Books has mixed results: at least one gift was loved, others less so. '
+      + 'The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
+  );
+});
+
+// A mixed chip is still a "stronger than a stored link" group -- alongside
+// it, discovered must use its labelled form, never the bare "Found through
+// play." reserved for when discovered is the only group.
+test('provenanceNote: discovered plus mixed uses the labelled discovered form', () => {
+  const chips = [discoveredChip('drinks', 'Fermented Drinks'), mixedChip('books', 'Books')];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Books has mixed results: at least one gift was loved, others less so. Fermented Drinks was found through play.',
+  );
+});
+
+// Same guard on the guide side: a mixed chip must demote the guide sentence
+// to "The rest are ..." exactly like a confirmed, discovered or profile chip
+// would.
+test('provenanceNote: guide plus mixed uses "The rest are ..." form', () => {
+  const chips = [guideChip('books', 'Books', 'polygon-1'), mixedChip('coffee', 'Coffee')];
+  assert.equal(
+    provenanceNote(provenanceIndex, chips),
+    'Coffee has mixed results: at least one gift was loved, others less so. '
+      + 'The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
   );
 });
 
@@ -1337,6 +1565,31 @@ test('the real dataset confirms categories from loved results only, keeping favo
   const lysander = idx.byCharacterId.get('lysander');
   assert.deepEqual(favouriteGifts(idx, lysander), []);
   assert.ok(categoryChips(idx, lysander).some((c) => c.id === 'weapons' && c.state === 'confirmed'));
+});
+
+// Against the real committed dataset: Esmeralda has a loved result on
+// `eastern-love-story` (books) and a slight one on `everyday-scenes` (also
+// books) -- the exact mixed case this feature exists for. Her cooking,
+// sweets and animals categories each have loved results only, so they stay
+// confirmed.
+test('the real dataset shows Esmeralda’s books category as mixed and her other tested categories as confirmed', async () => {
+  const idx = buildIndex(await loadDataset('data'));
+  const chips = categoryChips(idx, idx.byCharacterId.get('esmeralda'));
+  const stateOf = (id) => chips.find((c) => c.id === id)?.state;
+  assert.equal(stateOf('books'), 'mixed');
+  assert.equal(stateOf('cooking'), 'confirmed');
+  assert.equal(stateOf('sweets'), 'confirmed');
+  assert.equal(stateOf('animals'), 'confirmed');
+});
+
+// Against the real committed dataset: Alexandra's fashion items are all
+// loved, and her one cooking item (`garum`) is also loved -- both categories
+// are uniform hits and stay confirmed rather than mixed.
+test('the real dataset confirms Alexandra’s fashion and cooking categories', async () => {
+  const idx = buildIndex(await loadDataset('data'));
+  const chips = categoryChips(idx, idx.byCharacterId.get('alexandra'));
+  assert.equal(chips.find((c) => c.id === 'fashion')?.state, 'confirmed');
+  assert.equal(chips.find((c) => c.id === 'cooking')?.state, 'confirmed');
 });
 
 // The Gifts tab's second entry point into a missing-item report. Like the

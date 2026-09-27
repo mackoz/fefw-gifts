@@ -36,6 +36,14 @@
 - **A pending report is not a confirmation.** It may not flip a pair to
   `CONFIRMED` or `FAVORITE`, contribute a reaction, count toward a tally, or
   produce a negative verdict. Only an approved observation merged into `data/` may.
+- **A favourite is about the item; only loved results confirm a category.**
+  A favourite reaction needs an uncommon or rare item (`scripts/validate.mjs`
+  rejects a favourite on a `common` gift), so it says nothing about the rest
+  of its category: it shows as the item itself, never as a category chip. A
+  category chip is confirmed only by an approved **loved** result, and shows
+  as **mixed** when the same category also has a liked, slight or "didn't
+  like it" result. Liked and slight results alone never make a chip. See
+  `categoryChips` in `assets/js/views/shared.js`.
 - **The Worker collects no personal data.** No name, email, IP, hashed IP,
   session id or fingerprint, in the D1 schema, the Worker or the client.
   Turnstile is called without `remoteip`. Adding any of these is a design
