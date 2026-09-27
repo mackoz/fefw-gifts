@@ -246,7 +246,7 @@ test('a favorite referencing an unknown gift is rejected', () => {
   assert.match(errors[0], /character c1: unknown favorite gift: ghost-gift/);
 });
 
-// M-4: a favourite (double support points) only ever happens on an uncommon
+// A favourite (double support points) only ever happens on an uncommon
 // or rare item, per the maintainer's rule from play. Declaring one on a
 // common gift is a data error, not just an unusual case.
 test('a declared favorite naming a common gift is rejected', () => {
@@ -387,7 +387,7 @@ test('an observation with an unknown gift or invalid reaction is rejected', () =
   assert.ok(errors.some((e) => /observation o1: invalid reaction: meh/.test(e)));
 });
 
-// M-4: a favourite (double support points) only ever happens on an uncommon
+// A favourite (double support points) only ever happens on an uncommon
 // or rare item, per the maintainer's rule from play. A reported favorite
 // reaction on a known-common gift is impossible and must be an error.
 test('a favorite observation on a common gift is rejected', () => {

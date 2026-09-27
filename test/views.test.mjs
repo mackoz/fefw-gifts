@@ -657,7 +657,7 @@ test('a mixed verdict replaces a refuted link rather than being dropped', () => 
   ]);
 });
 
-// M-9 (PR #19 review): today a CONFIRMED pair only ever carries `liked`,
+// Today a CONFIRMED pair only ever carries `liked`,
 // `slight` or `none` -- `deriveConfidence` turns a `favorite` reaction into
 // its own FAVORITE state -- so treating "any non-loved CONFIRMED reaction"
 // as below-loved happens to agree with the explicit list. If a new reaction
@@ -715,7 +715,7 @@ test('categoryChips orders confirmed chips, then mixed chips, then stored links'
   ]);
 });
 
-// M-10 (PR #19 review): the ordering test above has only one mixed chip, so
+// The ordering test above has only one mixed chip, so
 // dropping `.sort(byPosition)` on mixed chips specifically would still pass
 // it. Here `tea`'s gifts come first in `index.gifts` (and so would be the
 // first category the loop encounters and adds to the `loved`/`mixed` sets),
@@ -954,7 +954,7 @@ test('characterSummary reports a favourite alongside a loved count, not instead 
   assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite, 2 loved');
 });
 
-// M-6 (PR #19 review): a gift can be both a declared favourite AND carry its
+// A gift can be both a declared favourite AND carry its
 // own approved `loved` observation -- contradictory data the validator
 // doesn't cross-check. Before this fix it counted in both buckets, reading
 // "1 favourite, 1 loved" for what is really one item.
@@ -967,7 +967,7 @@ test('characterSummary does not double-count a loved gift that is also a favouri
   assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite');
 });
 
-// M-10 (PR #19 review): "2 favourites, N loved" pluralisation is never
+// "2 favourites, N loved" pluralisation is never
 // exercised elsewhere, so hard-coding the singular "favourite" would survive
 // every other test here.
 test('characterSummary pluralises "favourites" alongside a loved count', () => {
@@ -1075,7 +1075,7 @@ test('the character detail page renders a Favourites block before Reported to li
   assert.equal(favouritesList.getAttribute('role'), 'list');
 });
 
-// M-1: renderPicker's card guard is `entry.favourites.length || entry.categories.length`.
+// renderPicker's card guard is `entry.favourites.length || entry.categories.length`.
 // No other fixture pairs a declared favourite with zero category chips, so a
 // mutant that drops the favourites half of the guard (rendering the chip list
 // only when there is a category chip) passed every other test in this file.
@@ -1095,7 +1095,7 @@ test('the index card renders a favourite chip even when it has no category chips
   assert.match(chips[0].className, /\bchip-favourite\b/);
 });
 
-// M-1: renderProfile's Favourites block is guarded by `favourites.length > 0`.
+// renderProfile's Favourites block is guarded by `favourites.length > 0`.
 // A mutant that weakens this to `>= 0` renders an empty Favourites heading and
 // list on every character page, and no existing test caught it.
 test('a character detail page with no favourites renders no Favourites heading', () => {
@@ -1107,7 +1107,7 @@ test('a character detail page with no favourites renders no Favourites heading',
   assert.equal(heading, undefined, 'no favourites means no Favourites heading');
 });
 
-// M-1: renderProfile calls chipList(chips) with no favourites argument for
+// renderProfile calls chipList(chips) with no favourites argument for
 // "Reported to like" -- a mutant that passes favourites through as well would
 // duplicate the star chip(s) under that heading, and no existing test caught it.
 test('the "Reported to like" list carries no favourite chips, even when the page has some', () => {
@@ -1122,7 +1122,7 @@ test('the "Reported to like" list carries no favourite chips, even when the page
   assert.equal(hasFavouriteChip, false, 'the Reported to like list must not duplicate favourite chips');
 });
 
-// M-8 (PR #19 review): a mixed chip is visually identical to a profile chip
+// A mixed chip is visually identical to a profile chip
 // (and confirmed to discovered), and font weight/border style -- the only
 // visual cues -- reach no screen reader at all. Every category chip needs a
 // hover title and a hidden text suffix naming its actual state; a favourite
@@ -1308,7 +1308,7 @@ test('provenanceNote: confirmed plus discovered no longer says "Found through pl
   );
 });
 
-// M-2: the confirmed-only sentence's "only group" check must actually look at
+// The confirmed-only sentence's "only group" check must actually look at
 // profile chips, not just discovered/guide -- otherwise a confirmed category
 // sitting next to a profile one would wrongly take the bare "Each has..."
 // form instead of naming the category.
@@ -1372,7 +1372,7 @@ test('provenanceNote: confirmed plus mixed plus guide reads in strength order', 
   );
 });
 
-// M-10 (PR #19 review): removing the `mixed.length === 0 &&` guard from the
+// Removing the `mixed.length === 0 &&` guard from the
 // 2+ confirmed "only group" check survives every other test here, because a
 // mixed chip alongside 2+ confirmed ones still reads as (technically) true
 // under the bare "Each has..." wording. Pins that a mixed chip must still
@@ -1732,7 +1732,7 @@ test('cellLabel is stateLabel: one label per result across the matrix and the ta
   assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'loved' }), 'Confirmed: Big gain');
 });
 
-// M-7: a mutated guard that answered only for CONFIRMED (e.g.
+// A mutated guard that answered only for CONFIRMED (e.g.
 // `cellState(confidence) !== 'CONFIRMED'`) turned every other cell's hover
 // into "…: undefined" and nothing caught it. Every other state's title must
 // be its real stateLabel text, never undefined.
@@ -1759,7 +1759,7 @@ test('the LEGEND gives loved and each below-loved reaction its own row, in order
   );
 });
 
-// M-9: a render-only mutation (drawing slight and liked with the cell-confirmed
+// A render-only mutation (drawing slight and liked with the cell-confirmed
 // class while still marking none correctly) survived the old test, which only
 // ever exercised the `none` reaction. Looping over all three below-loved
 // reactions closes that gap.
