@@ -1,5 +1,4 @@
 import { passesFilters } from '../filters.js';
-import { POSITIVE_REACTIONS } from '../confidence.js';
 import { cellClasses, stateLabel, el, emptyState } from './shared.js';
 
 export function matrixModel(index, filters, search) {
@@ -27,28 +26,43 @@ export function matrixModel(index, filters, search) {
 
 export const SYMBOL = { FAVORITE: '★', CONFIRMED: '✔', CONTESTED: '?', PENDING: '•', PREDICTED: '~', UNTESTED: '', TESTED: '–' };
 
-// TESTED is a render-only pseudo-state: a CONFIRMED pair whose reaction is not
-// positive means a player tested this and it did nothing. Drawing that as ✔
-// under a legend reading "confirmed" claims the gift works, the opposite of
-// what was reported. It is deliberately NOT part of the confidence state
-// machine in confidence.js -- nothing derives from it but this view's symbol,
-// tint and title. This does NOT mirror characterSummary in character.js:
-// cellState only pulls out `none` as TESTED and still draws liked/slight as
-// the confirmed ✔, while the card's "tested" bucket (loved-only cards) covers
-// liked, slight and none together. The two intentionally disagree today;
-// this is a tracked follow-up, not fixed here.
+// Players use the guide to minmax bond so they can recruit characters quickly
+// (many gate recruitment behind a bond threshold), so what they're hunting
+// for is a LOVED (or FAVORITE) result specifically, not every positive
+// reaction -- see characterSummary's file comment in character.js, which this
+// matches. TESTED is a render-only pseudo-state: a CONFIRMED pair whose
+// reaction is liked, slight or "none" is a real, approved result, but none of
+// them is the big bond gain a minmaxing player is after. Drawing any of them
+// as ✔ under a legend reading "loved" claims the pair reached that gain, which
+// only a CONFIRMED "loved" reaction (or a FAVORITE) actually does. It is
+// deliberately NOT part of the confidence state machine in confidence.js --
+// nothing derives from it but this view's symbol, tint and title. This now
+// mirrors characterSummary's loved/tested split exactly: CONFIRMED + loved
+// stays the ✔, FAVORITE stays ★, and liked/slight/none together become
+// TESTED, the same three reactions the card's "N tested, none loved yet"
+// bucket counts.
+const BELOW_LOVED_REACTIONS = ['liked', 'slight', 'none'];
+
 export function cellState(confidence) {
-  if (confidence.state === 'CONFIRMED' && !POSITIVE_REACTIONS.includes(confidence.reaction)) return 'TESTED';
+  if (confidence.state === 'CONFIRMED' && BELOW_LOVED_REACTIONS.includes(confidence.reaction)) return 'TESTED';
   return confidence.state;
 }
 
 // stateLabel is keyed on the real states, so handing it the pseudo-state would
 // come back "Not tested yet" -- a denial of the very report this marks. The
-// pseudo-state gets its own label, in the same words as its legend row.
-const CELL_LABEL = { TESTED: 'Confirmed: no support gain' };
+// pseudo-state keeps the exact reaction rather than a single generic label:
+// "no support gain", "small gain" and "moderate gain" are real, distinct
+// reports, and collapsing them to one string would throw away information the
+// hover title is the only place left to carry.
+const CELL_LABEL = {
+  none: 'Tested: no support gain',
+  slight: 'Tested: small gain',
+  liked: 'Tested: moderate gain',
+};
 
 export function cellLabel(confidence) {
-  return CELL_LABEL[cellState(confidence)] ?? stateLabel(confidence);
+  if (cellState(confidence) === 'TESTED') return CELL_LABEL[confidence.reaction];
+  return stateLabel(confidence);
 }
 
 // The matrix can empty out three ways, and each one needs a different way back.
@@ -63,10 +77,10 @@ export function emptyMatrixMessage(state) {
 
 // A real key: swatch, symbol and label per state. The old run-on string joined
 // six entries with middle dots, which reads as decoration rather than a key.
-const LEGEND = [
+export const LEGEND = [
   ['FAVORITE', 'favourite'],
-  ['CONFIRMED', 'confirmed'],
-  ['TESTED', 'tested, no support gain'],
+  ['CONFIRMED', 'loved'],
+  ['TESTED', 'tested, below loved'],
   ['CONTESTED', 'reports disagree'],
   ['PENDING', 'reported, awaiting review'],
   ['PREDICTED', 'predicted, unconfirmed'],

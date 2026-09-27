@@ -86,7 +86,7 @@ test('giftRows lists giftable characters ranked by confidence', () => {
   assert.equal(rows[0].confidence.state, 'PREDICTED');
 });
 
-import { matrixModel, SYMBOL, cellState, cellLabel, render as renderMatrix } from '../assets/js/views/matrix.js';
+import { matrixModel, SYMBOL, cellState, cellLabel, LEGEND, render as renderMatrix } from '../assets/js/views/matrix.js';
 
 test('the matrix excludes non-giftable characters and keeps every gift by default', () => {
   const idx = buildIndex(dataset);
@@ -1640,21 +1640,43 @@ test('reportButton and reportChip both emit the .report-button class app.js clos
   }
 });
 
-// A2: a CONFIRMED pair whose reaction is not positive means a player tested
-// this and it did nothing. Drawing it as the confirmed ✔ under a legend
-// reading "confirmed" claims the gift works -- the opposite of the report.
-test('cellState separates a no-gain confirmation from a confirmed one', () => {
+// A2: a CONFIRMED pair whose reaction is liked, slight or "none" is a real,
+// approved report, but none of them is the loved result a minmaxing player is
+// after. Drawing any of them as the loved ✔ under a legend reading "loved"
+// claims a bond gain the report never made -- see matrix.js's file comment,
+// which matches characterSummary's loved/tested split in character.js.
+test('cellState separates a below-loved confirmation from a loved one', () => {
   assert.equal(cellState({ state: 'CONFIRMED', reaction: 'none' }), 'TESTED');
-  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'liked' }), 'CONFIRMED');
+  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'slight' }), 'TESTED');
+  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'liked' }), 'TESTED');
+  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'loved' }), 'CONFIRMED');
   assert.equal(cellState({ state: 'FAVORITE', reaction: 'favorite' }), 'FAVORITE');
   assert.equal(cellState({ state: 'UNTESTED', reaction: null }), 'UNTESTED');
   assert.equal(cellState({ state: 'PENDING', reaction: null }), 'PENDING');
+  assert.equal(cellState({ state: 'CONTESTED', reaction: null }), 'CONTESTED');
+  assert.equal(cellState({ state: 'PREDICTED', reaction: null }), 'PREDICTED');
+  // An unrecognised reaction on a CONFIRMED pair must not silently count as
+  // below-loved -- see the M-9 test on characterSummary's identical list.
+  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'unknown-tier' }), 'CONFIRMED');
   assert.notEqual(SYMBOL.TESTED, SYMBOL.CONFIRMED, 'the pseudo-state needs its own symbol or the split is invisible');
   // The tooltip must not swing the other way and deny the report it marks.
   assert.doesNotMatch(cellLabel({ state: 'CONFIRMED', reaction: 'none' }), /not tested/i);
 });
 
-test('the matrix renders a no-gain confirmation with neither the confirmed tick nor its tint', () => {
+test('cellLabel keeps the exact reaction for each below-loved reaction, and stateLabel for loved', () => {
+  assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'none' }), 'Tested: no support gain');
+  assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'slight' }), 'Tested: small gain');
+  assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'liked' }), 'Tested: moderate gain');
+  assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'loved' }), 'Confirmed: Big gain');
+});
+
+test('the LEGEND labels loved and below-loved correctly', () => {
+  const labels = Object.fromEntries(LEGEND);
+  assert.equal(labels.CONFIRMED, 'loved');
+  assert.equal(labels.TESTED, 'tested, below loved');
+});
+
+test('the matrix renders a below-loved confirmation with neither the loved tick nor its tint', () => {
   const idx = buildIndex({
     ...dataset,
     observations: [{ id: 'o1', gift: 'book', character: 'c1', reaction: 'none', date: '2026-09-20' }],
@@ -1672,6 +1694,20 @@ test('the matrix renders a no-gain confirmation with neither the confirmed tick 
   // The key has to explain the symbol the grid just drew.
   const swatch = findFirst(container, (n) => (n.className ?? '').includes('cell-tested') && (n.className ?? '').includes('legend-swatch'));
   assert.ok(swatch, 'the legend needs a row for the tested pseudo-state');
+});
+
+// A slight result is a real, approved CONFIRMED result, but it is not loved --
+// "Hide untested pairs" filters on confidence.state (which stays CONFIRMED),
+// never on cellState's render-only TESTED pseudo-state, so it must still
+// survive that filter.
+test('"Hide untested pairs" keeps a slight (below-loved) pair, not just a loved one', () => {
+  const idx = buildIndex({
+    ...dataset,
+    observations: [{ id: 'o1', gift: 'book', character: 'c1', reaction: 'slight', date: '2026-09-20' }],
+  });
+  const m = matrixModel(idx, { ...DEFAULT_FILTERS, hideUntested: true }, '');
+  assert.ok(m.gifts.some((g) => g.id === 'book'), '"Hide untested pairs" must not drop a below-loved confirmed pair');
+  assert.equal(m.cellAt('book', 'c1').state, 'CONFIRMED');
 });
 
 // A3: both hunt sections render a name followed by a chip list, so with the

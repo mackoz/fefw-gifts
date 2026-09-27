@@ -8,12 +8,19 @@
 // `marks` survives on the model because it costs nothing and describes the
 // data honestly, but nothing renders it today.
 import { el, favouriteGifts } from './shared.js';
-import { POSITIVE_REACTIONS } from '../confidence.js';
 
 // Every state that carries a signal. UNTESTED is deliberately absent: it is
 // the ground itself, and drawing it would cost thousands of nodes to say
 // nothing.
 const MARKED = new Set(['FAVORITE', 'CONFIRMED', 'CONTESTED', 'PENDING', 'PREDICTED']);
+
+// The only reactions that count as "below loved" on a CONFIRMED pair. Kept as
+// an explicit list, matching BELOW_LOVED_REACTIONS in character.js and
+// matrix.js: today `deriveConfidence` only ever puts one of these three on a
+// CONFIRMED pair (a `favorite` reaction becomes its own FAVORITE state), but a
+// new reaction tier must be added here on purpose rather than silently
+// counting as below-loved.
+const BELOW_LOVED_REACTIONS = ['liked', 'slight', 'none'];
 
 export function weaveModel(index, filters) {
   const characters = index.characters
@@ -22,7 +29,7 @@ export function weaveModel(index, filters) {
   const gifts = index.gifts;
 
   const marks = [];
-  let confirmed = 0;
+  let loved = 0;
   let tested = 0;
   let favouritesFound = 0;
 
@@ -30,23 +37,25 @@ export function weaveModel(index, filters) {
     gifts.forEach((gift, x) => {
       const { state, reaction } = index.confidenceFor(character.id, gift.id);
       // A pending report is a real player's result but not a confirmation, so
-      // it is drawn and not counted.
+      // it is drawn and not counted -- see CLAUDE.md's "A pending report is
+      // not a confirmation." A contested pair is real signal too, but reports
+      // disagree, so it is drawn and not counted either.
       //
-      // A CONFIRMED pair only counts as confirmed when the reaction is
-      // positive. A CONFIRMED "none" is a real player report -- somebody
-      // tested this and it did nothing -- so it is counted, but counting it
-      // under "pairs confirmed" would claim the opposite of what happened.
-      // A FAVORITE is positive by definition. This does NOT mirror
-      // characterSummary in character.js any more: this masthead counts
-      // loved, liked and slight together as "confirmed", while the card's
-      // "loved" count is loved only (liked/slight land in its separate
-      // "tested" bucket). The two intentionally disagree today; bringing the
-      // masthead in line with the card's loved-only wording is a tracked
-      // follow-up, not done here.
-      if (state === 'FAVORITE') confirmed += 1;
+      // A FAVORITE counts as loved: it's loved and more (double points on top
+      // of the bond gain), so it belongs in the same bucket a minmaxing
+      // player is hunting for, not a separate one. A CONFIRMED pair only
+      // counts as loved when the reaction actually is 'loved'. Liked, slight
+      // and "none" are all real, approved CONFIRMED results -- somebody
+      // tested this -- but none of them is the big bond gain a minmaxing
+      // player is after, so they are counted separately as "tested below
+      // loved" rather than folded into the loved total, which would claim a
+      // gain the report never made. This now mirrors characterSummary in
+      // character.js exactly: its loved count is loved-only, and its
+      // "N tested, none loved yet" bucket is the same three reactions.
+      if (state === 'FAVORITE') loved += 1;
       else if (state === 'CONFIRMED') {
-        if (POSITIVE_REACTIONS.includes(reaction)) confirmed += 1;
-        else tested += 1;
+        if (reaction === 'loved') loved += 1;
+        else if (BELOW_LOVED_REACTIONS.includes(reaction)) tested += 1;
       }
       if (MARKED.has(state)) marks.push({ x, y, state });
     });
@@ -59,7 +68,7 @@ export function weaveModel(index, filters) {
     columns: gifts.length,
     rows: characters.length,
     pairs: characters.length * gifts.length,
-    confirmed,
+    loved,
     tested,
     favouritesFound,
     favouritesTotal: characters.length,
@@ -71,17 +80,17 @@ export function weaveModel(index, filters) {
 // project stands, which is also the reason to contribute.
 export function weaveSummary(model) {
   const n = (value) => value.toLocaleString('en-GB');
-  const pairs = model.confirmed === 0
-    ? `No pair confirmed yet, out of ${n(model.pairs)}.`
-    : `${n(model.confirmed)} of ${n(model.pairs)} pairs confirmed.`;
+  const pairs = model.loved === 0
+    ? `No pair loved yet, out of ${n(model.pairs)}.`
+    : `${n(model.loved)} of ${n(model.pairs)} pairs loved.`;
   const favourites = model.favouritesFound === 0
     ? `${n(model.favouritesTotal)} favourite${model.favouritesTotal === 1 ? '' : 's'} still unfound.`
     : `${n(model.favouritesFound)} of ${n(model.favouritesTotal)} favourite${model.favouritesTotal === 1 ? '' : 's'} found.`;
-  // A third sentence only when there is something to say. A no-gain result is
-  // a real player report and is counted here, but it is not a confirmation
-  // that the gift works -- so it gets its own sentence rather than being
-  // folded into the confirmed total.
-  if (model.tested > 0) return `${pairs} ${favourites} ${n(model.tested)} tested with no support gain.`;
+  // A third sentence only when there is something to say. A liked, slight or
+  // no-gain result is a real, approved player report and is counted here, but
+  // none of them is the loved result a minmaxing player is after -- so it
+  // gets its own sentence rather than being folded into the loved total.
+  if (model.tested > 0) return `${pairs} ${favourites} ${n(model.tested)} more tested below loved.`;
   return `${pairs} ${favourites}`;
 }
 

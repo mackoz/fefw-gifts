@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { buildIndex } from '../assets/js/data.js';
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
 import { weaveModel, weaveSummary } from '../assets/js/views/weave.js';
+import { loadDataset } from '../scripts/validate.mjs';
 
 const dataset = {
   categories: [{ id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] }],
@@ -35,17 +36,17 @@ test('untested pairs produce no mark', () => {
   assert.deepEqual(model.marks, [{ x: 0, y: 0, state: 'PREDICTED' }]);
 });
 
-test('a pending report is marked but never counted as confirmed', () => {
+test('a pending report is marked but never counted as loved', () => {
   const pending = [{ id: 'p1', character: 'c1', gift: 'rock', reaction: 'loved', created_at: '2026-09-21T00:00:00Z' }];
   const model = weaveModel(buildIndex(dataset, pending), DEFAULT_FILTERS);
-  assert.equal(model.confirmed, 0, 'a pending report is not a confirmation');
+  assert.equal(model.loved, 0, 'a pending report is not a confirmation');
   assert.ok(model.marks.some((m) => m.state === 'PENDING'), 'a pending report should still show on the weave');
 });
 
-test('an observed favourite counts as confirmed', () => {
+test('an observed favourite counts as loved', () => {
   const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'favorite', date: '2026-09-21' }];
   const model = weaveModel(buildIndex(clone({ observations })), DEFAULT_FILTERS);
-  assert.equal(model.confirmed, 1);
+  assert.equal(model.loved, 1, 'a favourite is loved and more, so it counts in the loved total');
   assert.equal(model.favouritesFound, 1);
 });
 
@@ -55,7 +56,7 @@ test('a declared favourite counts even though no player observed it', () => {
   const characters = dataset.characters.map((c) => (c.id === 'c1' ? { ...c, favorites: ['book'] } : c));
   const model = weaveModel(buildIndex(clone({ characters })), DEFAULT_FILTERS);
   assert.equal(model.favouritesFound, 1);
-  assert.equal(model.confirmed, 0, 'declaring a favourite is not a player confirmation');
+  assert.equal(model.loved, 0, 'declaring a favourite is not a player confirmation');
 });
 
 test('a declared favourite naming an unknown gift does not count', () => {
@@ -66,39 +67,109 @@ test('a declared favourite naming an unknown gift does not count', () => {
 
 test('the summary is two sentences and never a middle-dot string', () => {
   const summary = weaveSummary(weaveModel(buildIndex(dataset), DEFAULT_FILTERS));
-  assert.equal(summary, 'No pair confirmed yet, out of 2. 1 favourite still unfound.');
+  assert.equal(summary, 'No pair loved yet, out of 2. 1 favourite still unfound.');
   assert.doesNotMatch(summary, /·/);
 });
 
-test('the summary switches to counts once something is confirmed', () => {
-  const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'liked', date: '2026-09-21' }];
+test('the summary switches to counts once a pair is loved', () => {
+  const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-21' }];
   const summary = weaveSummary(weaveModel(buildIndex(clone({ observations })), DEFAULT_FILTERS));
-  assert.match(summary, /^1 of 2 pairs confirmed\./);
+  assert.match(summary, /^1 of 2 pairs loved\./);
 });
 
-// A CONFIRMED pair whose reaction is not positive means a player tested this
-// and it did nothing. Counting it under "N of M pairs confirmed" would make
-// the masthead claim N gifts that work, and would contradict the character
-// tile on the same page, which already says "tested". See characterSummary.
-test('a no-gain confirmation is counted as tested, never as confirmed', () => {
+// A CONFIRMED pair whose reaction is liked, slight or "none" is a real,
+// approved report, but none of them is the loved result a minmaxing player is
+// after. Counting it under "N of M pairs loved" would claim a bond gain the
+// report never made, and would contradict the character tile on the same
+// page, which already says "tested". See characterSummary.
+test('a below-loved confirmation is counted as tested, never as loved', () => {
   const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'none', date: '2026-09-21' }];
   const model = weaveModel(buildIndex(clone({ observations })), DEFAULT_FILTERS);
-  assert.equal(model.confirmed, 0, 'a reported no support gain is not a confirmation that the gift works');
+  assert.equal(model.loved, 0, 'a below-loved result is not counted as loved');
   assert.equal(model.tested, 1);
 });
 
-test('a positive confirmation still counts as confirmed and not as tested', () => {
+test('a slight reaction counts as tested, not loved', () => {
+  const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'slight', date: '2026-09-21' }];
+  const model = weaveModel(buildIndex(clone({ observations })), DEFAULT_FILTERS);
+  assert.equal(model.loved, 0);
+  assert.equal(model.tested, 1);
+});
+
+test('a liked reaction still counts as tested, not loved', () => {
   const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'liked', date: '2026-09-21' }];
   const model = weaveModel(buildIndex(clone({ observations })), DEFAULT_FILTERS);
-  assert.equal(model.confirmed, 1);
+  assert.equal(model.loved, 0);
+  assert.equal(model.tested, 1);
+});
+
+test('a loved reaction counts as loved and not as tested', () => {
+  const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-21' }];
+  const model = weaveModel(buildIndex(clone({ observations })), DEFAULT_FILTERS);
+  assert.equal(model.loved, 1);
   assert.equal(model.tested, 0);
 });
 
-test('the summary gains its third sentence only when something was tested with no gain', () => {
+// A CONTESTED pair is real signal elsewhere, but reports disagree, so it must
+// never count toward either bucket -- see CLAUDE.md's "A pending report is
+// not a confirmation," which the same non-approval logic extends to a
+// disagreement.
+test('a contested pair counts toward neither loved nor tested', () => {
+  const contestedDataset = clone({
+    observations: [
+      { id: 'o1', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-21' },
+      { id: 'o2', character: 'c1', gift: 'book', reaction: 'none', date: '2026-09-22' },
+    ],
+  });
+  const idx = buildIndex(contestedDataset);
+  assert.equal(idx.confidenceFor('c1', 'book').state, 'CONTESTED');
+  const model = weaveModel(idx, DEFAULT_FILTERS);
+  assert.equal(model.loved, 0);
+  assert.equal(model.tested, 0);
+});
+
+test('the summary gains its third sentence only when something was tested below loved', () => {
   const quiet = weaveSummary(weaveModel(buildIndex(dataset), DEFAULT_FILTERS));
-  assert.doesNotMatch(quiet, /no support gain/, 'nothing tested yet, so there is nothing to say');
+  assert.doesNotMatch(quiet, /tested below loved/, 'nothing tested yet, so there is nothing to say');
 
   const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'none', date: '2026-09-21' }];
   const summary = weaveSummary(weaveModel(buildIndex(clone({ observations })), DEFAULT_FILTERS));
-  assert.equal(summary, 'No pair confirmed yet, out of 2. 1 favourite still unfound. 1 tested with no support gain.');
+  assert.equal(summary, 'No pair loved yet, out of 2. 1 favourite still unfound. 1 more tested below loved.');
+});
+
+test('the summary omits the third sentence when loved is nonzero but tested is zero', () => {
+  const observations = [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-21' }];
+  const summary = weaveSummary(weaveModel(buildIndex(clone({ observations })), DEFAULT_FILTERS));
+  assert.equal(summary, '1 of 2 pairs loved. 1 favourite still unfound.');
+  assert.doesNotMatch(summary, /tested below loved/);
+});
+
+// Cross-checks the masthead against independently-derived counts from the
+// real dataset, rather than hard-coding today's numbers -- those numbers will
+// keep changing as more observations land.
+test('weaveSummary on the real dataset matches counts derived independently from observations.json', async () => {
+  const dataset = await loadDataset('data');
+  const idx = buildIndex(dataset);
+  const filters = { ...DEFAULT_FILTERS, hideSpoilers: false };
+  const model = weaveModel(idx, filters);
+
+  const giftableIds = new Set(dataset.characters.filter((c) => c.giftable).map((c) => c.id));
+  let expectedLoved = 0;
+  let expectedTested = 0;
+  for (const o of dataset.observations) {
+    if (!giftableIds.has(o.character)) continue;
+    if (o.reaction === 'loved' || o.reaction === 'favorite') expectedLoved += 1;
+    else if (o.reaction === 'liked' || o.reaction === 'slight' || o.reaction === 'none') expectedTested += 1;
+  }
+
+  assert.equal(model.loved, expectedLoved);
+  assert.equal(model.tested, expectedTested);
+
+  const summary = weaveSummary(model);
+  assert.match(summary, new RegExp(`${expectedLoved.toLocaleString('en-GB')} of `));
+  if (expectedTested > 0) {
+    assert.match(summary, new RegExp(`${expectedTested.toLocaleString('en-GB')} more tested below loved\\.$`));
+  } else {
+    assert.doesNotMatch(summary, /tested below loved/);
+  }
 });
