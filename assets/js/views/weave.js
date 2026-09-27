@@ -36,8 +36,13 @@ export function weaveModel(index, filters) {
       // positive. A CONFIRMED "none" is a real player report -- somebody
       // tested this and it did nothing -- so it is counted, but counting it
       // under "pairs confirmed" would claim the opposite of what happened.
-      // A FAVORITE is positive by definition. Mirrors characterSummary in
-      // character.js, which this masthead must never contradict.
+      // A FAVORITE is positive by definition. This does NOT mirror
+      // characterSummary in character.js any more: this masthead counts
+      // loved, liked and slight together as "confirmed", while the card's
+      // "loved" count is loved only (liked/slight land in its separate
+      // "tested" bucket). The two intentionally disagree today; bringing the
+      // masthead in line with the card's loved-only wording is a tracked
+      // follow-up, not done here.
       if (state === 'FAVORITE') confirmed += 1;
       else if (state === 'CONFIRMED') {
         if (POSITIVE_REACTIONS.includes(reaction)) confirmed += 1;

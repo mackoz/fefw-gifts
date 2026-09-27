@@ -3,7 +3,6 @@ import {
   sortByConfidence, badge, el, emptyState, sourceName, reportButton, reportChip,
   partitionRows, categoryChips, favouriteGifts, chip,
 } from './shared.js';
-import { POSITIVE_REACTIONS } from '../confidence.js';
 import { voteControl, voteControlModel } from '../vote-control.js';
 
 export function characterRows(index, characterId, filters) {
@@ -22,14 +21,33 @@ export function detailStatus(character, filters) {
   return 'ok';
 }
 
+// Reactions that are real, approved CONFIRMED results but not the big bond
+// gain a minmaxing player is after -- see characterSummary's comment below.
+const BELOW_LOVED_REACTIONS = ['liked', 'slight', 'none'];
+
 // The strongest true statement about a character, in a fixed order. It never
 // implies a negative: a character nobody has tested reads as untested, not as
-// one whose gifts fail.
+// one whose gifts fail. Players use this guide to minmax bond -- many
+// characters gate recruitment behind a bond threshold -- so what they're
+// hunting for is LOVED (and FAVORITE) results specifically, not every
+// positive reaction: a liked or slight result is real and does raise bond,
+// but less, and isn't the thing worth reporting a summary count of. The
+// count below is loved only, not "positive": see categoryVerdicts in
+// shared.js and CLAUDE.md's "A favourite is about the item; only loved
+// results confirm a category" for the same loved-vs-lesser distinction
+// applied to categories.
 export function characterSummary(index, character) {
   // Same favouriteGifts union shared.js exports, so this and the Favourites
   // tab can never disagree about whether a favourite is known.
-  const favouriteCount = favouriteGifts(index, character).length;
-  let confirmed = 0;
+  const favourites = favouriteGifts(index, character);
+  const favouriteCount = favourites.length;
+  // A gift can be a favourite (declared or observed FAVORITE) AND separately
+  // carry its own approved `loved` observation -- contradictory data the
+  // validator doesn't cross-check. Before this counted in both buckets,
+  // reading "1 favourite, 1 loved" for what is really one item. Excluding
+  // favourite ids from the loved count keeps every gift counted at most once.
+  const favouriteIds = new Set(favourites.map((gift) => gift.id));
+  let loved = 0;
   let tested = 0;
   let contested = 0;
   let pending = 0;
@@ -37,15 +55,20 @@ export function characterSummary(index, character) {
 
   for (const gift of index.gifts) {
     const confidence = index.confidenceFor(character.id, gift.id);
-    // A CONFIRMED row is only a "confirmed" gift when the reaction is
-    // positive. The report form's first option is "They didn't like it", so
-    // a CONFIRMED "none" reaction is common -- and reporting it as one of "N
-    // confirmed" would read as N gifts that work, the opposite of what
-    // happened. "Tested" is deliberately neutral: it neither claims the gift
-    // worked nor implies the character dislikes things (see CLAUDE.md).
-    if (confidence.state === 'CONFIRMED' && POSITIVE_REACTIONS.includes(confidence.reaction)) confirmed += 1;
-    else if (confidence.state === 'CONFIRMED') tested += 1;
-    else if (confidence.state === 'CONTESTED') contested += 1;
+    // Only a CONFIRMED "loved" reaction on a gift that isn't already counted
+    // as a favourite counts as "loved" here -- see the file-level comment
+    // above and the favouriteIds note. Liked, slight and "none" are all
+    // real, approved CONFIRMED results, but none of them is the big bond
+    // gain a minmaxing player is after, so they fall into the neutral
+    // "tested" bucket instead. The report form's first option is "They
+    // didn't like it", so a CONFIRMED "none" reaction is common -- and
+    // "tested" is deliberately neutral: it neither claims the gift worked
+    // nor implies the character dislikes things (see CLAUDE.md).
+    if (confidence.state === 'CONFIRMED' && confidence.reaction === 'loved' && !favouriteIds.has(gift.id)) {
+      loved += 1;
+    } else if (confidence.state === 'CONFIRMED' && BELOW_LOVED_REACTIONS.includes(confidence.reaction)) {
+      tested += 1;
+    } else if (confidence.state === 'CONTESTED') contested += 1;
     else if (confidence.state === 'PENDING') pending += 1;
     // A refuted-category prediction is a guess that the gift will NOT land --
     // it is not something "worth trying", so only a positive prediction
@@ -53,10 +76,23 @@ export function characterSummary(index, character) {
     else if (confidence.state === 'PREDICTED' && confidence.predicted === 'positive') predicted += 1;
   }
 
-  if (favouriteCount > 0) return `${favouriteCount} favourite${favouriteCount === 1 ? '' : 's'} found`;
-  if (confirmed > 0) return `${confirmed} confirmed`;
-  if (tested > 0) return `${tested} tested`;
-  // CONTESTED and PENDING sit between confirmed and predicted, and they are
+  // A favourite and a loved count are both worth surfacing at once: the
+  // favourite says which item(s) are confirmed double points, the loved
+  // count says how many other big wins exist. Neither subsumes the other.
+  if (favouriteCount > 0 && loved > 0) {
+    return `${favouriteCount} favourite${favouriteCount === 1 ? '' : 's'}, ${loved} loved`;
+  }
+  if (favouriteCount > 0) return `${favouriteCount} favourite${favouriteCount === 1 ? '' : 's'}`;
+  if (loved > 0) return `${loved} loved`;
+  // "Tested" alone means "no support gain" elsewhere on the site: the
+  // matrix's TESTED pseudo-state and legend, the masthead's "tested with no
+  // support gain" line, and REACTION_LABEL.none all use it that way. A liked
+  // or slight result is real, positive
+  // signal, so a bare "N tested" here would undersell it as N gifts that did
+  // nothing -- the trailing clause says plainly that none of them reached
+  // loved yet.
+  if (tested > 0) return `${tested} tested, none loved yet`;
+  // CONTESTED and PENDING sit between loved and predicted, and they are
   // the reason this chain cannot simply fall through to "nothing tested yet":
   // both mean somebody HAS tested this character. Omitting them made the index
   // say nothing had been tested while approved, contradicting observations sat
@@ -98,6 +134,20 @@ export function signalHeading(rows) {
   return rows.every((row) => row.confidence.predicted === 'positive') ? 'Worth trying' : 'Predictions';
 }
 
+// A mixed chip and a profile chip -- and, for that matter, a confirmed and a
+// discovered one -- render visually identical (see style.css's Chips
+// section): the only cue is font weight and border style, which a screen
+// reader gets none of. A hidden text suffix and a hover title spell out what
+// each state actually means, per chip. An unknown state (there shouldn't be
+// one) gets neither rather than printing "undefined".
+const CHIP_STATE_TEXT = {
+  confirmed: 'loved in testing',
+  mixed: 'mixed results',
+  guide: 'predicted from a guide',
+  discovered: 'found through play',
+  profile: 'on the in-game profile',
+};
+
 // Favourite chips render first, then category chips -- a favourite is
 // stronger evidence about that one item than any category link, so it leads.
 // `favourites` defaults to none, which is all the "Reported to like" list on
@@ -110,12 +160,23 @@ function chipList(entries, favourites = []) {
   list.setAttribute('role', 'list');
   for (const gift of favourites) {
     const item = el('li');
-    item.append(chip(gift.name, { href: `#/gift/${gift.id}`, className: 'chip-favourite' }));
+    const node = chip(gift.name, { href: `#/gift/${gift.id}`, className: 'chip-favourite' });
+    // The CSS already prefixes a favourite chip with "Favourite:" as alt
+    // text (see style.css), so only a hover title is needed here -- no
+    // hidden suffix, or a screen reader would hear "Favourite" twice.
+    node.title = 'Favourite';
+    item.append(node);
     list.append(item);
   }
   for (const entry of entries) {
     const item = el('li');
-    item.append(chip(entry.label, { className: `provenance-${entry.state}` }));
+    const node = chip(entry.label, { className: `provenance-${entry.state}` });
+    const text = CHIP_STATE_TEXT[entry.state];
+    if (text) {
+      node.title = text;
+      node.append(el('span', 'visually-hidden', `, ${text}`));
+    }
+    item.append(node);
     list.append(item);
   }
   return list;
@@ -129,19 +190,26 @@ function joinList(labels) {
   return `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
 }
 
-// The chips under "Reported to like" mix four very different claims: a
-// category with an approved test result behind it, a guide's guess (carried
-// over, unconfirmed), an in-game profile listing, and something a player
-// actually found through play. The bug this replaces said "carried over"
-// about all three stored-link kinds, which overclaimed for the profile and
-// discovered ones -- only the guide sentence is actually a guess. Each group
-// gets its own sentence, and a fourth group -- confirmed through testing --
-// now leads, since it is the strongest claim a chip can make; the guide
-// sentence is demoted to "the rest" once something stronger sits above it.
+// The chips under "Reported to like" mix five very different claims: a
+// category confirmed outright by testing, one that testing has left mixed, a
+// guide's guess (carried over, unconfirmed), an in-game profile listing, and
+// something a player actually found through play. The bug this replaces said
+// "carried over" about all three stored-link kinds, which overclaimed for the
+// profile and discovered ones -- only the guide sentence is actually a guess.
+// Each group gets its own sentence, in strength order: confirmed leads, since
+// it is the strongest claim a chip can make, then mixed -- also testing, but
+// not a uniform hit -- then discovered, profile, and guide, demoted to "the
+// rest" once something stronger sits above it. Every "is this the only group"
+// check below has to treat mixed as a group too, exactly like discovered,
+// profile and guide, or a mixed chip sitting next to a confirmed-only or
+// guide-only sentence would leave that other group's "only group" wording --
+// e.g. "Each has…", "Found through play." -- reading as if it covered every
+// chip, when a mixed one sits right beside it, unmentioned.
 export function provenanceNote(index, chips) {
   if (chips.length === 0) return '';
 
   const confirmed = chips.filter((c) => c.state === 'confirmed');
+  const mixed = chips.filter((c) => c.state === 'mixed');
   const discovered = chips.filter((c) => c.state === 'discovered');
   const profile = chips.filter((c) => c.state === 'profile');
   const guide = chips.filter((c) => c.state === 'guide');
@@ -154,15 +222,24 @@ export function provenanceNote(index, chips) {
   if (confirmed.length === 1) {
     sentences.push(`${confirmed[0].label} has at least one gift loved in testing.`);
   } else if (confirmed.length > 1) {
-    if (discovered.length === 0 && profile.length === 0 && guide.length === 0) {
+    if (mixed.length === 0 && discovered.length === 0 && profile.length === 0 && guide.length === 0) {
       sentences.push('Each has at least one gift loved in testing.');
     } else {
       sentences.push(`${joinList(confirmed.map((c) => c.label))} each have at least one gift loved in testing.`);
     }
   }
 
+  // A mixed category is still testing, not a guess, but it is not a uniform
+  // hit either -- see CLAUDE.md's "A favourite is about the item; only loved
+  // results confirm a category." The sentence always names the category (or
+  // categories), since "mixed" alone says nothing about which one.
+  if (mixed.length > 0) {
+    const verb = mixed.length === 1 ? 'has' : 'have';
+    sentences.push(`${joinList(mixed.map((c) => c.label))} ${verb} mixed results: at least one gift was loved, others less so.`);
+  }
+
   if (discovered.length > 0) {
-    if (guide.length === 0 && profile.length === 0 && confirmed.length === 0) {
+    if (mixed.length === 0 && guide.length === 0 && profile.length === 0 && confirmed.length === 0) {
       sentences.push('Found through play.');
     } else {
       const verb = discovered.length === 1 ? 'was' : 'were';
@@ -177,7 +254,7 @@ export function provenanceNote(index, chips) {
 
   if (guide.length > 0) {
     const publishers = [...new Set(guide.map((c) => sourceName(index, c.source)))];
-    sentences.push(discovered.length === 0 && profile.length === 0 && confirmed.length === 0
+    sentences.push(mixed.length === 0 && discovered.length === 0 && profile.length === 0 && confirmed.length === 0
       ? `Category preferences carried over from ${publishers.join(' and ')}. They’re predictions until a player reports loving an item in that category.`
       : `The rest are carried over from ${publishers.join(' and ')} and are predictions until a player reports loving an item in that category.`);
   }
