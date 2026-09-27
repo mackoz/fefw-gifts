@@ -1,3 +1,5 @@
+import { BELOW_LOVED_REACTIONS } from '../confidence.js';
+
 // PENDING sits between the observed states and the guesses: a real player
 // reported it, but nobody has reviewed it yet.
 const STATE_RANK = { FAVORITE: 0, CONFIRMED: 1, CONTESTED: 2, PENDING: 3, PREDICTED: 4, UNTESTED: 5 };
@@ -10,19 +12,41 @@ const REACTION_LABEL = {
   favorite: 'Double points',
 };
 
+// A secondary key within CONFIRMED only: loved, then liked, then slight, then
+// none, so a "Tested: ..." row never sits above a "Confirmed: Big gain" row
+// on a character or gift page now that the two carry different labels. Every
+// other state shares rank 0 here, so this never affects their order relative
+// to each other -- STATE_RANK alone already does that.
+const REACTION_RANK = { loved: 0, liked: 1, slight: 2, none: 3 };
+
+function reactionRank(confidence) {
+  if (confidence.state !== 'CONFIRMED') return 0;
+  return REACTION_RANK[confidence.reaction] ?? 4;
+}
+
 export function sortByConfidence(rows) {
   return rows
     .map((row, i) => ({ row, i }))
-    .sort((a, b) => (STATE_RANK[a.row.confidence.state] - STATE_RANK[b.row.confidence.state]) || (a.i - b.i))
+    .sort((a, b) => (
+      (STATE_RANK[a.row.confidence.state] - STATE_RANK[b.row.confidence.state])
+      || (reactionRank(a.row.confidence) - reactionRank(b.row.confidence))
+      || (a.i - b.i)
+    ))
     .map(({ row }) => row);
 }
 
 // Never describe an unobserved pair as disliked: absence of a match is not
 // evidence. Only a reported reaction may read as a negative.
+//
+// A CONFIRMED pair gets one of two prefixes on the same REACTION_LABEL text,
+// not two different vocabularies: "Confirmed: Big gain" for a loved result,
+// "Tested: <gain>" for a below-loved one (liked, slight or none).
 export function stateLabel(confidence) {
   switch (confidence.state) {
     case 'FAVORITE': return 'Favourite — double points';
-    case 'CONFIRMED': return `Confirmed: ${REACTION_LABEL[confidence.reaction] ?? 'reported'}`;
+    case 'CONFIRMED':
+      if (BELOW_LOVED_REACTIONS.includes(confidence.reaction)) return `Tested: ${REACTION_LABEL[confidence.reaction]}`;
+      return `Confirmed: ${REACTION_LABEL[confidence.reaction] ?? 'reported'}`;
     case 'CONTESTED': return 'Reports disagree';
     case 'PENDING': return 'Reported — awaiting review';
     case 'PREDICTED': return confidence.predicted === 'negative' ? 'Predicted: probably no gain' : 'Predicted — not yet confirmed';
@@ -37,8 +61,17 @@ export function el(tag, className, text) {
   return node;
 }
 
+// A CONFIRMED pair whose reaction is below loved gets its own class
+// (state-liked / state-slight / state-none), not state-confirmed: the badge's
+// text already says "Tested: ..." for these (see stateLabel above), and
+// state-confirmed draws the loved tick and tint (style.css) -- pairing that
+// with a "Tested" label would claim the pair reached the loved gain it did
+// not. CONFIRMED+loved keeps state-confirmed; every other state is unchanged.
 export function stateClasses(confidence) {
-  const classes = [`state-${confidence.state.toLowerCase()}`];
+  const base = confidence.state === 'CONFIRMED' && BELOW_LOVED_REACTIONS.includes(confidence.reaction)
+    ? `state-${confidence.reaction}`
+    : `state-${confidence.state.toLowerCase()}`;
+  const classes = [base];
   if (confidence.provenance) classes.push(`provenance-${confidence.provenance}`);
   if (confidence.isException) classes.push('is-exception');
   if (confidence.rarityMismatch) classes.push('rarity-mismatch');
@@ -118,14 +151,6 @@ export function partitionRows(rows) {
   }
   return { signal, untested };
 }
-
-// The only reactions that count as "below loved" for categoryVerdicts. Kept
-// as an explicit list rather than an `else` catch-all: today `deriveConfidence`
-// only ever puts one of these three reactions on a CONFIRMED pair (a `favorite`
-// reaction becomes its own FAVORITE state, never CONFIRMED), but if a new
-// reaction tier is ever added, it should have to be added here on purpose
-// rather than silently counting as below-loved by falling through an `else`.
-const BELOW_LOVED_REACTIONS = ['liked', 'slight', 'none'];
 
 // A category's verdict for a character rests only on approved observations,
 // read through confidenceFor -- never a stored link and never an unreviewed

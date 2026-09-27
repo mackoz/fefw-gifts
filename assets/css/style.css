@@ -324,6 +324,9 @@ main#view > p,
 
 .state-favorite,
 .state-confirmed,
+.state-liked,
+.state-slight,
+.state-none,
 .state-contested,
 .state-pending,
 .state-predicted,
@@ -356,6 +359,19 @@ main#view > p,
   border-color: currentColor;
 }
 .state-confirmed::before { content: "\2713"; }
+
+/* A below-loved result (liked, slight or none) is real, so it still gets a
+   pill -- but none of them is the loved gain a minmaxing player is after, so
+   none may borrow the loved tint, background or tick. Liked keeps the
+   confirmed ink (no background) since it is the strongest of the three;
+   slight and none share the muted ink. Each glyph matches the Matrix's own
+   +/–/0 for that reaction. */
+.state-liked  { color: var(--confirmed); background: transparent; border-color: currentColor; }
+.state-liked::before { content: "+"; }
+.state-slight { color: var(--muted); background: transparent; border-color: currentColor; }
+.state-slight::before { content: "\2013"; }
+.state-none   { color: var(--muted); background: transparent; border-color: currentColor; }
+.state-none::before { content: "0"; }
 
 .state-contested {
   color: var(--contested);
@@ -1156,11 +1172,18 @@ main#view.view-matrix {
 .legend-swatch.cell-pending   { background: var(--pending-bg);   color: var(--pending); }
 .matrix td.cell-predicted,
 .legend-swatch.cell-predicted { background: var(--predicted-bg); color: var(--predicted); }
-/* A confirmed report of "no support gain" is a real result, so the cell is
-   marked -- but it is not a success, so it must not borrow the confirmed tint.
-   Neutral ground with muted ink: we looked, and nothing happened. */
-.matrix td.cell-tested,
-.legend-swatch.cell-tested    { background: transparent; color: var(--muted); }
+/* An approved result below loved (liked, slight or none) is real, so the cell
+   is marked -- but none of them is the big bond gain a minmaxing player is
+   after, so none may borrow the loved background or its tint. Liked keeps the
+   confirmed ink (still no background) since it is the strongest of the three;
+   slight and none share the muted ink and are told apart only by their glyph
+   (+ / – / 0) and hover title -- see matrix.js's SYMBOL/cellState comment. */
+.matrix td.cell-liked,
+.legend-swatch.cell-liked  { background: transparent; color: var(--confirmed); }
+.matrix td.cell-slight,
+.legend-swatch.cell-slight { background: transparent; color: var(--muted); }
+.matrix td.cell-none,
+.legend-swatch.cell-none   { background: transparent; color: var(--muted); }
 .matrix td.cell-untested      { background: transparent; }
 /* Matches the cell: an untested pair renders as no box, so the legend key for
    it must not show one either. The swatch's own border still marks the slot. */

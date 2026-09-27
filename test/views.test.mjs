@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { buildIndex } from '../assets/js/data.js';
 import { characterRows, characterIndexModel, characterSummary, signalHeading, provenanceNote } from '../assets/js/views/character.js';
 import {
-  sortByConfidence, stateLabel, partitionRows, categoryChips, favouriteGifts, chip, reportButton, reportChip,
+  sortByConfidence, stateLabel, stateClasses, badge, partitionRows, categoryChips, favouriteGifts, chip, reportButton, reportChip,
 } from '../assets/js/views/shared.js';
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
 import { giftRows, giftIndexModel, missingItemButton } from '../assets/js/views/gift.js';
@@ -72,6 +72,60 @@ test('sortByConfidence is stable for equal states', () => {
   assert.deepEqual(sortByConfidence(rows).map((r) => r.gift.id), ['a', 'b']);
 });
 
+// A CONFIRMED slight or liked row used to share rank 1 with a CONFIRMED loved
+// row, so "Tested: ..." and "Confirmed: Big gain" rows could interleave in
+// whatever order the data happened to list them. Loved now sorts first within
+// CONFIRMED, then liked, then slight, then none -- so a player scanning a
+// character or gift table for loved results never has to hunt past a "Tested"
+// row that data order happened to put above it.
+test('sortByConfidence puts loved before liked before slight before none, within CONFIRMED', () => {
+  const rows = [
+    { gift: { id: 'a-slight' }, confidence: { state: 'CONFIRMED', reaction: 'slight' } },
+    { gift: { id: 'b-loved' }, confidence: { state: 'CONFIRMED', reaction: 'loved' } },
+    { gift: { id: 'c-none' }, confidence: { state: 'CONFIRMED', reaction: 'none' } },
+    { gift: { id: 'd-liked' }, confidence: { state: 'CONFIRMED', reaction: 'liked' } },
+    { gift: { id: 'e-favorite' }, confidence: { state: 'FAVORITE', reaction: 'favorite' } },
+  ];
+  assert.deepEqual(
+    sortByConfidence(rows).map((r) => r.gift.id),
+    ['e-favorite', 'b-loved', 'd-liked', 'a-slight', 'c-none'],
+    'FAVORITE stays first; within CONFIRMED, loved, then liked, then slight, then none',
+  );
+});
+
+test('sortByConfidence keeps original order for ties within the same reaction', () => {
+  const rows = [
+    { gift: { id: 'a' }, confidence: { state: 'CONFIRMED', reaction: 'slight' } },
+    { gift: { id: 'b' }, confidence: { state: 'CONFIRMED', reaction: 'slight' } },
+  ];
+  assert.deepEqual(sortByConfidence(rows).map((r) => r.gift.id), ['a', 'b']);
+});
+
+// I-1: badge() classes a below-loved CONFIRMED row as state-liked/-slight/-none,
+// never state-confirmed -- style.css draws state-confirmed with the loved
+// tick and tint, and pairing that with a "Tested: ..." label would claim the
+// pair reached the loved gain it did not (the exact contradiction the Matrix
+// avoids with its own +/–/0 cells). A loved reaction keeps state-confirmed.
+test('badge classes a below-loved result as state-liked/state-slight/state-none, never state-confirmed', () => {
+  assert.match(stateClasses({ state: 'CONFIRMED', reaction: 'liked' }), /\bstate-liked\b/);
+  assert.doesNotMatch(stateClasses({ state: 'CONFIRMED', reaction: 'liked' }), /\bstate-confirmed\b/);
+  assert.match(stateClasses({ state: 'CONFIRMED', reaction: 'slight' }), /\bstate-slight\b/);
+  assert.doesNotMatch(stateClasses({ state: 'CONFIRMED', reaction: 'slight' }), /\bstate-confirmed\b/);
+  assert.match(stateClasses({ state: 'CONFIRMED', reaction: 'none' }), /\bstate-none\b/);
+  assert.doesNotMatch(stateClasses({ state: 'CONFIRMED', reaction: 'none' }), /\bstate-confirmed\b/);
+  assert.match(stateClasses({ state: 'CONFIRMED', reaction: 'loved' }), /\bstate-confirmed\b/);
+  // provenance/is-exception/rarity-mismatch classes are untouched by this change.
+  assert.match(
+    stateClasses({ state: 'CONFIRMED', reaction: 'slight', isException: true, rarityMismatch: true, provenance: 'guide' }),
+    /\bstate-slight\b.*\bprovenance-guide\b.*\bis-exception\b.*\brarity-mismatch\b/,
+  );
+
+  const slightBadge = badge({ state: 'CONFIRMED', reaction: 'slight' });
+  assert.match(slightBadge.className, /\bstate-slight\b/);
+  assert.doesNotMatch(slightBadge.className, /\bstate-confirmed\b/);
+  assert.equal(slightBadge.textContent, 'Tested: Small gain');
+});
+
 test('giftRows lists giftable characters ranked by confidence', () => {
   const idx = buildIndex({
     ...dataset,
@@ -86,7 +140,7 @@ test('giftRows lists giftable characters ranked by confidence', () => {
   assert.equal(rows[0].confidence.state, 'PREDICTED');
 });
 
-import { matrixModel, SYMBOL, cellState, cellLabel, render as renderMatrix } from '../assets/js/views/matrix.js';
+import { matrixModel, SYMBOL, cellState, cellLabel, LEGEND, render as renderMatrix } from '../assets/js/views/matrix.js';
 
 test('the matrix excludes non-giftable characters and keeps every gift by default', () => {
   const idx = buildIndex(dataset);
@@ -603,7 +657,7 @@ test('a mixed verdict replaces a refuted link rather than being dropped', () => 
   ]);
 });
 
-// M-9 (PR #19 review): today a CONFIRMED pair only ever carries `liked`,
+// Today a CONFIRMED pair only ever carries `liked`,
 // `slight` or `none` -- `deriveConfidence` turns a `favorite` reaction into
 // its own FAVORITE state -- so treating "any non-loved CONFIRMED reaction"
 // as below-loved happens to agree with the explicit list. If a new reaction
@@ -661,7 +715,7 @@ test('categoryChips orders confirmed chips, then mixed chips, then stored links'
   ]);
 });
 
-// M-10 (PR #19 review): the ordering test above has only one mixed chip, so
+// The ordering test above has only one mixed chip, so
 // dropping `.sort(byPosition)` on mixed chips specifically would still pass
 // it. Here `tea`'s gifts come first in `index.gifts` (and so would be the
 // first category the loop encounters and adds to the `loved`/`mixed` sets),
@@ -900,7 +954,7 @@ test('characterSummary reports a favourite alongside a loved count, not instead 
   assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite, 2 loved');
 });
 
-// M-6 (PR #19 review): a gift can be both a declared favourite AND carry its
+// A gift can be both a declared favourite AND carry its
 // own approved `loved` observation -- contradictory data the validator
 // doesn't cross-check. Before this fix it counted in both buckets, reading
 // "1 favourite, 1 loved" for what is really one item.
@@ -913,7 +967,7 @@ test('characterSummary does not double-count a loved gift that is also a favouri
   assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite');
 });
 
-// M-10 (PR #19 review): "2 favourites, N loved" pluralisation is never
+// "2 favourites, N loved" pluralisation is never
 // exercised elsewhere, so hard-coding the singular "favourite" would survive
 // every other test here.
 test('characterSummary pluralises "favourites" alongside a loved count', () => {
@@ -1021,7 +1075,7 @@ test('the character detail page renders a Favourites block before Reported to li
   assert.equal(favouritesList.getAttribute('role'), 'list');
 });
 
-// M-1: renderPicker's card guard is `entry.favourites.length || entry.categories.length`.
+// renderPicker's card guard is `entry.favourites.length || entry.categories.length`.
 // No other fixture pairs a declared favourite with zero category chips, so a
 // mutant that drops the favourites half of the guard (rendering the chip list
 // only when there is a category chip) passed every other test in this file.
@@ -1041,7 +1095,7 @@ test('the index card renders a favourite chip even when it has no category chips
   assert.match(chips[0].className, /\bchip-favourite\b/);
 });
 
-// M-1: renderProfile's Favourites block is guarded by `favourites.length > 0`.
+// renderProfile's Favourites block is guarded by `favourites.length > 0`.
 // A mutant that weakens this to `>= 0` renders an empty Favourites heading and
 // list on every character page, and no existing test caught it.
 test('a character detail page with no favourites renders no Favourites heading', () => {
@@ -1053,7 +1107,7 @@ test('a character detail page with no favourites renders no Favourites heading',
   assert.equal(heading, undefined, 'no favourites means no Favourites heading');
 });
 
-// M-1: renderProfile calls chipList(chips) with no favourites argument for
+// renderProfile calls chipList(chips) with no favourites argument for
 // "Reported to like" -- a mutant that passes favourites through as well would
 // duplicate the star chip(s) under that heading, and no existing test caught it.
 test('the "Reported to like" list carries no favourite chips, even when the page has some', () => {
@@ -1068,7 +1122,7 @@ test('the "Reported to like" list carries no favourite chips, even when the page
   assert.equal(hasFavouriteChip, false, 'the Reported to like list must not duplicate favourite chips');
 });
 
-// M-8 (PR #19 review): a mixed chip is visually identical to a profile chip
+// A mixed chip is visually identical to a profile chip
 // (and confirmed to discovered), and font weight/border style -- the only
 // visual cues -- reach no screen reader at all. Every category chip needs a
 // hover title and a hidden text suffix naming its actual state; a favourite
@@ -1254,7 +1308,7 @@ test('provenanceNote: confirmed plus discovered no longer says "Found through pl
   );
 });
 
-// M-2: the confirmed-only sentence's "only group" check must actually look at
+// The confirmed-only sentence's "only group" check must actually look at
 // profile chips, not just discovered/guide -- otherwise a confirmed category
 // sitting next to a profile one would wrongly take the bare "Each has..."
 // form instead of naming the category.
@@ -1318,7 +1372,7 @@ test('provenanceNote: confirmed plus mixed plus guide reads in strength order', 
   );
 });
 
-// M-10 (PR #19 review): removing the `mixed.length === 0 &&` guard from the
+// Removing the `mixed.length === 0 &&` guard from the
 // 2+ confirmed "only group" check survives every other test here, because a
 // mixed chip alongside 2+ confirmed ones still reads as (technically) true
 // under the bare "Each has..." wording. Pins that a mixed chip must still
@@ -1640,38 +1694,120 @@ test('reportButton and reportChip both emit the .report-button class app.js clos
   }
 });
 
-// A2: a CONFIRMED pair whose reaction is not positive means a player tested
-// this and it did nothing. Drawing it as the confirmed ✔ under a legend
-// reading "confirmed" claims the gift works -- the opposite of the report.
-test('cellState separates a no-gain confirmation from a confirmed one', () => {
-  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'none' }), 'TESTED');
-  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'liked' }), 'CONFIRMED');
+// A2: a CONFIRMED pair whose reaction is liked, slight or "none" is a real,
+// approved report, but none of them is the loved result a minmaxing player is
+// after. Drawing any of them as the loved ✔ under a legend reading "loved"
+// claims a bond gain the report never made -- see the SYMBOL/cellState
+// comment in matrix.js. Each below-loved reaction gets its own pseudo-state
+// (LIKED/SLIGHT/NONE), so liked, slight and no-gain results read differently
+// from each other, not just from loved.
+test('cellState gives liked, slight and no-gain results distinct pseudo-states, and leaves a loved result alone', () => {
+  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'liked' }), 'LIKED');
+  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'slight' }), 'SLIGHT');
+  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'none' }), 'NONE');
+  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'loved' }), 'CONFIRMED');
   assert.equal(cellState({ state: 'FAVORITE', reaction: 'favorite' }), 'FAVORITE');
   assert.equal(cellState({ state: 'UNTESTED', reaction: null }), 'UNTESTED');
   assert.equal(cellState({ state: 'PENDING', reaction: null }), 'PENDING');
-  assert.notEqual(SYMBOL.TESTED, SYMBOL.CONFIRMED, 'the pseudo-state needs its own symbol or the split is invisible');
+  assert.equal(cellState({ state: 'CONTESTED', reaction: null }), 'CONTESTED');
+  assert.equal(cellState({ state: 'PREDICTED', reaction: null }), 'PREDICTED');
+  // An unrecognised reaction on a CONFIRMED pair must not silently count as
+  // below-loved -- see the M-9 test on characterSummary's identical list.
+  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'unknown-tier' }), 'CONFIRMED');
+  // Every below-loved state needs its own symbol, distinct from loved's ✔ and
+  // from each other, or the three-way split is invisible.
+  const symbols = [SYMBOL.LIKED, SYMBOL.SLIGHT, SYMBOL.NONE, SYMBOL.CONFIRMED];
+  assert.equal(new Set(symbols).size, symbols.length, 'liked, slight, none and loved must each have their own symbol');
   // The tooltip must not swing the other way and deny the report it marks.
   assert.doesNotMatch(cellLabel({ state: 'CONFIRMED', reaction: 'none' }), /not tested/i);
 });
 
-test('the matrix renders a no-gain confirmation with neither the confirmed tick nor its tint', () => {
+// cellLabel is now just stateLabel, so the matrix hover and the
+// character/gift tables can never say two different things (or two different
+// casings) about the same reaction.
+test('cellLabel is stateLabel: one label per result across the matrix and the tables', () => {
+  assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'none' }), 'Tested: No support gain');
+  assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'slight' }), 'Tested: Small gain');
+  assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'liked' }), 'Tested: Moderate gain');
+  assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'loved' }), 'Confirmed: Big gain');
+});
+
+// A mutated guard that answered only for CONFIRMED (e.g.
+// `cellState(confidence) !== 'CONFIRMED'`) turned every other cell's hover
+// into "…: undefined" and nothing caught it. Every other state's title must
+// be its real stateLabel text, never undefined.
+test('cellLabel is never undefined for a non-CONFIRMED state', () => {
+  assert.equal(cellLabel({ state: 'FAVORITE', reaction: 'favorite' }), 'Favourite — double points');
+  assert.equal(cellLabel({ state: 'PENDING', reaction: null }), 'Reported — awaiting review');
+  assert.equal(cellLabel({ state: 'PREDICTED', reaction: null, predicted: 'positive' }), 'Predicted — not yet confirmed');
+  assert.equal(cellLabel({ state: 'UNTESTED', reaction: null }), 'Not tested yet');
+});
+
+test('the LEGEND gives loved and each below-loved reaction its own row, in order', () => {
+  const labels = Object.fromEntries(LEGEND);
+  assert.equal(labels.CONFIRMED, 'loved');
+  assert.equal(labels.LIKED, 'liked (moderate gain)');
+  assert.equal(labels.SLIGHT, 'slight (small gain)');
+  assert.equal(labels.NONE, 'no support gain');
+  assert.equal(labels.TESTED, undefined, 'the single TESTED row is gone, replaced by LIKED/SLIGHT/NONE');
+  // Object.fromEntries above loses row order, so it can't catch the rows
+  // being reshuffled (e.g. NONE before LIKED). LEGEND's own array order is
+  // what the legend renders in, top to bottom.
+  assert.deepEqual(
+    LEGEND.map(([state]) => state),
+    ['FAVORITE', 'CONFIRMED', 'LIKED', 'SLIGHT', 'NONE', 'CONTESTED', 'PENDING', 'PREDICTED', 'UNTESTED'],
+  );
+});
+
+// A render-only mutation (drawing slight and liked with the cell-confirmed
+// class while still marking none correctly) survived the old test, which only
+// ever exercised the `none` reaction. Looping over all three below-loved
+// reactions closes that gap.
+const BELOW_LOVED_LABEL = { none: 'Tested: No support gain', slight: 'Tested: Small gain', liked: 'Tested: Moderate gain' };
+
+for (const [reaction, cellState_, symbol] of [['none', 'none', '0'], ['slight', 'slight', '–'], ['liked', 'liked', '+']]) {
+  test(`the matrix renders a ${reaction} confirmation as cell-${cellState_} with neither the loved tick nor its tint`, () => {
+    const idx = buildIndex({
+      ...dataset,
+      observations: [{ id: 'o1', gift: 'book', character: 'c1', reaction, date: '2026-09-20' }],
+    });
+    const container = fakeElement('div');
+    renderMatrix(container, idx, { filters: DEFAULT_FILTERS, search: 'book', submissionsEnabled: false });
+
+    const cells = collect(container, (n) => n.tagName === 'TD' && (n.className ?? '').startsWith('cell-'));
+    assert.equal(cells.length, 1, 'the search should narrow this to one gift row and one character column');
+    assert.match(cells[0].className, new RegExp(`\\bcell-${cellState_}\\b`));
+    assert.doesNotMatch(cells[0].className, /\bcell-confirmed\b/);
+    assert.equal(cells[0].textContent, symbol);
+    // The exact title, not just "doesn't look like a denial": this is the one
+    // mutation the display-state title bug (passing the pseudo-state to
+    // cellLabel instead of the raw confidence) would produce -- stateLabel
+    // would fall through to "Not tested yet" for every one of these cells.
+    // Both the title and the aria-label carry it, since a <td>'s title is not
+    // reliably announced by a screen reader.
+    const expectedTitle = `C and Book: ${BELOW_LOVED_LABEL[reaction]}`;
+    assert.equal(cells[0].title, expectedTitle);
+    assert.equal(cells[0].getAttribute('aria-label'), expectedTitle);
+
+    // The key has to explain the symbol the grid just drew, with the same glyph.
+    const swatch = findFirst(container, (n) => (n.className ?? '').includes(`cell-${cellState_}`) && (n.className ?? '').includes('legend-swatch'));
+    assert.ok(swatch, `the legend needs a row for the ${reaction} pseudo-state`);
+    assert.equal(swatch.textContent, symbol, `the ${reaction} legend swatch must show the same glyph as the cell`);
+  });
+}
+
+// A slight result is a real, approved CONFIRMED result, but it is not loved --
+// "Hide untested pairs" filters on confidence.state (which stays CONFIRMED),
+// never on cellState's render-only below-loved pseudo-states, so it must
+// still survive that filter.
+test('"Hide untested pairs" keeps a slight (below-loved) pair, not just a loved one', () => {
   const idx = buildIndex({
     ...dataset,
-    observations: [{ id: 'o1', gift: 'book', character: 'c1', reaction: 'none', date: '2026-09-20' }],
+    observations: [{ id: 'o1', gift: 'book', character: 'c1', reaction: 'slight', date: '2026-09-20' }],
   });
-  const container = fakeElement('div');
-  renderMatrix(container, idx, { filters: DEFAULT_FILTERS, search: 'book', submissionsEnabled: false });
-
-  const cells = collect(container, (n) => n.tagName === 'TD' && (n.className ?? '').startsWith('cell-'));
-  assert.equal(cells.length, 1, 'the search should narrow this to one gift row and one character column');
-  assert.match(cells[0].className, /\bcell-tested\b/);
-  assert.doesNotMatch(cells[0].className, /\bcell-confirmed\b/);
-  assert.equal(cells[0].textContent, SYMBOL.TESTED);
-  assert.doesNotMatch(cells[0].title, /^.*: Confirmed: reported$/);
-
-  // The key has to explain the symbol the grid just drew.
-  const swatch = findFirst(container, (n) => (n.className ?? '').includes('cell-tested') && (n.className ?? '').includes('legend-swatch'));
-  assert.ok(swatch, 'the legend needs a row for the tested pseudo-state');
+  const m = matrixModel(idx, { ...DEFAULT_FILTERS, hideUntested: true }, '');
+  assert.ok(m.gifts.some((g) => g.id === 'book'), '"Hide untested pairs" must not drop a below-loved confirmed pair');
+  assert.equal(m.cellAt('book', 'c1').state, 'CONFIRMED');
 });
 
 // A3: both hunt sections render a name followed by a chip list, so with the
