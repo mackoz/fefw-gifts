@@ -120,13 +120,14 @@ export function createTelemetry({ key, host, location, send, randomId }) → { t
 `assets/js/config.js` gains:
 
 ```js
-export const POSTHOG_KEY = null;          // the fefw-gifts project's phc_ key
+export const POSTHOG_KEY = 'phc_qp9gwfJwRJRPrqZq7bQDwEr5ARv9rPGBAi6ntwWija9T'; // project 631311, US Cloud
 export const POSTHOG_HOST = 'https://t.mackoz.net';
 ```
 
 Null is a supported state, exactly like `WORKER_URL`: telemetry is off and the
-site is unchanged. The key is public by design (it can only write events), so
-committing it is fine once the project exists.
+site is unchanged. The key is public by design (it can only write events), and
+the fefw-gifts project (631311) already exists with "Discard client IP data"
+on and autocapture, heatmaps and web vitals off, as of 2026-09-27.
 
 ### Wiring
 
