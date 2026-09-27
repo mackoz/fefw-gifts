@@ -1,3 +1,5 @@
+import { BELOW_LOVED_REACTIONS } from '../confidence.js';
+
 // PENDING sits between the observed states and the guesses: a real player
 // reported it, but nobody has reviewed it yet.
 const STATE_RANK = { FAVORITE: 0, CONFIRMED: 1, CONTESTED: 2, PENDING: 3, PREDICTED: 4, UNTESTED: 5 };
@@ -19,10 +21,22 @@ export function sortByConfidence(rows) {
 
 // Never describe an unobserved pair as disliked: absence of a match is not
 // evidence. Only a reported reaction may read as a negative.
+//
+// A CONFIRMED pair gets one of two prefixes on the same REACTION_LABEL text,
+// not two different vocabularies: "Confirmed: Big gain" for a loved result,
+// "Tested: <gain>" for a below-loved one (liked, slight or none). Before this,
+// the matrix built its own "Tested: small gain" text out of a separate,
+// lower-cased copy while this function said "Confirmed: Small gain" for the
+// exact same result -- two names and two casings for one report, visible to
+// anyone comparing the character/gift tables against the matrix's hover
+// title. Building both prefixes from this one REACTION_LABEL means the
+// matrix's cellLabel can now just call this function directly.
 export function stateLabel(confidence) {
   switch (confidence.state) {
     case 'FAVORITE': return 'Favourite — double points';
-    case 'CONFIRMED': return `Confirmed: ${REACTION_LABEL[confidence.reaction] ?? 'reported'}`;
+    case 'CONFIRMED':
+      if (BELOW_LOVED_REACTIONS.includes(confidence.reaction)) return `Tested: ${REACTION_LABEL[confidence.reaction]}`;
+      return `Confirmed: ${REACTION_LABEL[confidence.reaction] ?? 'reported'}`;
     case 'CONTESTED': return 'Reports disagree';
     case 'PENDING': return 'Reported — awaiting review';
     case 'PREDICTED': return confidence.predicted === 'negative' ? 'Predicted: probably no gain' : 'Predicted — not yet confirmed';
@@ -118,14 +132,6 @@ export function partitionRows(rows) {
   }
   return { signal, untested };
 }
-
-// The only reactions that count as "below loved" for categoryVerdicts. Kept
-// as an explicit list rather than an `else` catch-all: today `deriveConfidence`
-// only ever puts one of these three reactions on a CONFIRMED pair (a `favorite`
-// reaction becomes its own FAVORITE state, never CONFIRMED), but if a new
-// reaction tier is ever added, it should have to be added here on purpose
-// rather than silently counting as below-loved by falling through an `else`.
-const BELOW_LOVED_REACTIONS = ['liked', 'slight', 'none'];
 
 // A category's verdict for a character rests only on approved observations,
 // read through confidenceFor -- never a stored link and never an unreviewed

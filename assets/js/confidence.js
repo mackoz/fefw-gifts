@@ -5,6 +5,17 @@ export const RARITY_ORDER = { common: 0, uncommon: 1, rare: 2 };
 export const REACTIONS = ['none', 'slight', 'liked', 'loved', 'favorite'];
 export const POSITIVE_REACTIONS = ['slight', 'liked', 'loved', 'favorite'];
 
+// The reactions that land a CONFIRMED pair below the loved result a
+// minmaxing player is after -- real, approved results, just not the big bond
+// gain (a `favorite` reaction never reaches here: deriveConfidence turns it
+// into its own FAVORITE state). Kept as an explicit list rather than an
+// `else` catch-all, so a new reaction tier has to be added here on purpose
+// rather than silently counting as below-loved. Exported once here rather
+// than duplicated per view module (shared.js, character.js, matrix.js and
+// weave.js all import this rather than keeping their own copy) so the four
+// can never drift apart on which reactions count as below loved.
+export const BELOW_LOVED_REACTIONS = ['liked', 'slight', 'none'];
+
 const MIN_RARITY = { 'uncommon-plus': 1, rare: 2 };
 
 function polarityOf(reaction) {

@@ -1,5 +1,6 @@
 import { passesFilters } from '../filters.js';
 import { cellClasses, stateLabel, el, emptyState } from './shared.js';
+import { BELOW_LOVED_REACTIONS } from '../confidence.js';
 
 export function matrixModel(index, filters, search) {
   const characters = index.characters
@@ -24,44 +25,44 @@ export function matrixModel(index, filters, search) {
   return { characters, gifts, cellAt: (giftId, characterId) => cells.get(key(giftId, characterId)) };
 }
 
-export const SYMBOL = { FAVORITE: '★', CONFIRMED: '✔', CONTESTED: '?', PENDING: '•', PREDICTED: '~', UNTESTED: '', TESTED: '–' };
+export const SYMBOL = {
+  FAVORITE: '★', CONFIRMED: '✔', CONTESTED: '?', PENDING: '•', PREDICTED: '~', UNTESTED: '',
+  LIKED: '+', SLIGHT: '–', NONE: '0',
+};
 
 // Players use the guide to minmax bond so they can recruit characters quickly
 // (many gate recruitment behind a bond threshold), so what they're hunting
 // for is a LOVED (or FAVORITE) result specifically, not every positive
 // reaction -- see characterSummary's file comment in character.js, which this
-// matches. TESTED is a render-only pseudo-state: a CONFIRMED pair whose
-// reaction is liked, slight or "none" is a real, approved result, but none of
-// them is the big bond gain a minmaxing player is after. Drawing any of them
-// as ✔ under a legend reading "loved" claims the pair reached that gain, which
-// only a CONFIRMED "loved" reaction (or a FAVORITE) actually does. It is
-// deliberately NOT part of the confidence state machine in confidence.js --
-// nothing derives from it but this view's symbol, tint and title. This now
-// mirrors characterSummary's loved/tested split exactly: CONFIRMED + loved
-// stays the ✔, FAVORITE stays ★, and liked/slight/none together become
-// TESTED, the same three reactions the card's "N tested, none loved yet"
-// bucket counts.
-const BELOW_LOVED_REACTIONS = ['liked', 'slight', 'none'];
+// follows the same loved/below-loved split as. LIKED, SLIGHT and NONE are
+// render-only pseudo-states: a CONFIRMED pair whose reaction is liked, slight
+// or "none" is a real, approved result, but none of them is the big bond gain
+// a minmaxing player is after. Drawing any of them as ✔ under a legend
+// reading "loved" claims the pair reached that gain, which only a CONFIRMED
+// "loved" reaction (or a FAVORITE) actually does. They are deliberately NOT
+// part of the confidence state machine in confidence.js -- nothing derives
+// from them but this view's symbol, tint and title. Earlier these three
+// collapsed into one TESTED pseudo-state; the maintainer asked for liked,
+// slight and no-gain results to look distinct from each other too, not just
+// from loved, so each below-loved reaction now gets its own symbol (+ / – /
+// 0) and legend row instead.
+const CELL_STATE_FOR_REACTION = { liked: 'LIKED', slight: 'SLIGHT', none: 'NONE' };
 
 export function cellState(confidence) {
-  if (confidence.state === 'CONFIRMED' && BELOW_LOVED_REACTIONS.includes(confidence.reaction)) return 'TESTED';
+  if (confidence.state === 'CONFIRMED' && BELOW_LOVED_REACTIONS.includes(confidence.reaction)) {
+    return CELL_STATE_FOR_REACTION[confidence.reaction];
+  }
   return confidence.state;
 }
 
-// stateLabel is keyed on the real states, so handing it the pseudo-state would
-// come back "Not tested yet" -- a denial of the very report this marks. The
-// pseudo-state keeps the exact reaction rather than a single generic label:
-// "no support gain", "small gain" and "moderate gain" are real, distinct
-// reports, and collapsing them to one string would throw away information the
-// hover title is the only place left to carry.
-const CELL_LABEL = {
-  none: 'Tested: no support gain',
-  slight: 'Tested: small gain',
-  liked: 'Tested: moderate gain',
-};
-
+// stateLabel already gives every below-loved reaction its own "Tested: <gain>"
+// text and the loved reaction "Confirmed: Big gain" (see shared.js), so the
+// matrix hover no longer needs a pseudo-state label of its own. It used to:
+// before shared.js's stateLabel and this file's own CELL_LABEL agreed on
+// wording, the matrix said "Tested: small gain" while the character and gift
+// tables said "Confirmed: Small gain" for the exact same slight result --
+// two names and two casings for one report (PR #20 review, M-4).
 export function cellLabel(confidence) {
-  if (cellState(confidence) === 'TESTED') return CELL_LABEL[confidence.reaction];
   return stateLabel(confidence);
 }
 
@@ -80,7 +81,9 @@ export function emptyMatrixMessage(state) {
 export const LEGEND = [
   ['FAVORITE', 'favourite'],
   ['CONFIRMED', 'loved'],
-  ['TESTED', 'tested, below loved'],
+  ['LIKED', 'liked (moderate gain)'],
+  ['SLIGHT', 'slight (small gain)'],
+  ['NONE', 'no support gain'],
   ['CONTESTED', 'reports disagree'],
   ['PENDING', 'reported, awaiting review'],
   ['PREDICTED', 'predicted, unconfirmed'],
@@ -156,8 +159,8 @@ export function render(container, index, state) {
     for (const character of model.characters) {
       const confidence = model.cellAt(gift.id, character.id);
       // Class, symbol and title all go through cellState: leaving any one of
-      // them on confidence.state would draw a ✔, a confirmed tint or a
-      // "Confirmed" tooltip over a no-gain result.
+      // them on confidence.state would draw a ✔, a loved tint or a
+      // "Confirmed" tooltip over a below-loved result.
       const shown = { ...confidence, state: cellState(confidence) };
       // cellClasses, not stateClasses: a badge's inline-flex and ::before symbol
       // would break the table grid and duplicate the symbol already set here.

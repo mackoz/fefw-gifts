@@ -4,6 +4,7 @@ import {
   partitionRows, categoryChips, favouriteGifts, chip,
 } from './shared.js';
 import { voteControl, voteControlModel } from '../vote-control.js';
+import { BELOW_LOVED_REACTIONS } from '../confidence.js';
 
 export function characterRows(index, characterId, filters) {
   const rows = index.gifts
@@ -20,10 +21,6 @@ export function detailStatus(character, filters) {
   if (!character.giftable) return 'not-giftable';
   return 'ok';
 }
-
-// Reactions that are real, approved CONFIRMED results but not the big bond
-// gain a minmaxing player is after -- see characterSummary's comment below.
-const BELOW_LOVED_REACTIONS = ['liked', 'slight', 'none'];
 
 // The strongest true statement about a character, in a fixed order. It never
 // implies a negative: a character nobody has tested reads as untested, not as
@@ -84,13 +81,13 @@ export function characterSummary(index, character) {
   }
   if (favouriteCount > 0) return `${favouriteCount} favourite${favouriteCount === 1 ? '' : 's'}`;
   if (loved > 0) return `${loved} loved`;
-  // "Tested" alone means "no support gain" elsewhere on the site: the
-  // matrix's TESTED pseudo-state and legend, the masthead's "tested with no
-  // support gain" line, and REACTION_LABEL.none all use it that way. A liked
-  // or slight result is real, positive
-  // signal, so a bare "N tested" here would undersell it as N gifts that did
-  // nothing -- the trailing clause says plainly that none of them reached
-  // loved yet.
+  // "Tested" alone means an approved result below loved (liked, slight or
+  // none) everywhere on the site: the matrix's +/–/0 cells and their legend
+  // rows, the masthead's "N more tested below loved" line, and stateLabel's
+  // "Tested: <gain>" text in shared.js all use it the same way. A liked or
+  // slight result is real, positive signal, so a bare "N tested" here would
+  // undersell it as N gifts that did nothing -- the trailing clause says
+  // plainly that none of them reached loved yet.
   if (tested > 0) return `${tested} tested, none loved yet`;
   // CONTESTED and PENDING sit between loved and predicted, and they are
   // the reason this chain cannot simply fall through to "nothing tested yet":

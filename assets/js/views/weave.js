@@ -1,5 +1,5 @@
 // The masthead's state-of-knowledge line: how much of the character x gift
-// grid anyone has actually confirmed.
+// grid is known to be loved.
 //
 // This used to also draw the whole grid as an SVG strip. It was cut: squeezing
 // 80x53 cells into a full-width band stretched each one to roughly 21px by
@@ -8,19 +8,12 @@
 // `marks` survives on the model because it costs nothing and describes the
 // data honestly, but nothing renders it today.
 import { el, favouriteGifts } from './shared.js';
+import { BELOW_LOVED_REACTIONS } from '../confidence.js';
 
 // Every state that carries a signal. UNTESTED is deliberately absent: it is
 // the ground itself, and drawing it would cost thousands of nodes to say
 // nothing.
 const MARKED = new Set(['FAVORITE', 'CONFIRMED', 'CONTESTED', 'PENDING', 'PREDICTED']);
-
-// The only reactions that count as "below loved" on a CONFIRMED pair. Kept as
-// an explicit list, matching BELOW_LOVED_REACTIONS in character.js and
-// matrix.js: today `deriveConfidence` only ever puts one of these three on a
-// CONFIRMED pair (a `favorite` reaction becomes its own FAVORITE state), but a
-// new reaction tier must be added here on purpose rather than silently
-// counting as below-loved.
-const BELOW_LOVED_REACTIONS = ['liked', 'slight', 'none'];
 
 export function weaveModel(index, filters) {
   const characters = index.characters
@@ -49,9 +42,14 @@ export function weaveModel(index, filters) {
       // tested this -- but none of them is the big bond gain a minmaxing
       // player is after, so they are counted separately as "tested below
       // loved" rather than folded into the loved total, which would claim a
-      // gain the report never made. This now mirrors characterSummary in
-      // character.js exactly: its loved count is loved-only, and its
-      // "N tested, none loved yet" bucket is the same three reactions.
+      // gain the report never made. This follows the same loved/below-loved
+      // split as characterSummary in character.js, though the two count at
+      // different granularities: characterSummary excludes a gift from its
+      // loved count when that same gift is already counted as a declared
+      // favourite, so it is not counted twice (see its favouriteIds note).
+      // Here that situation cannot arise per pair -- FAVORITE and CONFIRMED
+      // are mutually exclusive confidence states for one character/gift pair
+      // -- so each pair simply counts once, as loved.
       if (state === 'FAVORITE') loved += 1;
       else if (state === 'CONFIRMED') {
         if (reaction === 'loved') loved += 1;

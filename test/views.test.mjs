@@ -1644,11 +1644,15 @@ test('reportButton and reportChip both emit the .report-button class app.js clos
 // approved report, but none of them is the loved result a minmaxing player is
 // after. Drawing any of them as the loved ✔ under a legend reading "loved"
 // claims a bond gain the report never made -- see matrix.js's file comment,
-// which matches characterSummary's loved/tested split in character.js.
-test('cellState separates a below-loved confirmation from a loved one', () => {
-  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'none' }), 'TESTED');
-  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'slight' }), 'TESTED');
-  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'liked' }), 'TESTED');
+// which follows characterSummary's loved/below-loved split in character.js.
+// Each below-loved reaction now gets its own pseudo-state (LIKED/SLIGHT/NONE)
+// rather than one shared TESTED, so the maintainer's ask -- liked, slight and
+// no-gain results should look different from each other, not just from loved
+// -- is covered directly rather than by a single membership check.
+test('cellState gives liked, slight and no-gain results distinct pseudo-states, and leaves a loved result alone', () => {
+  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'liked' }), 'LIKED');
+  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'slight' }), 'SLIGHT');
+  assert.equal(cellState({ state: 'CONFIRMED', reaction: 'none' }), 'NONE');
   assert.equal(cellState({ state: 'CONFIRMED', reaction: 'loved' }), 'CONFIRMED');
   assert.equal(cellState({ state: 'FAVORITE', reaction: 'favorite' }), 'FAVORITE');
   assert.equal(cellState({ state: 'UNTESTED', reaction: null }), 'UNTESTED');
@@ -1658,48 +1662,74 @@ test('cellState separates a below-loved confirmation from a loved one', () => {
   // An unrecognised reaction on a CONFIRMED pair must not silently count as
   // below-loved -- see the M-9 test on characterSummary's identical list.
   assert.equal(cellState({ state: 'CONFIRMED', reaction: 'unknown-tier' }), 'CONFIRMED');
-  assert.notEqual(SYMBOL.TESTED, SYMBOL.CONFIRMED, 'the pseudo-state needs its own symbol or the split is invisible');
+  // Every below-loved state needs its own symbol, distinct from loved's ✔ and
+  // from each other, or the three-way split is invisible.
+  const symbols = [SYMBOL.LIKED, SYMBOL.SLIGHT, SYMBOL.NONE, SYMBOL.CONFIRMED];
+  assert.equal(new Set(symbols).size, symbols.length, 'liked, slight, none and loved must each have their own symbol');
   // The tooltip must not swing the other way and deny the report it marks.
   assert.doesNotMatch(cellLabel({ state: 'CONFIRMED', reaction: 'none' }), /not tested/i);
 });
 
-test('cellLabel keeps the exact reaction for each below-loved reaction, and stateLabel for loved', () => {
-  assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'none' }), 'Tested: no support gain');
-  assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'slight' }), 'Tested: small gain');
-  assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'liked' }), 'Tested: moderate gain');
+// M-4 fix: cellLabel is now just stateLabel, so the matrix hover and the
+// character/gift tables can never say two different things (or two different
+// casings) about the same reaction again.
+test('cellLabel is stateLabel: one label per result across the matrix and the tables', () => {
+  assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'none' }), 'Tested: No support gain');
+  assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'slight' }), 'Tested: Small gain');
+  assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'liked' }), 'Tested: Moderate gain');
   assert.equal(cellLabel({ state: 'CONFIRMED', reaction: 'loved' }), 'Confirmed: Big gain');
 });
 
-test('the LEGEND labels loved and below-loved correctly', () => {
+// M-7: a mutated guard that answered only for CONFIRMED (e.g.
+// `cellState(confidence) !== 'CONFIRMED'`) turned every other cell's hover
+// into "…: undefined" and nothing caught it. Every other state's title must
+// be its real stateLabel text, never undefined.
+test('cellLabel is never undefined for a non-CONFIRMED state', () => {
+  assert.equal(cellLabel({ state: 'FAVORITE', reaction: 'favorite' }), 'Favourite — double points');
+  assert.equal(cellLabel({ state: 'PENDING', reaction: null }), 'Reported — awaiting review');
+  assert.equal(cellLabel({ state: 'PREDICTED', reaction: null, predicted: 'positive' }), 'Predicted — not yet confirmed');
+  assert.equal(cellLabel({ state: 'UNTESTED', reaction: null }), 'Not tested yet');
+});
+
+test('the LEGEND gives loved and each below-loved reaction its own row', () => {
   const labels = Object.fromEntries(LEGEND);
   assert.equal(labels.CONFIRMED, 'loved');
-  assert.equal(labels.TESTED, 'tested, below loved');
+  assert.equal(labels.LIKED, 'liked (moderate gain)');
+  assert.equal(labels.SLIGHT, 'slight (small gain)');
+  assert.equal(labels.NONE, 'no support gain');
+  assert.equal(labels.TESTED, undefined, 'the single TESTED row is gone, replaced by LIKED/SLIGHT/NONE');
 });
 
-test('the matrix renders a below-loved confirmation with neither the loved tick nor its tint', () => {
-  const idx = buildIndex({
-    ...dataset,
-    observations: [{ id: 'o1', gift: 'book', character: 'c1', reaction: 'none', date: '2026-09-20' }],
+// M-9: a render-only mutation (drawing slight and liked with the cell-confirmed
+// class while still marking none correctly) survived the old test, which only
+// ever exercised the `none` reaction. Looping over all three below-loved
+// reactions closes that gap.
+for (const [reaction, cellState_, symbol] of [['none', 'none', '0'], ['slight', 'slight', '–'], ['liked', 'liked', '+']]) {
+  test(`the matrix renders a ${reaction} confirmation as cell-${cellState_} with neither the loved tick nor its tint`, () => {
+    const idx = buildIndex({
+      ...dataset,
+      observations: [{ id: 'o1', gift: 'book', character: 'c1', reaction, date: '2026-09-20' }],
+    });
+    const container = fakeElement('div');
+    renderMatrix(container, idx, { filters: DEFAULT_FILTERS, search: 'book', submissionsEnabled: false });
+
+    const cells = collect(container, (n) => n.tagName === 'TD' && (n.className ?? '').startsWith('cell-'));
+    assert.equal(cells.length, 1, 'the search should narrow this to one gift row and one character column');
+    assert.match(cells[0].className, new RegExp(`\\bcell-${cellState_}\\b`));
+    assert.doesNotMatch(cells[0].className, /\bcell-confirmed\b/);
+    assert.equal(cells[0].textContent, symbol);
+    assert.doesNotMatch(cells[0].title, /^.*: Confirmed: reported$/);
+
+    // The key has to explain the symbol the grid just drew.
+    const swatch = findFirst(container, (n) => (n.className ?? '').includes(`cell-${cellState_}`) && (n.className ?? '').includes('legend-swatch'));
+    assert.ok(swatch, `the legend needs a row for the ${reaction} pseudo-state`);
   });
-  const container = fakeElement('div');
-  renderMatrix(container, idx, { filters: DEFAULT_FILTERS, search: 'book', submissionsEnabled: false });
-
-  const cells = collect(container, (n) => n.tagName === 'TD' && (n.className ?? '').startsWith('cell-'));
-  assert.equal(cells.length, 1, 'the search should narrow this to one gift row and one character column');
-  assert.match(cells[0].className, /\bcell-tested\b/);
-  assert.doesNotMatch(cells[0].className, /\bcell-confirmed\b/);
-  assert.equal(cells[0].textContent, SYMBOL.TESTED);
-  assert.doesNotMatch(cells[0].title, /^.*: Confirmed: reported$/);
-
-  // The key has to explain the symbol the grid just drew.
-  const swatch = findFirst(container, (n) => (n.className ?? '').includes('cell-tested') && (n.className ?? '').includes('legend-swatch'));
-  assert.ok(swatch, 'the legend needs a row for the tested pseudo-state');
-});
+}
 
 // A slight result is a real, approved CONFIRMED result, but it is not loved --
 // "Hide untested pairs" filters on confidence.state (which stays CONFIRMED),
-// never on cellState's render-only TESTED pseudo-state, so it must still
-// survive that filter.
+// never on cellState's render-only below-loved pseudo-states, so it must
+// still survive that filter.
 test('"Hide untested pairs" keeps a slight (below-loved) pair, not just a loved one', () => {
   const idx = buildIndex({
     ...dataset,
