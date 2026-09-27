@@ -1146,5 +1146,19 @@
     "character": "dadao",
     "reaction": "loved",
     "date": "2026-09-27"
+  },
+  {
+    "id": "432af704-4b9f-47be-8768-a6bcf2338a8a",
+    "gift": "yarc-milk",
+    "character": "peter",
+    "reaction": "loved",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "f8e5b173-68cf-43e8-a22d-e9f5dc897cd0",
+    "gift": "jamel-milk",
+    "character": "peter",
+    "reaction": "loved",
+    "date": "2026-09-27"
   }
 ]
