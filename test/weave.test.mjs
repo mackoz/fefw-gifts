@@ -144,9 +144,76 @@ test('the summary omits the third sentence when loved is nonzero but tested is z
   assert.doesNotMatch(summary, /tested below loved/);
 });
 
+// Groups raw observations by (character, gift) -- restricted to giftable
+// characters -- and tallies each PAIR once, the way deriveConfidence's own
+// CONFIRMED/CONTESTED split works, but computed straight from the raw
+// observations array rather than through confidenceFor/buildIndex, so the
+// real-data test below stays an independent cross-check rather than
+// re-testing the code it's meant to verify. Two players reporting the same
+// pair with the same reaction must count once, not twice -- deriveConfidence
+// collapses `reactions` to a Set before deciding CONFIRMED, so counting raw
+// observations one-for-one would overcount any pair with more than one
+// report. A pair with differing reactions is CONTESTED in the real model and
+// counts toward neither loved nor tested, so it must count toward neither
+// here either, or this "independent" tally would disagree with weaveModel by
+// design the moment the data ever contains a genuine disagreement.
+function tallyPairsByReaction(observations, giftableIds) {
+  const reactionsByPair = new Map();
+  for (const o of observations) {
+    if (!giftableIds.has(o.character)) continue;
+    const key = `${o.character}\u0000${o.gift}`;
+    if (!reactionsByPair.has(key)) reactionsByPair.set(key, new Set());
+    reactionsByPair.get(key).add(o.reaction);
+  }
+
+  let loved = 0;
+  let tested = 0;
+  for (const reactions of reactionsByPair.values()) {
+    if (reactions.size > 1) continue; // Contested: counts toward neither bucket.
+    const [reaction] = reactions;
+    if (reaction === 'loved' || reaction === 'favorite') loved += 1;
+    else if (reaction === 'liked' || reaction === 'slight' || reaction === 'none') tested += 1;
+  }
+  return { loved, tested };
+}
+
+test('tallyPairsByReaction counts a duplicated pair once and a contested pair not at all', () => {
+  const giftableIds = new Set(['c1']);
+  // Two players independently reported the same pair with the same reaction:
+  // must count once, not twice.
+  const duplicated = [
+    { id: 'o1', character: 'c1', gift: 'book', reaction: 'loved' },
+    { id: 'o2', character: 'c1', gift: 'book', reaction: 'loved' },
+  ];
+  assert.deepEqual(tallyPairsByReaction(duplicated, giftableIds), { loved: 1, tested: 0 });
+
+  // Two players disagree on the same pair: contested, counts toward neither.
+  const contested = [
+    { id: 'o1', character: 'c1', gift: 'book', reaction: 'loved' },
+    { id: 'o2', character: 'c1', gift: 'book', reaction: 'none' },
+  ];
+  assert.deepEqual(tallyPairsByReaction(contested, giftableIds), { loved: 0, tested: 0 });
+
+  // A non-giftable character's observations never count.
+  const notGiftable = [{ id: 'o1', character: 'c2', gift: 'book', reaction: 'loved' }];
+  assert.deepEqual(tallyPairsByReaction(notGiftable, giftableIds), { loved: 0, tested: 0 });
+
+  // Two distinct pairs, one loved and one tested, tally independently.
+  const mixed = [
+    { id: 'o1', character: 'c1', gift: 'book', reaction: 'loved' },
+    { id: 'o2', character: 'c1', gift: 'brew', reaction: 'slight' },
+  ];
+  assert.deepEqual(tallyPairsByReaction(mixed, giftableIds), { loved: 1, tested: 1 });
+});
+
 // Cross-checks the masthead against independently-derived counts from the
 // real dataset, rather than hard-coding today's numbers -- those numbers will
-// keep changing as more observations land.
+// keep changing as more observations land. Tallied per pair (see
+// tallyPairsByReaction above), not per observation: a per-observation count
+// would double-count a pair two players both reported, and would count a
+// contested pair's observations as if they were agreement, either of which
+// would fail this test on perfectly valid new data and block that data PR's
+// deploy (see CLAUDE.md's "Deployment is gated on validation").
 test('weaveSummary on the real dataset matches counts derived independently from observations.json', async () => {
   const dataset = await loadDataset('data');
   const idx = buildIndex(dataset);
@@ -154,13 +221,7 @@ test('weaveSummary on the real dataset matches counts derived independently from
   const model = weaveModel(idx, filters);
 
   const giftableIds = new Set(dataset.characters.filter((c) => c.giftable).map((c) => c.id));
-  let expectedLoved = 0;
-  let expectedTested = 0;
-  for (const o of dataset.observations) {
-    if (!giftableIds.has(o.character)) continue;
-    if (o.reaction === 'loved' || o.reaction === 'favorite') expectedLoved += 1;
-    else if (o.reaction === 'liked' || o.reaction === 'slight' || o.reaction === 'none') expectedTested += 1;
-  }
+  const { loved: expectedLoved, tested: expectedTested } = tallyPairsByReaction(dataset.observations, giftableIds);
 
   assert.equal(model.loved, expectedLoved);
   assert.equal(model.tested, expectedTested);
