@@ -33,19 +33,17 @@ export const SYMBOL = {
 // Players use the guide to minmax bond so they can recruit characters quickly
 // (many gate recruitment behind a bond threshold), so what they're hunting
 // for is a LOVED (or FAVORITE) result specifically, not every positive
-// reaction -- see characterSummary's file comment in character.js, which this
-// follows the same loved/below-loved split as. LIKED, SLIGHT and NONE are
-// render-only pseudo-states: a CONFIRMED pair whose reaction is liked, slight
-// or "none" is a real, approved result, but none of them is the big bond gain
-// a minmaxing player is after. Drawing any of them as ✔ under a legend
-// reading "loved" claims the pair reached that gain, which only a CONFIRMED
-// "loved" reaction (or a FAVORITE) actually does. They are deliberately NOT
-// part of the confidence state machine in confidence.js -- nothing derives
-// from them but this view's symbol, tint and title. Earlier these three
-// collapsed into one TESTED pseudo-state; the maintainer asked for liked,
-// slight and no-gain results to look distinct from each other too, not just
-// from loved, so each below-loved reaction now gets its own symbol (+ / – /
-// 0) and legend row instead.
+// reaction -- it follows the same loved/below-loved split as characterSummary
+// in character.js. LIKED, SLIGHT and NONE are render-only pseudo-states: a
+// CONFIRMED pair whose reaction is liked, slight or "none" is a real,
+// approved result, but none of them is the big bond gain a minmaxing player
+// is after. Drawing any of them as ✔ under a legend reading "loved" claims
+// the pair reached that gain, which only a CONFIRMED "loved" reaction (or a
+// FAVORITE) actually does. They are deliberately NOT part of the confidence
+// state machine in confidence.js -- nothing derives from them but this view's
+// symbol, tint and title. Each below-loved reaction gets its own symbol (+ /
+// – / 0) and legend row, so they read differently from each other as well as
+// from loved.
 const CELL_STATE_FOR_REACTION = { liked: 'LIKED', slight: 'SLIGHT', none: 'NONE' };
 
 export function cellState(confidence) {
@@ -55,13 +53,8 @@ export function cellState(confidence) {
   return confidence.state;
 }
 
-// stateLabel already gives every below-loved reaction its own "Tested: <gain>"
-// text and the loved reaction "Confirmed: Big gain" (see shared.js), so the
-// matrix hover no longer needs a pseudo-state label of its own. It used to:
-// before shared.js's stateLabel and this file's own CELL_LABEL agreed on
-// wording, the matrix said "Tested: small gain" while the character and gift
-// tables said "Confirmed: Small gain" for the exact same slight result --
-// two names and two casings for one report (PR #20 review, M-4).
+// cellLabel is stateLabel: the matrix hover and the tables share one label
+// per result.
 export function cellLabel(confidence) {
   return stateLabel(confidence);
 }
@@ -158,14 +151,22 @@ export function render(container, index, state) {
     row.append(el('td', 'lead-in'));
     for (const character of model.characters) {
       const confidence = model.cellAt(gift.id, character.id);
-      // Class, symbol and title all go through cellState: leaving any one of
-      // them on confidence.state would draw a ✔, a loved tint or a
-      // "Confirmed" tooltip over a below-loved result.
+      // Class and symbol go through cellState: leaving either on
+      // confidence.state would draw a ✔ or a loved tint over a below-loved
+      // result. The title must use the raw confidence, not `shown` --
+      // stateLabel only knows the real states, so handing it the display-only
+      // LIKED/SLIGHT/NONE state would fall through to "Not tested yet",
+      // denying the very report the cell marks.
       const shown = { ...confidence, state: cellState(confidence) };
       // cellClasses, not stateClasses: a badge's inline-flex and ::before symbol
       // would break the table grid and duplicate the symbol already set here.
       const cell = el('td', cellClasses(shown), SYMBOL[shown.state]);
-      cell.title = `${character.name} and ${gift.name}: ${cellLabel(confidence)}`;
+      const label = `${character.name} and ${gift.name}: ${cellLabel(confidence)}`;
+      cell.title = label;
+      // title on a <td> is not reliably announced, and the cell's accessible
+      // name would otherwise be just its glyph -- "plus", "en dash" (often
+      // silent) or "zero", which can read as untested or as a dislike.
+      cell.setAttribute('aria-label', label);
       row.append(cell);
     }
     body.append(row);

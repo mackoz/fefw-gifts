@@ -12,10 +12,26 @@ const REACTION_LABEL = {
   favorite: 'Double points',
 };
 
+// A secondary key within CONFIRMED only: loved, then liked, then slight, then
+// none, so a "Tested: ..." row never sits above a "Confirmed: Big gain" row
+// on a character or gift page now that the two carry different labels. Every
+// other state shares rank 0 here, so this never affects their order relative
+// to each other -- STATE_RANK alone already does that.
+const REACTION_RANK = { loved: 0, liked: 1, slight: 2, none: 3 };
+
+function reactionRank(confidence) {
+  if (confidence.state !== 'CONFIRMED') return 0;
+  return REACTION_RANK[confidence.reaction] ?? 4;
+}
+
 export function sortByConfidence(rows) {
   return rows
     .map((row, i) => ({ row, i }))
-    .sort((a, b) => (STATE_RANK[a.row.confidence.state] - STATE_RANK[b.row.confidence.state]) || (a.i - b.i))
+    .sort((a, b) => (
+      (STATE_RANK[a.row.confidence.state] - STATE_RANK[b.row.confidence.state])
+      || (reactionRank(a.row.confidence) - reactionRank(b.row.confidence))
+      || (a.i - b.i)
+    ))
     .map(({ row }) => row);
 }
 
@@ -24,13 +40,7 @@ export function sortByConfidence(rows) {
 //
 // A CONFIRMED pair gets one of two prefixes on the same REACTION_LABEL text,
 // not two different vocabularies: "Confirmed: Big gain" for a loved result,
-// "Tested: <gain>" for a below-loved one (liked, slight or none). Before this,
-// the matrix built its own "Tested: small gain" text out of a separate,
-// lower-cased copy while this function said "Confirmed: Small gain" for the
-// exact same result -- two names and two casings for one report, visible to
-// anyone comparing the character/gift tables against the matrix's hover
-// title. Building both prefixes from this one REACTION_LABEL means the
-// matrix's cellLabel can now just call this function directly.
+// "Tested: <gain>" for a below-loved one (liked, slight or none).
 export function stateLabel(confidence) {
   switch (confidence.state) {
     case 'FAVORITE': return 'Favourite — double points';
@@ -51,8 +61,17 @@ export function el(tag, className, text) {
   return node;
 }
 
+// A CONFIRMED pair whose reaction is below loved gets its own class
+// (state-liked / state-slight / state-none), not state-confirmed: the badge's
+// text already says "Tested: ..." for these (see stateLabel above), and
+// state-confirmed draws the loved tick and tint (style.css) -- pairing that
+// with a "Tested" label would claim the pair reached the loved gain it did
+// not. CONFIRMED+loved keeps state-confirmed; every other state is unchanged.
 export function stateClasses(confidence) {
-  const classes = [`state-${confidence.state.toLowerCase()}`];
+  const base = confidence.state === 'CONFIRMED' && BELOW_LOVED_REACTIONS.includes(confidence.reaction)
+    ? `state-${confidence.reaction}`
+    : `state-${confidence.state.toLowerCase()}`;
+  const classes = [base];
   if (confidence.provenance) classes.push(`provenance-${confidence.provenance}`);
   if (confidence.isException) classes.push('is-exception');
   if (confidence.rarityMismatch) classes.push('rarity-mismatch');

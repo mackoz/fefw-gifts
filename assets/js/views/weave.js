@@ -43,13 +43,9 @@ export function weaveModel(index, filters) {
       // player is after, so they are counted separately as "tested below
       // loved" rather than folded into the loved total, which would claim a
       // gain the report never made. This follows the same loved/below-loved
-      // split as characterSummary in character.js, though the two count at
-      // different granularities: characterSummary excludes a gift from its
-      // loved count when that same gift is already counted as a declared
-      // favourite, so it is not counted twice (see its favouriteIds note).
-      // Here that situation cannot arise per pair -- FAVORITE and CONFIRMED
-      // are mutually exclusive confidence states for one character/gift pair
-      // -- so each pair simply counts once, as loved.
+      // split as characterSummary in character.js. Here pairs are counted by
+      // confidence state alone; a declared favourite only feeds the
+      // favourites sentence, so each pair still counts once.
       if (state === 'FAVORITE') loved += 1;
       else if (state === 'CONFIRMED') {
         if (reaction === 'loved') loved += 1;

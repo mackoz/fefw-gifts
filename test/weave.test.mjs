@@ -177,12 +177,11 @@ function tallyPairsByReaction(observations, giftableIds) {
   return { loved, tested };
 }
 
-// M-6 (PR #20 review): mutating the guard from
-// `else if (BELOW_LOVED_REACTIONS.includes(reaction)) tested += 1;` to a bare
-// `else tested += 1;` survived every other test here, because today's real
-// data (and validate.mjs) never produces an unrecognised reaction on a
-// CONFIRMED pair. A stub index sidesteps that and exercises the branch
-// directly.
+// Guards the `BELOW_LOVED_REACTIONS.includes(reaction)` check specifically:
+// widening it to a bare `else tested += 1;` would count any non-loved
+// CONFIRMED reaction as tested, but real data (and validate.mjs) never
+// produces an unrecognised reaction, so no test built from real data can
+// reach this branch. A stub index sidesteps that and exercises it directly.
 test('an unknown reaction on a CONFIRMED pair counts as neither loved nor tested', () => {
   const stubIndex = {
     characters: [{ id: 'c1', giftable: true, spoiler: false, favorites: [] }],
@@ -194,13 +193,16 @@ test('an unknown reaction on a CONFIRMED pair counts as neither loved nor tested
   assert.equal(model.tested, 0);
 });
 
-// M-8 (PR #20 review): mutating `n()`'s `toLocaleString('en-GB')` to
-// `String(value)` survived, because the real-data test's numbers (156, 23)
-// have no thousands separator to lose. A model whose count actually crosses
-// 1,000 closes that gap.
+// `n()`'s `toLocaleString('en-GB')` formats every count it touches, not just
+// the loved one -- real data's numbers (156, 23) have no thousands separator
+// to lose, so only a model whose counts actually cross 1,000 can catch a
+// regression here.
 test('weaveSummary formats large counts with a thousands separator', () => {
-  const summary = weaveSummary({ loved: 1234, pairs: 6048, tested: 0, favouritesFound: 0, favouritesTotal: 2 });
-  assert.match(summary, /^1,234 of 6,048 pairs loved\./);
+  const loved = weaveSummary({ loved: 1234, pairs: 6048, tested: 0, favouritesFound: 0, favouritesTotal: 2 });
+  assert.match(loved, /^1,234 of 6,048 pairs loved\./);
+
+  const tested = weaveSummary({ loved: 1, pairs: 6048, tested: 1234, favouritesFound: 0, favouritesTotal: 2 });
+  assert.match(tested, /1,234 more tested below loved\.$/);
 });
 
 test('tallyPairsByReaction counts a duplicated pair once and a contested pair not at all', () => {
@@ -232,6 +234,47 @@ test('tallyPairsByReaction counts a duplicated pair once and a contested pair no
   assert.deepEqual(tallyPairsByReaction(mixed, giftableIds), { loved: 1, tested: 1 });
 });
 
+// A character counts as a known favourite the same way favouriteGifts in
+// shared.js does, but computed straight from the raw dataset: a declared
+// favourite naming a real gift, or a pair whose observations are all
+// 'favorite' (a pair with a mixed reaction is CONTESTED in the real model,
+// never FAVORITE, so it must not count here either). Restricted to the same
+// admitted characters as the loved/tested tally.
+function realFavouritesFound(dataset, admittedIds) {
+  const giftIds = new Set(dataset.gifts.map((g) => g.id));
+  const reactionsByPair = new Map();
+  for (const o of dataset.observations) {
+    if (!admittedIds.has(o.character)) continue;
+    const key = `${o.character}\u0000${o.gift}`;
+    if (!reactionsByPair.has(key)) reactionsByPair.set(key, new Set());
+    reactionsByPair.get(key).add(o.reaction);
+  }
+  const found = new Set();
+  for (const [key, reactions] of reactionsByPair) {
+    if (reactions.size === 1 && reactions.has('favorite')) found.add(key.split('\u0000')[0]);
+  }
+  for (const c of dataset.characters) {
+    if (admittedIds.has(c.id) && (c.favorites ?? []).some((id) => giftIds.has(id))) found.add(c.id);
+  }
+  return found.size;
+}
+
+// Builds the exact three-sentence string weaveSummary produces, from plain
+// counts, so the real-data test below can compare the whole sentence rather
+// than a fragment of it.
+function expectedSummary({ loved, pairs, favouritesFound, favouritesTotal, tested }) {
+  const n = (value) => value.toLocaleString('en-GB');
+  const pairsSentence = loved === 0
+    ? `No pair loved yet, out of ${n(pairs)}.`
+    : `${n(loved)} of ${n(pairs)} pairs loved.`;
+  const favouritesSentence = favouritesFound === 0
+    ? `${n(favouritesTotal)} favourite${favouritesTotal === 1 ? '' : 's'} still unfound.`
+    : `${n(favouritesFound)} of ${n(favouritesTotal)} favourite${favouritesTotal === 1 ? '' : 's'} found.`;
+  return tested > 0
+    ? `${pairsSentence} ${favouritesSentence} ${n(tested)} more tested below loved.`
+    : `${pairsSentence} ${favouritesSentence}`;
+}
+
 // Cross-checks the masthead against independently-derived counts from the
 // real dataset, rather than hard-coding today's numbers -- those numbers will
 // keep changing as more observations land. Tallied per pair (see
@@ -239,18 +282,14 @@ test('tallyPairsByReaction counts a duplicated pair once and a contested pair no
 // would double-count a pair two players both reported, and would count a
 // contested pair's observations as if they were agreement, either of which
 // would fail this test on perfectly valid new data and block that data PR's
-// deploy (see CLAUDE.md's "Deployment is gated on validation").
-//
-// M-10 (PR #20 review), two fixes:
-// 1. Runs with DEFAULT_FILTERS (hideSpoilers: true) -- the masthead's actual
-//    default view -- rather than hideSpoilers: false, so this cross-checks
-//    what players see first, not a view nothing else on the page defaults to.
-//    The independent tally is restricted the same way weaveModel restricts
-//    its own characters: giftable AND not spoiler-hidden.
-// 2. The old `new RegExp(`${expectedLoved} of `)` was unanchored: "8 of "
-//    also matches inside "158 of" or "8 of 55 favourites". Anchored to the
-//    start of the string with `^`.
-test('weaveSummary on the real dataset (default filters) matches counts derived independently from observations.json', async () => {
+// deploy (see CLAUDE.md's "Deployment is gated on validation"). Runs with
+// DEFAULT_FILTERS (hideSpoilers: true) -- the masthead's actual default view.
+// Compares the whole rendered sentence against one built independently
+// (expectedSummary above), including the favourites count and the "No pair
+// loved yet" / third-sentence branches, rather than matching a fragment of
+// it -- a fragment match can pass on a coincidental substring, or on a
+// summary whose favourites sentence is simply wrong.
+test('weaveSummary on the real dataset (default filters) matches the whole sentence built independently from the data', async () => {
   const dataset = await loadDataset('data');
   const idx = buildIndex(dataset);
   const model = weaveModel(idx, DEFAULT_FILTERS);
@@ -262,15 +301,20 @@ test('weaveSummary on the real dataset (default filters) matches counts derived 
       .map((c) => c.id),
   );
   const { loved: expectedLoved, tested: expectedTested } = tallyPairsByReaction(dataset.observations, admittedIds);
+  const expectedFavouritesFound = realFavouritesFound(dataset, admittedIds);
 
   assert.equal(model.loved, expectedLoved);
   assert.equal(model.tested, expectedTested);
+  assert.equal(model.favouritesFound, expectedFavouritesFound);
+  assert.equal(model.pairs, admittedIds.size * dataset.gifts.length);
+  assert.equal(model.favouritesTotal, admittedIds.size);
 
-  const summary = weaveSummary(model);
-  assert.match(summary, new RegExp(`^${expectedLoved.toLocaleString('en-GB')} of `));
-  if (expectedTested > 0) {
-    assert.match(summary, new RegExp(`${expectedTested.toLocaleString('en-GB')} more tested below loved\\.$`));
-  } else {
-    assert.doesNotMatch(summary, /tested below loved/);
-  }
+  const expected = expectedSummary({
+    loved: expectedLoved,
+    tested: expectedTested,
+    favouritesFound: expectedFavouritesFound,
+    favouritesTotal: admittedIds.size,
+    pairs: admittedIds.size * dataset.gifts.length,
+  });
+  assert.equal(weaveSummary(model), expected);
 });

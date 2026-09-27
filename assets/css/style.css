@@ -324,6 +324,9 @@ main#view > p,
 
 .state-favorite,
 .state-confirmed,
+.state-liked,
+.state-slight,
+.state-none,
 .state-contested,
 .state-pending,
 .state-predicted,
@@ -356,6 +359,19 @@ main#view > p,
   border-color: currentColor;
 }
 .state-confirmed::before { content: "\2713"; }
+
+/* A below-loved result (liked, slight or none) is real, so it still gets a
+   pill -- but none of them is the loved gain a minmaxing player is after, so
+   none may borrow the loved tint, background or tick. Liked keeps the
+   confirmed ink (no background) since it is the strongest of the three;
+   slight and none share the muted ink. Each glyph matches the Matrix's own
+   +/–/0 for that reaction. */
+.state-liked  { color: var(--confirmed); background: transparent; border-color: currentColor; }
+.state-liked::before { content: "+"; }
+.state-slight { color: var(--muted); background: transparent; border-color: currentColor; }
+.state-slight::before { content: "\2013"; }
+.state-none   { color: var(--muted); background: transparent; border-color: currentColor; }
+.state-none::before { content: "0"; }
 
 .state-contested {
   color: var(--contested);
