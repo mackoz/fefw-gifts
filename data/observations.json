@@ -1160,5 +1160,96 @@
     "character": "peter",
     "reaction": "loved",
     "date": "2026-09-27"
+  },
+  {
+    "id": "0afa440f-655d-4d93-93ac-994ca4e60382",
+    "gift": "yarc-milk",
+    "character": "esmeralda",
+    "reaction": "slight",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "c8dd9124-ee11-4850-bdab-c2d6ec9c47f0",
+    "gift": "simple-pastries",
+    "character": "esmeralda",
+    "reaction": "loved",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "3ce784eb-f16f-4f95-97ae-06b988563ee4",
+    "gift": "mellow-pastries",
+    "character": "esmeralda",
+    "reaction": "loved",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "9c7703de-4dc6-4d3d-8e1b-ea369a5a8a78",
+    "gift": "garum",
+    "character": "esmeralda",
+    "reaction": "loved",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "c8e2d77c-7178-44d3-bc76-fba9e57eceb4",
+    "gift": "home-recipe-book",
+    "character": "esmeralda",
+    "reaction": "loved",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "d2809cae-0954-4c3a-b5df-8a5d2c81de59",
+    "gift": "young-ghosh",
+    "character": "esmeralda",
+    "reaction": "slight",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "480c7926-abf0-4f76-8a6a-1ac610648b7e",
+    "gift": "mature-shosh",
+    "character": "esmeralda",
+    "reaction": "slight",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "982041f0-ee40-4f9d-bf87-ffd8cc7889e3",
+    "gift": "common-coffee",
+    "character": "esmeralda",
+    "reaction": "slight",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "fd6b042f-53f3-48ce-a76f-f46995ef124d",
+    "gift": "select-coffee",
+    "character": "esmeralda",
+    "reaction": "slight",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "bc6f7e2b-39de-4ee5-ac0c-81a5fb89b703",
+    "gift": "pickled-vegetables",
+    "character": "esmeralda",
+    "reaction": "slight",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "def347cb-23e3-436e-84eb-fb1425bb6160",
+    "gift": "kitten-figurine",
+    "character": "esmeralda",
+    "reaction": "loved",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "acae4ebe-105f-4b22-91e0-c6fd3b9f1bfd",
+    "gift": "eastern-love-story",
+    "character": "esmeralda",
+    "reaction": "loved",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "c5a2523e-4670-4451-b763-8db6c65d3c8b",
+    "gift": "everyday-scenes",
+    "character": "esmeralda",
+    "reaction": "slight",
+    "date": "2026-09-27"
   }
 ]
