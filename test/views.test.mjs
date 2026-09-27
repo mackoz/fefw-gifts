@@ -603,6 +603,28 @@ test('a mixed verdict replaces a refuted link rather than being dropped', () => 
   ]);
 });
 
+// M-9 (PR #19 review): today a CONFIRMED pair only ever carries `liked`,
+// `slight` or `none` -- `deriveConfidence` turns a `favorite` reaction into
+// its own FAVORITE state -- so treating "any non-loved CONFIRMED reaction"
+// as below-loved happens to agree with the explicit list. If a new reaction
+// tier is ever added without updating this list, it must NOT silently count
+// as below-loved. `unknown-tier` stands in for that not-yet-invented tier:
+// it bypasses the report form and validate.mjs (which would reject it), the
+// same way this file's other fixtures construct data directly.
+test('an unrecognised CONFIRMED reaction is neither loved nor below-loved', () => {
+  const idx = buildIndex({
+    ...mixedBase,
+    characters: [testedCharacter()],
+    observations: [
+      { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'unknown-tier', date: '2026-09-23' },
+    ],
+  });
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
+    { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
+  ]);
+});
+
 // Confirmed leads, then mixed, then whatever stored links are left over --
 // each group sorted by categories.json position, never by insertion order.
 test('categoryChips orders confirmed chips, then mixed chips, then stored links', () => {
@@ -637,6 +659,39 @@ test('categoryChips orders confirmed chips, then mixed chips, then stored links'
     { id: 'tea', state: 'mixed' },
     { id: 'coffee', state: 'guide' },
   ]);
+});
+
+// M-10 (PR #19 review): the ordering test above has only one mixed chip, so
+// dropping `.sort(byPosition)` on mixed chips specifically would still pass
+// it. Here `tea`'s gifts come first in `index.gifts` (and so would be the
+// first category the loop encounters and adds to the `loved`/`mixed` sets),
+// but `tea` sits AFTER `poems` in categories.json -- so relying on gift or
+// Set-insertion order instead of `.sort(byPosition)` would render
+// [tea, poems], the wrong way round.
+test('mixed chips are sorted by categories.json position, not by gift or insertion order', () => {
+  const orderedDataset = {
+    categories: [
+      { id: 'poems', label: 'Poems', inGameDescriptor: null, aliases: [] },
+      { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
+    ],
+    gifts: [
+      { id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'common', description: '', sources: [] },
+      { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
+      { id: 'poem-a', name: 'Poem A', category: 'poems', rarity: 'common', description: '', sources: [] },
+      { id: 'poem-b', name: 'Poem B', category: 'poems', rarity: 'common', description: '', sources: [] },
+    ],
+    characters: [testedCharacter()],
+    observations: [
+      { id: 'o1', character: 'p1', gift: 'green-tea', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o2', character: 'p1', gift: 'chamomile', reaction: 'slight', date: '2026-09-23' },
+      { id: 'o3', character: 'p1', gift: 'poem-a', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o4', character: 'p1', gift: 'poem-b', reaction: 'liked', date: '2026-09-23' },
+    ],
+    sources: [],
+  };
+  const idx = buildIndex(orderedDataset);
+  const chips = categoryChips(idx, idx.byCharacterId.get('p1'));
+  assert.deepEqual(chips.map((c) => c.id), ['poems', 'tea']);
 });
 
 // favouriteGifts mirrors favoritesModel's found-list union, one character at
@@ -751,13 +806,13 @@ test('reportChip carries the report-button class and both dataset ids', () => {
 test('characterSummary reports the strongest true thing, never a negative', () => {
   const idx = buildIndex(dataset);
   // The fixture's c1 has one favourite observation on `brew`.
-  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite found');
+  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite');
 });
 
 test('characterSummary counts a declared favourite the Favourites tab would count', () => {
   const characters = [{ ...dataset.characters[0], favorites: ['rock'] }];
   const idx = buildIndex({ ...dataset, characters, observations: [] });
-  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite found');
+  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite');
 });
 
 test('characterSummary falls back through loved, tested, predicted, then nothing', () => {
@@ -775,7 +830,7 @@ test('characterSummary falls back through loved, tested, predicted, then nothing
     characters: [base],
     observations: [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'liked', date: '2026-09-21' }],
   });
-  assert.equal(characterSummary(tested, tested.byCharacterId.get('c1')), '1 tested');
+  assert.equal(characterSummary(tested, tested.byCharacterId.get('c1')), '1 tested, none loved yet');
 
   const loved = buildIndex({
     ...dataset,
@@ -823,7 +878,7 @@ test('characterSummary counts liked and slight together as "N tested" when nothi
       { id: 'o2', character: 'c1', gift: 'brew', reaction: 'slight', date: '2026-09-23' },
     ],
   });
-  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '2 tested');
+  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '2 tested, none loved yet');
 });
 
 // A favourite is about one specific item; a loved count is about how many
@@ -843,6 +898,49 @@ test('characterSummary reports a favourite alongside a loved count, not instead 
     ],
   });
   assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite, 2 loved');
+});
+
+// M-6 (PR #19 review): a gift can be both a declared favourite AND carry its
+// own approved `loved` observation -- contradictory data the validator
+// doesn't cross-check. Before this fix it counted in both buckets, reading
+// "1 favourite, 1 loved" for what is really one item.
+test('characterSummary does not double-count a loved gift that is also a favourite', () => {
+  const idx = buildIndex({
+    ...dataset,
+    characters: [{ ...dataset.characters[0], favorites: ['book'] }],
+    observations: [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-23' }],
+  });
+  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite');
+});
+
+// M-10 (PR #19 review): "2 favourites, N loved" pluralisation is never
+// exercised elsewhere, so hard-coding the singular "favourite" would survive
+// every other test here.
+test('characterSummary pluralises "favourites" alongside a loved count', () => {
+  const idx = buildIndex({
+    ...dataset,
+    gifts: [
+      ...dataset.gifts,
+      { id: 'tome', name: 'Tome', category: 'books', rarity: 'common', description: '', sources: [] },
+    ],
+    characters: [{ ...dataset.characters[0], favorites: ['rock'] }],
+    observations: [
+      { id: 'o1', character: 'c1', gift: 'brew', reaction: 'favorite', date: '2026-09-20' },
+      { id: 'o2', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o3', character: 'c1', gift: 'tome', reaction: 'loved', date: '2026-09-23' },
+    ],
+  });
+  // Favourites: observed `brew` (FAVORITE) plus declared `rock` -- two distinct items.
+  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '2 favourites, 2 loved');
+});
+
+test('characterSummary pluralises "favourites" with no loved results either', () => {
+  const idx = buildIndex({
+    ...dataset,
+    characters: [{ ...dataset.characters[0], favorites: ['rock'] }],
+    observations: [{ id: 'o1', character: 'c1', gift: 'brew', reaction: 'favorite', date: '2026-09-20' }],
+  });
+  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '2 favourites');
 });
 
 test('characterIndexModel hides non-giftable characters and honours search', () => {
@@ -968,6 +1066,69 @@ test('the "Reported to like" list carries no favourite chips, even when the page
   const reportedToLike = lists[1];
   const hasFavouriteChip = reportedToLike.children.some((li) => li.children[0]?.className?.includes('chip-favourite'));
   assert.equal(hasFavouriteChip, false, 'the Reported to like list must not duplicate favourite chips');
+});
+
+// M-8 (PR #19 review): a mixed chip is visually identical to a profile chip
+// (and confirmed to discovered), and font weight/border style -- the only
+// visual cues -- reach no screen reader at all. Every category chip needs a
+// hover title and a hidden text suffix naming its actual state; a favourite
+// chip gets only the title, since the CSS already speaks "Favourite:" as
+// alt text and a hidden suffix too would repeat it.
+test('every character chip carries a state title, and a hidden suffix except favourites', () => {
+  const idx = buildIndex({
+    categories: [
+      { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
+      { id: 'coffee', label: 'Coffee', inGameDescriptor: null, aliases: [] },
+      { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
+    ],
+    gifts: [
+      { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
+      { id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'common', description: '', sources: [] },
+      { id: 'espresso', name: 'Espresso', category: 'coffee', rarity: 'common', description: '', sources: [] },
+      { id: 'novel', name: 'Novel', category: 'books', rarity: 'common', description: '', sources: [] },
+      { id: 'trinket', name: 'Trinket', category: null, rarity: 'rare', description: '', sources: [] },
+    ],
+    characters: [{
+      id: 'p1', name: 'P', giftable: true, spoiler: false, traits: [],
+      categories: { books: { state: 'guide', source: 'polygon-1' } },
+      rarityPreference: null, favorites: ['trinket'], notes: null,
+    }],
+    observations: [
+      { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'slight', date: '2026-09-23' },
+      { id: 'o3', character: 'p1', gift: 'espresso', reaction: 'loved', date: '2026-09-23' },
+    ],
+    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+  });
+
+  const container = fakeElement('div');
+  characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'p1' });
+
+  const lists = collect(container, (n) => (n.className ?? '').includes('character-chips'));
+  assert.equal(lists.length, 2, 'a Favourites list and a Reported-to-like list');
+  const [favouritesList, reportedToLike] = lists;
+
+  const favouriteChip = favouritesList.children[0].children[0];
+  assert.equal(favouriteChip.title, 'Favourite');
+  assert.equal(
+    collect(favouriteChip, (n) => (n.className ?? '').includes('visually-hidden')).length,
+    0,
+    'a favourite chip gets no hidden suffix',
+  );
+
+  const byLabel = Object.fromEntries(reportedToLike.children.map((li) => {
+    const node = li.children[0];
+    return [node.textContent, node];
+  }));
+
+  assert.equal(byLabel.Coffee.title, 'loved in testing');
+  assert.equal(collect(byLabel.Coffee, (n) => (n.className ?? '').includes('visually-hidden'))[0].textContent, ', loved in testing');
+
+  assert.equal(byLabel.Tea.title, 'mixed results');
+  assert.equal(collect(byLabel.Tea, (n) => (n.className ?? '').includes('visually-hidden'))[0].textContent, ', mixed results');
+
+  assert.equal(byLabel.Books.title, 'predicted from a guide');
+  assert.equal(collect(byLabel.Books, (n) => (n.className ?? '').includes('visually-hidden'))[0].textContent, ', predicted from a guide');
 });
 
 // A character's category chips mix three different claims -- a guide's guess,
@@ -1157,6 +1318,22 @@ test('provenanceNote: confirmed plus mixed plus guide reads in strength order', 
   );
 });
 
+// M-10 (PR #19 review): removing the `mixed.length === 0 &&` guard from the
+// 2+ confirmed "only group" check survives every other test here, because a
+// mixed chip alongside 2+ confirmed ones still reads as (technically) true
+// under the bare "Each has..." wording. Pins that a mixed chip must still
+// force the labelled "X and Y each have..." form, exactly like a discovered,
+// profile or guide chip would.
+test('provenanceNote: two confirmed categories plus a mixed chip uses "each have", not "Each has"', () => {
+  const chips = [confirmedChip('books', 'Books'), confirmedChip('coffee', 'Coffee'), mixedChip('tea', 'Tea')];
+  const note = provenanceNote(provenanceIndex, chips);
+  assert.equal(
+    note,
+    'Books and Coffee each have at least one gift loved in testing. Tea has mixed results: at least one gift was loved, others less so.',
+  );
+  assert.doesNotMatch(note, /Each has/);
+});
+
 // A mixed chip is still a "stronger than a stored link" group -- alongside
 // it, discovered must use its labelled form, never the bare "Found through
 // play." reserved for when discovered is the only group.
@@ -1286,7 +1463,7 @@ test('characterSummary reports a liked, slight or neutral-reaction confirmation 
       ...base,
       observations: [{ id: 'o1', character: 'c1', gift: 'b1', reaction, date: '2026-09-22' }],
     });
-    assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 tested', `a ${reaction} reaction must read as tested`);
+    assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 tested, none loved yet', `a ${reaction} reaction must read as tested`);
   }
 
   const loved = buildIndex({
@@ -1662,7 +1839,7 @@ test('the real dataset reports characterSummary as loved counts, not every posit
   assert.equal(summaryFor('esmeralda'), '6 loved');
   assert.equal(summaryFor('seteth'), '1 favourite, 11 loved');
   assert.equal(summaryFor('loretta'), '1 loved');
-  assert.equal(summaryFor('ninae'), '1 favourite found');
+  assert.equal(summaryFor('ninae'), '1 favourite');
 });
 
 // The Gifts tab's second entry point into a missing-item report. Like the

@@ -32,7 +32,11 @@ export const SYMBOL = { FAVORITE: '★', CONFIRMED: '✔', CONTESTED: '?', PENDI
 // under a legend reading "confirmed" claims the gift works, the opposite of
 // what was reported. It is deliberately NOT part of the confidence state
 // machine in confidence.js -- nothing derives from it but this view's symbol,
-// tint and title. Mirrors characterSummary in character.js.
+// tint and title. This does NOT mirror characterSummary in character.js:
+// cellState only pulls out `none` as TESTED and still draws liked/slight as
+// the confirmed ✔, while the card's "tested" bucket (loved-only cards) covers
+// liked, slight and none together. The two intentionally disagree today;
+// this is a tracked follow-up, not fixed here.
 export function cellState(confidence) {
   if (confidence.state === 'CONFIRMED' && !POSITIVE_REACTIONS.includes(confidence.reaction)) return 'TESTED';
   return confidence.state;

@@ -119,19 +119,25 @@ export function partitionRows(rows) {
   return { signal, untested };
 }
 
+// The only reactions that count as "below loved" for categoryVerdicts. Kept
+// as an explicit list rather than an `else` catch-all: today `deriveConfidence`
+// only ever puts one of these three reactions on a CONFIRMED pair (a `favorite`
+// reaction becomes its own FAVORITE state, never CONFIRMED), but if a new
+// reaction tier is ever added, it should have to be added here on purpose
+// rather than silently counting as below-loved by falling through an `else`.
+const BELOW_LOVED_REACTIONS = ['liked', 'slight', 'none'];
+
 // A category's verdict for a character rests only on approved observations,
 // read through confidenceFor -- never a stored link and never an unreviewed
 // report. A favourite reaction only happens on an uncommon/rare item, so a
 // FAVORITE result says something about that item, not its category -- it
 // counts toward neither loved nor below-loved, and a common item in the same
 // category may not even be loved. CONTESTED, PENDING and PREDICTED are all
-// real signal elsewhere in the app, but none of them is an approved result,
-// so none of them may promote or demote a category here -- see CLAUDE.md's
-// "A pending report is not a confirmation." A liked, slight or "none"
-// reaction is a real, approved CONFIRMED result, just not a loved one: on its
-// own it establishes nothing (see CLAUDE.md's "Absence of a match is never a
-// dislike" -- there is no absence here, but the same caution against reading
-// too much into a lesser result applies), but once the category also has a
+// real signal elsewhere in the app, but none of them is a single, agreed
+// approved result, so none of them may promote or demote a category here --
+// see CLAUDE.md's "A pending report is not a confirmation." A liked, slight
+// or "none" reaction is a real, approved CONFIRMED result, just not a loved
+// one: on its own it establishes nothing, but once the category also has a
 // loved result, it downgrades that category from confirmed to mixed rather
 // than being silently dropped. A category with zero loved results is neither
 // confirmed nor mixed, however many below-loved results it has. A character
@@ -149,7 +155,7 @@ function categoryVerdicts(index, character) {
     const confidence = index.confidenceFor(character.id, gift.id);
     if (confidence.state !== 'CONFIRMED') continue;
     if (confidence.reaction === 'loved') loved.add(gift.category);
-    else belowLoved.add(gift.category); // liked, slight or none
+    else if (BELOW_LOVED_REACTIONS.includes(confidence.reaction)) belowLoved.add(gift.category);
   }
   for (const id of loved) {
     if (belowLoved.has(id)) mixed.add(id); else confirmed.add(id);
