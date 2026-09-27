@@ -323,7 +323,7 @@
     "id": "fodlan-tea",
     "name": "Fodlan Tea",
     "category": "beverages",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"

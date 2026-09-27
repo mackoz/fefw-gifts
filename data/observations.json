@@ -1062,5 +1062,19 @@
     "character": "halvin",
     "reaction": "loved",
     "date": "2026-09-26"
+  },
+  {
+    "id": "8bb5dc2f-4c3d-4252-bb30-849516cac29c",
+    "gift": "fodlan-tea",
+    "character": "ninae",
+    "reaction": "liked",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "29c42197-7e11-4e63-824e-8e2c31a8fd25",
+    "gift": "the-knights-suitors",
+    "character": "seteth",
+    "reaction": "loved",
+    "date": "2026-09-27"
   }
 ]
