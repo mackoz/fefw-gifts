@@ -3,7 +3,7 @@
     "id": "yarc-milk",
     "name": "Yarc Milk",
     "category": "children",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"

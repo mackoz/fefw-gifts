@@ -1076,5 +1076,26 @@
     "character": "seteth",
     "reaction": "loved",
     "date": "2026-09-27"
+  },
+  {
+    "id": "c1db8a9d-d8b6-4c3f-b824-208ff015e9f4",
+    "gift": "yarc-milk",
+    "character": "loretta",
+    "reaction": "slight",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "925ce37a-d32d-4243-8e30-d3349e96abbc",
+    "gift": "weak-cervi",
+    "character": "loretta",
+    "reaction": "slight",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "d3c6d426-c25c-4dfa-b254-831a6168f653",
+    "gift": "ginji-cervi",
+    "character": "loretta",
+    "reaction": "loved",
+    "date": "2026-09-27"
   }
 ]
