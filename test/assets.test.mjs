@@ -143,15 +143,21 @@ test('each view gets a class so the matrix can lift the column limit', () => {
 // debounce as surely as removing it, and previously stayed green. If the
 // wiring is refactored (e.g. the handler pulled out to a named const) this
 // test is meant to go red and be updated on purpose, not loosened until it
-// passes.
-test('the search input is wired through debounce with a positive delay', () => {
+// passes. It also pins the separate telemetry debounce on the same input, so
+// typing "seteth" is reported as one search event, not one per prefix.
+test('the search input is wired through debounce: a positive render delay and a separate telemetry delay', () => {
   const app = sourceOf('app.js');
   assert.match(app, /import \{ debounce \} from '\.\/debounce\.js'/, 'app.js must import debounce from debounce.js');
   const wiring = app.match(
-    /getElementById\('search'\)\.addEventListener\('input',\s*debounce\(\(e\) => \{[\s\S]*?\},\s*(\d+)\s*\)\)/,
+    /const search = document\.getElementById\('search'\);\s*search\.addEventListener\('input',\s*debounce\(\(e\) => \{[\s\S]*?\},\s*(\d+)\s*\)\)/,
   );
   assert.ok(wiring, 'the search input listener must be wrapped in debounce(...)');
   assert.ok(Number(wiring[1]) > 0, `the debounce delay must be a positive number, got ${wiring[1]}`);
+  assert.match(
+    app,
+    /search\.addEventListener\(\s*'input',\s*debounce\(\s*\(e\)\s*=>\s*reportSearch\(e\.target\.value\)\s*,\s*SEARCH_IDLE_MS\s*\)\s*\)/,
+    'the search telemetry must use its own SEARCH_IDLE_MS debounce',
+  );
 });
 
 // The report dialog's character dropdown must respect the "Hide spoilers"
