@@ -337,6 +337,12 @@ misordering the maintainer's own queue — visible the moment a report is read.
 Shared carrier IPs would also block legitimate voters. Collecting less is the
 better trade.
 
+**Usage counts are anonymous too.** The site counts page views, searches,
+filter toggles and report and vote outcomes in PostHog. Each page load gets a
+random id held in memory; there is no person profile, no GeoIP, no browser
+storage, and the id never reaches the Worker. See
+`2026-09-27-telemetry-design.md`.
+
 ### Structural changes
 
 Adding a category, correcting a gift's rarity, or fixing a character's traits are

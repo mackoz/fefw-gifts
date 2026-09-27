@@ -40,6 +40,13 @@
   session id or fingerprint, in the D1 schema, the Worker or the client.
   Turnstile is called without `remoteip`. Adding any of these is a design
   change, not a fix.
+- **Telemetry is anonymous counts only.** `assets/js/telemetry.js` sends
+  events with a random, in-memory, per-page-load id and
+  `$process_person_profile: false`; it never reads or writes browser storage
+  or cookies, never loads a third-party script, and its id is never attached
+  to a report, a vote or a Worker request. Adding a persistent id, a person
+  profile, autocapture or session replay is a design change, not a fix. See
+  `docs/superpowers/specs/2026-09-27-telemetry-design.md`.
 - **The site must work with the Worker unavailable or unconfigured.**
   `WORKER_URL` in `assets/js/config.js` may be null, and null is a supported
   state rather than a bug: the committed data must still render from GitHub

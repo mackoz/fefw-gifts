@@ -60,6 +60,20 @@ npm run validate  # validates data/ against the schema and cross-references
 
 Both must pass before any change is merged.
 
+## Usage counts
+
+The site sends anonymous usage counts to PostHog (project 631311, US Cloud)
+through the `t.mackoz.net` proxy; see
+`docs/superpowers/specs/2026-09-27-telemetry-design.md` for exactly what is
+sent. Nothing is sent from `localhost` or plain `http:`, so local runs never
+show up. Setting `POSTHOG_KEY` to `null` in `assets/js/config.js` switches it
+off.
+
+If the PostHog project is ever recreated, turn on **Settings → Privacy →
+Discard client IP data**, and leave autocapture, heatmaps, web vitals and
+session replay off. The site does not load the PostHog SDK, but those switches
+are the guard against anyone adding it later.
+
 ## Contributing
 
 The in-site **Report a result** form is the primary way to submit a gift
