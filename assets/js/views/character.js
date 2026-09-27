@@ -86,8 +86,8 @@ export function characterSummary(index, character) {
   if (loved > 0) return `${loved} loved`;
   // "Tested" alone means "no support gain" elsewhere on the site: the
   // matrix's TESTED pseudo-state and legend, the masthead's "tested with no
-  // support gain" line, and REACTION_LABEL.none all use it that way (see I-1
-  // in the PR #19 review). A liked or slight result is real, positive
+  // support gain" line, and REACTION_LABEL.none all use it that way. A liked
+  // or slight result is real, positive
   // signal, so a bare "N tested" here would undersell it as N gifts that did
   // nothing -- the trailing clause says plainly that none of them reached
   // loved yet.
