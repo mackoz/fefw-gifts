@@ -3,7 +3,6 @@ import {
   sortByConfidence, badge, el, emptyState, sourceName, reportButton, reportChip,
   partitionRows, categoryChips, favouriteGifts, chip,
 } from './shared.js';
-import { POSITIVE_REACTIONS } from '../confidence.js';
 import { voteControl, voteControlModel } from '../vote-control.js';
 
 export function characterRows(index, characterId, filters) {
@@ -24,12 +23,20 @@ export function detailStatus(character, filters) {
 
 // The strongest true statement about a character, in a fixed order. It never
 // implies a negative: a character nobody has tested reads as untested, not as
-// one whose gifts fail.
+// one whose gifts fail. Players use this guide to minmax bond -- many
+// characters gate recruitment behind a bond threshold -- so what they're
+// hunting for is LOVED (and FAVORITE) results specifically, not every
+// positive reaction: a liked or slight result is real and does raise bond,
+// but far less, and isn't the thing worth reporting a summary count of. The
+// count below is loved only, not "positive": see categoryVerdicts in
+// shared.js and CLAUDE.md's "A favourite is about the item; only loved
+// results confirm a category" for the same loved-vs-lesser distinction
+// applied to categories.
 export function characterSummary(index, character) {
   // Same favouriteGifts union shared.js exports, so this and the Favourites
   // tab can never disagree about whether a favourite is known.
   const favouriteCount = favouriteGifts(index, character).length;
-  let confirmed = 0;
+  let loved = 0;
   let tested = 0;
   let contested = 0;
   let pending = 0;
@@ -37,13 +44,15 @@ export function characterSummary(index, character) {
 
   for (const gift of index.gifts) {
     const confidence = index.confidenceFor(character.id, gift.id);
-    // A CONFIRMED row is only a "confirmed" gift when the reaction is
-    // positive. The report form's first option is "They didn't like it", so
-    // a CONFIRMED "none" reaction is common -- and reporting it as one of "N
-    // confirmed" would read as N gifts that work, the opposite of what
-    // happened. "Tested" is deliberately neutral: it neither claims the gift
-    // worked nor implies the character dislikes things (see CLAUDE.md).
-    if (confidence.state === 'CONFIRMED' && POSITIVE_REACTIONS.includes(confidence.reaction)) confirmed += 1;
+    // Only a CONFIRMED "loved" reaction counts as "loved" here -- see the
+    // file-level comment above. Liked, slight and "none" are all real,
+    // approved CONFIRMED results, but none of them is the big bond gain a
+    // minmaxing player is after, so they fall into the neutral "tested"
+    // bucket instead. The report form's first option is "They didn't like
+    // it", so a CONFIRMED "none" reaction is common -- and "tested" is
+    // deliberately neutral: it neither claims the gift worked nor implies
+    // the character dislikes things (see CLAUDE.md).
+    if (confidence.state === 'CONFIRMED' && confidence.reaction === 'loved') loved += 1;
     else if (confidence.state === 'CONFIRMED') tested += 1;
     else if (confidence.state === 'CONTESTED') contested += 1;
     else if (confidence.state === 'PENDING') pending += 1;
@@ -53,10 +62,16 @@ export function characterSummary(index, character) {
     else if (confidence.state === 'PREDICTED' && confidence.predicted === 'positive') predicted += 1;
   }
 
+  // A favourite and a loved count are both worth surfacing at once: the
+  // favourite says which single item is confirmed double points, the loved
+  // count says how many other big wins exist. Neither subsumes the other.
+  if (favouriteCount > 0 && loved > 0) {
+    return `${favouriteCount} favourite${favouriteCount === 1 ? '' : 's'}, ${loved} loved`;
+  }
   if (favouriteCount > 0) return `${favouriteCount} favourite${favouriteCount === 1 ? '' : 's'} found`;
-  if (confirmed > 0) return `${confirmed} confirmed`;
+  if (loved > 0) return `${loved} loved`;
   if (tested > 0) return `${tested} tested`;
-  // CONTESTED and PENDING sit between confirmed and predicted, and they are
+  // CONTESTED and PENDING sit between loved and predicted, and they are
   // the reason this chain cannot simply fall through to "nothing tested yet":
   // both mean somebody HAS tested this character. Omitting them made the index
   // say nothing had been tested while approved, contradicting observations sat

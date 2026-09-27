@@ -760,19 +760,29 @@ test('characterSummary counts a declared favourite the Favourites tab would coun
   assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite found');
 });
 
-test('characterSummary falls back through confirmed, predicted, then nothing', () => {
+test('characterSummary falls back through loved, tested, predicted, then nothing', () => {
   const base = { ...dataset.characters[0], favorites: [] };
 
   const predictedOnly = buildIndex({ ...dataset, characters: [base], observations: [] });
   // c1 likes books, and `book` is a books item, so exactly one prediction.
   assert.equal(characterSummary(predictedOnly, predictedOnly.byCharacterId.get('c1')), '1 worth trying');
 
-  const confirmed = buildIndex({
+  // A `liked` reaction is a real, approved CONFIRMED result, but it is not a
+  // `loved` one -- see the minmax-bond rationale in characterSummary's
+  // comment -- so it falls into "tested", not "loved".
+  const tested = buildIndex({
     ...dataset,
     characters: [base],
     observations: [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'liked', date: '2026-09-21' }],
   });
-  assert.equal(characterSummary(confirmed, confirmed.byCharacterId.get('c1')), '1 confirmed');
+  assert.equal(characterSummary(tested, tested.byCharacterId.get('c1')), '1 tested');
+
+  const loved = buildIndex({
+    ...dataset,
+    characters: [base],
+    observations: [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-21' }],
+  });
+  assert.equal(characterSummary(loved, loved.byCharacterId.get('c1')), '1 loved');
 
   const bare = buildIndex({ ...dataset, characters: [{ ...base, categories: {} }], observations: [] });
   assert.equal(characterSummary(bare, bare.byCharacterId.get('c1')), 'nothing tested yet');
@@ -788,6 +798,51 @@ test('characterSummary does not count a refuted-category prediction as worth try
     observations: [],
   });
   assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), 'nothing tested yet');
+});
+
+// A `slight` result alongside a `loved` one must not inflate the loved count
+// -- only the loved gift counts, and the slight one is silently absorbed
+// rather than surfaced, since a favourite-free "N loved" summary has nowhere
+// to mention "tested" too. See characterSummary's file comment.
+test('characterSummary counts loved separately from a slight result on another gift', () => {
+  const idx = buildIndex({
+    ...dataset,
+    observations: [
+      { id: 'o1', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o2', character: 'c1', gift: 'brew', reaction: 'slight', date: '2026-09-23' },
+    ],
+  });
+  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 loved');
+});
+
+test('characterSummary counts liked and slight together as "N tested" when nothing is loved', () => {
+  const idx = buildIndex({
+    ...dataset,
+    observations: [
+      { id: 'o1', character: 'c1', gift: 'book', reaction: 'liked', date: '2026-09-23' },
+      { id: 'o2', character: 'c1', gift: 'brew', reaction: 'slight', date: '2026-09-23' },
+    ],
+  });
+  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '2 tested');
+});
+
+// A favourite is about one specific item; a loved count is about how many
+// gifts overall land a big bond gain. Neither replaces the other, so both
+// show at once once both are true.
+test('characterSummary reports a favourite alongside a loved count, not instead of it', () => {
+  const idx = buildIndex({
+    ...dataset,
+    gifts: [
+      ...dataset.gifts,
+      { id: 'tome', name: 'Tome', category: 'books', rarity: 'common', description: '', sources: [] },
+    ],
+    observations: [
+      { id: 'o1', character: 'c1', gift: 'brew', reaction: 'favorite', date: '2026-09-20' },
+      { id: 'o2', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o3', character: 'c1', gift: 'tome', reaction: 'loved', date: '2026-09-23' },
+    ],
+  });
+  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite, 2 loved');
 });
 
 test('characterIndexModel hides non-giftable characters and honours search', () => {
@@ -1212,28 +1267,33 @@ test('characterSummary reports contested and pending results rather than silence
   assert.equal(characterSummary(nothing, nothing.byCharacterId.get('c1')), 'nothing tested yet');
 });
 
-// A CONFIRMED row is a real observation, but only a positive reaction means
-// the gift worked. The report form's first option is "They didn't like it",
-// so a CONFIRMED "none" reaction is common, and counting it toward "N
-// confirmed" would read as N gifts that work. See I3 in the fix brief.
-test('characterSummary reports a neutral-reaction confirmation as "tested", not "confirmed"', () => {
+// A CONFIRMED row is a real observation, but only a `loved` reaction is the
+// big bond gain a minmaxing player is hunting for -- see characterSummary's
+// comment. The report form's first option is "They didn't like it", so a
+// CONFIRMED "none" reaction is common, and counting it toward "N loved" would
+// read as N gifts that work. `liked` and `slight` are real and positive, but
+// still fall short of `loved`, so both land in "tested" alongside "none". See
+// I3 in the fix brief for the original none-vs-confirmed split this extends.
+test('characterSummary reports a liked, slight or neutral-reaction confirmation as "tested", never "loved"', () => {
   const base = {
     ...dataset,
     gifts: [{ id: 'b1', name: 'B1', category: null, rarity: null, description: '', sources: [] }],
     characters: [{ ...dataset.characters[0], categories: {}, favorites: [] }],
   };
 
-  const tested = buildIndex({
-    ...base,
-    observations: [{ id: 'o1', character: 'c1', gift: 'b1', reaction: 'none', date: '2026-09-22' }],
-  });
-  assert.equal(characterSummary(tested, tested.byCharacterId.get('c1')), '1 tested');
+  for (const reaction of ['none', 'slight', 'liked']) {
+    const idx = buildIndex({
+      ...base,
+      observations: [{ id: 'o1', character: 'c1', gift: 'b1', reaction, date: '2026-09-22' }],
+    });
+    assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 tested', `a ${reaction} reaction must read as tested`);
+  }
 
-  const confirmed = buildIndex({
+  const loved = buildIndex({
     ...base,
-    observations: [{ id: 'o1', character: 'c1', gift: 'b1', reaction: 'liked', date: '2026-09-22' }],
+    observations: [{ id: 'o1', character: 'c1', gift: 'b1', reaction: 'loved', date: '2026-09-22' }],
   });
-  assert.equal(characterSummary(confirmed, confirmed.byCharacterId.get('c1')), '1 confirmed');
+  assert.equal(characterSummary(loved, loved.byCharacterId.get('c1')), '1 loved');
 });
 
 test('giftIndexModel groups by category, alphabetically', () => {
@@ -1590,6 +1650,19 @@ test('the real dataset confirms Alexandra’s fashion and cooking categories', a
   const chips = categoryChips(idx, idx.byCharacterId.get('alexandra'));
   assert.equal(chips.find((c) => c.id === 'fashion')?.state, 'confirmed');
   assert.equal(chips.find((c) => c.id === 'cooking')?.state, 'confirmed');
+});
+
+// Against the real committed dataset: pins the minmax-bond summary line for
+// four characters chosen for their different shapes -- loved only, a
+// favourite plus loved, exactly one loved, and a favourite with no loved
+// result at all.
+test('the real dataset reports characterSummary as loved counts, not every positive result', async () => {
+  const idx = buildIndex(await loadDataset('data'));
+  const summaryFor = (id) => characterSummary(idx, idx.byCharacterId.get(id));
+  assert.equal(summaryFor('esmeralda'), '6 loved');
+  assert.equal(summaryFor('seteth'), '1 favourite, 11 loved');
+  assert.equal(summaryFor('loretta'), '1 loved');
+  assert.equal(summaryFor('ninae'), '1 favourite found');
 });
 
 // The Gifts tab's second entry point into a missing-item report. Like the
