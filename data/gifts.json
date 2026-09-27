@@ -73,7 +73,7 @@
     "id": "home-recipe-book",
     "name": "Home-Recipe Book",
     "category": "cooking",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -203,7 +203,7 @@
     "id": "eastern-love-story",
     "name": "Eastern Love Story",
     "category": "books",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -1088,6 +1088,14 @@
   {
     "id": "the-knights-suitors",
     "name": "The Knight's Suitors",
+    "category": "books",
+    "rarity": "common",
+    "description": "",
+    "sources": []
+  },
+  {
+    "id": "everyday-scenes",
+    "name": "Everyday Scenes",
     "category": "books",
     "rarity": "common",
     "description": "",
