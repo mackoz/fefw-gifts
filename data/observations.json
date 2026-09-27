@@ -1097,5 +1097,54 @@
     "character": "loretta",
     "reaction": "loved",
     "date": "2026-09-27"
+  },
+  {
+    "id": "67258e65-5844-48ce-927d-f13b7924457c",
+    "gift": "pack-of-pastels",
+    "character": "halvin",
+    "reaction": "loved",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "4182d0f4-9689-417d-89d8-79848760db5c",
+    "gift": "yarc-milk",
+    "character": "dadao",
+    "reaction": "loved",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "d5c3c105-e5b7-48b5-9ec0-89d45136ea58",
+    "gift": "simple-pastries",
+    "character": "dadao",
+    "reaction": "loved",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "c88c2071-1d69-4058-8f69-a43e88ef61fa",
+    "gift": "common-coffee",
+    "character": "dadao",
+    "reaction": "slight",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "1aaaaf0f-d5d1-49b9-b55a-5c8a232762ca",
+    "gift": "jamel-milk",
+    "character": "dadao",
+    "reaction": "loved",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "f8e12fea-d7a5-46cb-a775-86c94491ef0a",
+    "gift": "garum",
+    "character": "dadao",
+    "reaction": "slight",
+    "date": "2026-09-27"
+  },
+  {
+    "id": "7a808ee0-4c4b-49d0-ba84-5f97f4a5e1d7",
+    "gift": "mellow-pastries",
+    "character": "dadao",
+    "reaction": "loved",
+    "date": "2026-09-27"
   }
 ]

@@ -132,8 +132,8 @@
   {
     "id": "jamel-milk",
     "name": "Jamel Milk",
-    "category": "sweets",
-    "rarity": null,
+    "category": "children",
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -372,8 +372,8 @@
   {
     "id": "mellow-pastries",
     "name": "Mellow Pastries",
-    "category": null,
-    "rarity": null,
+    "category": "sweets",
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -403,7 +403,7 @@
     "id": "garum",
     "name": "Garum",
     "category": "cooking",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
