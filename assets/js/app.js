@@ -2,7 +2,8 @@ import { fetchDataset, buildIndex } from './data.js';
 import { debounce } from './debounce.js';
 import { parseRoute, DEFAULT_FILTERS } from './filters.js';
 import { createApi } from './api.js';
-import { TURNSTILE_SITE_KEY } from './config.js';
+import { TURNSTILE_SITE_KEY, POSTHOG_KEY, POSTHOG_HOST } from './config.js';
+import { createTelemetry, pageviewProperties, createSearchReporter, SEARCH_IDLE_MS } from './telemetry.js';
 import { createTurnstile } from './turnstile.js';
 import { createReportForm } from './report-form.js';
 import { recordVote } from './votes.js';
@@ -99,22 +100,40 @@ async function main() {
   // matters: committed data renders whether or not the Worker answers.
   state.index = buildIndex(state.dataset, []);
 
-  addEventListener('hashchange', render);
-  document.getElementById('search').addEventListener('input', debounce((e) => {
+  // Synchronous and I/O-free until track() is called, and track() is never
+  // awaited, so telemetry cannot hold up the first render.
+  const telemetry = createTelemetry({ key: POSTHOG_KEY, host: POSTHOG_HOST, location: globalThis.location });
+  let firstPageview = true;
+  function trackPageview() {
+    telemetry.track('$pageview', pageviewProperties({ location, referrer: document.referrer, first: firstPageview }));
+    firstPageview = false;
+  }
+
+  addEventListener('hashchange', () => {
+    render();
+    trackPageview();
+  });
+  const search = document.getElementById('search');
+  search.addEventListener('input', debounce((e) => {
     state.search = e.target.value.trim().toLowerCase();
     // As typed, for the missing-item pre-fill. The lower-cased copy above is
     // for matching only.
     state.searchText = e.target.value.trim();
     render();
   }, 120));
+  // Its own, longer debounce: typing "seteth" is one search, not six prefixes.
+  const reportSearch = createSearchReporter(telemetry.track);
+  search.addEventListener('input', debounce((e) => reportSearch(e.target.value), SEARCH_IDLE_MS));
   for (const box of document.querySelectorAll('[data-filter]')) {
     box.checked = state.filters[box.dataset.filter];
     box.addEventListener('change', () => {
       state.filters[box.dataset.filter] = box.checked;
       render();
+      telemetry.track('filterToggled', { filter: box.dataset.filter, on: box.checked });
     });
   }
   render();
+  trackPageview();
 
   if (api.enabled) {
     api.fetchPending().then((pending) => {
@@ -166,6 +185,7 @@ async function main() {
     }),
     onSubmitted: refreshPending,
     getFilters: () => state.filters,
+    onTelemetry: telemetry.track,
   });
 
   openButton.addEventListener('click', () => reportForm.open());
@@ -203,6 +223,9 @@ async function main() {
     const result = await api.sendVote({ ...vote, turnstileToken: token });
     voteSubmit.disabled = false;
     voteTurnstile.reset();
+    // Outcome only. A direction would make PostHog hold a tally, which the
+    // voting design forbids anywhere.
+    telemetry.track('voteCast', { outcome: result.ok ? 'ok' : 'error' });
 
     if (!result.ok) {
       voteStatus.textContent = result.error;

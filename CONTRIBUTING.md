@@ -10,6 +10,11 @@ Your report is anonymous. Nothing about you is stored — not a name, not an
 email, not an IP address, not a session identifier. There is no credit
 mechanism, by choice.
 
+Separately, the site counts page views, button presses and what is typed into
+the search box, which can include the name of an item you then report as
+missing, to see how it is used. Those counts carry no identifier that
+survives a reload, and no identifier links them to a report or a vote.
+
 A report appears on the site straight away marked **awaiting review**, which is
 not the same as confirmed: it contributes no reaction and settles nothing until
 a maintainer approves it and it is merged into `data/observations.json`.

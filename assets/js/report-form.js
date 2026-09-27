@@ -134,9 +134,13 @@ function fillReactions(fieldset) {
 //
 // One dialog, two modes. The gift select's last option switches it into
 // missing-item mode; `openMissingItem` opens it there directly.
+// `onTelemetry(event, properties)` receives counts only -- which kind of report
+// and whether the Worker took it, never what was reported. app.js hands it
+// telemetry.track; this module does not import telemetry itself.
 export function createReportForm({
   elements, index, api, turnstile, onSubmitted = () => {},
   getFilters = () => ({ hideSpoilers: true }),
+  onTelemetry = () => {},
 }) {
   const {
     dialog, form, character, characterField, gift, reactions, reactionsLegend, status, cancel, submit,
@@ -206,11 +210,12 @@ export function createReportForm({
   itemName.addEventListener('input', syncDuplicate);
   cancel.addEventListener('click', () => dialog.close());
 
-  async function send(payload, submitCall) {
+  async function send(payload, submitCall, kind) {
     submit.disabled = true;
     setStatus('Sending…');
     const result = await submitCall(payload);
     submit.disabled = false;
+    onTelemetry('reportSubmitted', { kind, outcome: result.ok ? 'ok' : 'error' });
 
     // A spent token cannot be reused whether the request succeeded or failed,
     // so the widget is reset either way.
@@ -231,7 +236,7 @@ export function createReportForm({
       setStatus(errors[0]);
       return;
     }
-    if (!(await send(payload, (p) => api.submitReport(p)))) return;
+    if (!(await send(payload, (p) => api.submitReport(p), 'gift'))) return;
 
     setStatus('');
     dialog.close();
@@ -253,7 +258,7 @@ export function createReportForm({
       setStatus(errors[0]);
       return;
     }
-    if (!(await send(payload, (p) => api.submitItemReport(p)))) return;
+    if (!(await send(payload, (p) => api.submitItemReport(p), 'item'))) return;
 
     // Nothing public changes -- an item report is hidden until approved -- so
     // the dialog stays open to say it arrived, and onSubmitted (the overlay
@@ -284,6 +289,7 @@ export function createReportForm({
   }
 
   async function show() {
+    onTelemetry('reportOpened');
     syncMode();
     syncDuplicate();
     dialog.showModal();

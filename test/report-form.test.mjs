@@ -284,7 +284,7 @@ function formHarness(t, { submitItemReport = async () => ({ ok: true, status: 20
   t.after(() => { globalThis.document = originalDocument; });
 
   const radio = { reaction: '', rarity: '' };
-  const calls = { submitItemReport: [], submitReport: [], resets: 0, refreshed: 0 };
+  const calls = { submitItemReport: [], submitReport: [], resets: 0, refreshed: 0, telemetry: [] };
   const el = {
     character: stubSelect(), gift: stubSelect(), itemCategory: stubSelect(), itemCharacter: stubSelect(),
     characterField: stubControl(), reactionsLegend: stubControl(), itemFields: stubControl({ hidden: true }),
@@ -315,6 +315,7 @@ function formHarness(t, { submitItemReport = async () => ({ ok: true, status: 20
     turnstile: { mount: async () => {}, reset() { calls.resets += 1; }, token: () => 'tok' },
     onSubmitted: () => { calls.refreshed += 1; },
     getFilters: () => filters,
+    onTelemetry: (event, properties) => { calls.telemetry.push([event, properties]); },
   });
 
   return {
@@ -573,4 +574,51 @@ test('a failed load can be retried: the cache is cleared, not stuck rejected', a
   await turnstile.mount();
   assert.equal(turnstile.token(), null);
   assert.equal(calls, 2, 'loadScript must be retried, not replayed from a cached rejection');
+});
+
+// --- telemetry: counts only, never contents
+
+test('opening the dialog, either way, is counted once per open', async (t) => {
+  const h = formHarness(t);
+  await h.reportForm.open();
+  await h.reportForm.openMissingItem('Lantern Oil');
+  assert.deepEqual(h.calls.telemetry, [['reportOpened', undefined], ['reportOpened', undefined]]);
+});
+
+test('a result report counts its outcome once the Worker answers, and nothing about its contents', async (t) => {
+  const h = formHarness(t);
+  await h.reportForm.open('alexandra', 'horse-grooming-kit');
+  h.radio.reaction = 'liked';
+  await h.submit();
+  assert.deepEqual(h.calls.telemetry.at(-1), ['reportSubmitted', { kind: 'gift', outcome: 'ok' }]);
+});
+
+test('a refused item report is counted as an error', async (t) => {
+  const h = formHarness(t, { submitItemReport: async () => ({ ok: false, status: 403, data: null, error: 'could not verify that you are human' }) });
+  await h.reportForm.openMissingItem('Lantern Oil');
+  h.el.itemCategory.value = 'horses';
+  await h.submit();
+  assert.deepEqual(h.calls.telemetry.at(-1), ['reportSubmitted', { kind: 'item', outcome: 'error' }]);
+});
+
+test('a form refused before sending is not counted as a submission', async (t) => {
+  const h = formHarness(t);
+  await h.reportForm.openMissingItem('Lantern Oil');
+  h.el.itemCategory.value = 'horses';
+  h.el.itemCharacter.value = 'alexandra';
+  await h.submit();
+  assert.match(h.el.status.textContent, /or neither/);
+  assert.ok(!h.calls.telemetry.some(([event]) => event === 'reportSubmitted'));
+});
+
+test('report payloads carry no telemetry or session field', () => {
+  const { payload: result } = buildReportPayload(FIELDS);
+  const { payload: item } = buildItemReportPayload(
+    { name: 'Lantern Oil', category: 'horses', turnstileToken: 'tok' },
+    { gifts: [] },
+  );
+  for (const payload of [result, item]) {
+    assert.ok(payload, 'the payload builds');
+    for (const key of Object.keys(payload)) assert.doesNotMatch(key, /distinct|telemetry|posthog|session/i);
+  }
 });

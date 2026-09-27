@@ -143,15 +143,21 @@ test('each view gets a class so the matrix can lift the column limit', () => {
 // debounce as surely as removing it, and previously stayed green. If the
 // wiring is refactored (e.g. the handler pulled out to a named const) this
 // test is meant to go red and be updated on purpose, not loosened until it
-// passes.
-test('the search input is wired through debounce with a positive delay', () => {
+// passes. It also pins the separate telemetry debounce on the same input, so
+// typing "seteth" is reported as one search event, not one per prefix.
+test('the search input is wired through debounce: a positive render delay and a separate telemetry delay', () => {
   const app = sourceOf('app.js');
   assert.match(app, /import \{ debounce \} from '\.\/debounce\.js'/, 'app.js must import debounce from debounce.js');
   const wiring = app.match(
-    /getElementById\('search'\)\.addEventListener\('input',\s*debounce\(\(e\) => \{[\s\S]*?\},\s*(\d+)\s*\)\)/,
+    /const search = document\.getElementById\('search'\);\s*search\.addEventListener\('input',\s*debounce\(\(e\) => \{[\s\S]*?\},\s*(\d+)\s*\)\)/,
   );
   assert.ok(wiring, 'the search input listener must be wrapped in debounce(...)');
   assert.ok(Number(wiring[1]) > 0, `the debounce delay must be a positive number, got ${wiring[1]}`);
+  assert.match(
+    app,
+    /search\.addEventListener\(\s*'input',\s*debounce\(\s*\(e\)\s*=>\s*reportSearch\(e\.target\.value\)\s*,\s*SEARCH_IDLE_MS\s*\)\s*\)/,
+    'the search telemetry must use its own SEARCH_IDLE_MS debounce',
+  );
 });
 
 // The report dialog's character dropdown must respect the "Hide spoilers"
@@ -163,6 +169,41 @@ test('the search input is wired through debounce with a positive delay', () => {
 test('app.js wires the live filter state into the report form', () => {
   const app = sourceOf('app.js');
   assert.match(app, /getFilters: \(\) => state\.filters/, 'app.js must pass the live filters into createReportForm');
+});
+
+// "Votes never reach the published site" and "Peer validation by voting" both
+// forbid any tally of votes reaching a public view; a vote direction sent as
+// telemetry would hand PostHog exactly that tally under a different name. This
+// pins the voteCast event to an outcome only, with no direction anywhere near it.
+test('the voteCast telemetry event carries no vote direction', () => {
+  const app = sourceOf('app.js');
+  const call = app.match(/telemetry\.track\('voteCast',\s*\{([^}]*)\}\)/);
+  assert.ok(call, "app.js must call telemetry.track('voteCast', { ... })");
+  assert.match(call[1], /outcome/, 'voteCast must still report its outcome');
+  assert.doesNotMatch(call[1], /direction|pendingVote|vote\./, 'voteCast must not carry a vote direction');
+});
+
+// app.js has no behavioural test, so these pin the wiring the telemetry spec
+// relies on: the report form gets a real onTelemetry, and every route change
+// (including the first render) is counted as a $pageview.
+test('app.js wires telemetry into the report form and counts every render as a pageview', () => {
+  const app = sourceOf('app.js');
+  assert.match(app, /onTelemetry:\s*telemetry\.track/, 'app.js must pass onTelemetry: telemetry.track to createReportForm');
+  assert.match(
+    app,
+    /addEventListener\('hashchange', \(\) => \{\s*render\(\);\s*trackPageview\(\);\s*\}\)/,
+    'the hashchange listener must render then count the pageview',
+  );
+  const renderThenTrack = app.match(/render\(\);\s*trackPageview\(\);/g) ?? [];
+  assert.ok(
+    renderThenTrack.length >= 2,
+    `expected render() immediately followed by trackPageview() at least twice (hashchange + first render), found ${renderThenTrack.length}`,
+  );
+  assert.match(
+    app,
+    /telemetry\.track\('filterToggled',\s*\{\s*filter:\s*box\.dataset\.filter,\s*on:\s*box\.checked\s*\}\)/,
+    'a filter checkbox change must be counted as filterToggled',
+  );
 });
 
 // A stray closing brace does not fail loudly: CSS error recovery silently
