@@ -39,7 +39,8 @@
 - **The Worker collects no personal data.** No name, email, IP, hashed IP,
   session id or fingerprint, in the D1 schema, the Worker or the client.
   Turnstile is called without `remoteip`. Adding any of these is a design
-  change, not a fix.
+  change, not a fix. The per-page-load telemetry id is governed by the
+  telemetry bullet below, and permitted only on its terms.
 - **Telemetry is anonymous counts only.** `assets/js/telemetry.js` sends
   events with a random, in-memory, per-page-load id and
   `$process_person_profile: false`; it never reads or writes browser storage

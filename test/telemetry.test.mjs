@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
   buildEvent, telemetryEnabled, createTelemetry, pageviewProperties, referrerDomain,
-  searchQuery, createSearchReporter, SEARCH_IDLE_MS, SEARCH_MAX_LENGTH,
+  searchQuery, createSearchReporter, SEARCH_IDLE_MS, SEARCH_MAX_LENGTH, ROUTE_ID_PATTERN,
 } from '../assets/js/telemetry.js';
+import { loadDataset } from '../scripts/validate.mjs';
 
 const SITE = {
   protocol: 'https:',
@@ -142,7 +143,7 @@ test('the module never touches browser storage or loads a script', async () => {
   }
 });
 
-// --- postJson (the real default send)
+// --- postEvent (the real default send)
 
 test('the default send does not throw when fetch is unavailable', (t) => {
   saveFetch(t);
@@ -189,7 +190,7 @@ test('the default send posts to the capture endpoint with the exact fetch option
   assert.equal(calls[0].url, 'https://t.example/i/v0/e/');
   assert.deepEqual(calls[0].options, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'text/plain' },
     body: JSON.stringify(buildEvent({
       key: 'phc_x', distinctId: 'id-1', event: 'search', properties: { query: 'seteth' },
     })),
@@ -237,7 +238,55 @@ test('a route with no id, or no hash at all, is still a path', () => {
   assert.equal(pageviewProperties({ location: matrix, first: false }).$pathname, '/matrix');
   assert.equal(pageviewProperties({ location: matrix, first: false }).id, null);
   const bare = { ...SITE, hash: '', href: 'https://mackoz.github.io/fefw-gifts/' };
-  assert.equal(pageviewProperties({ location: bare, first: false }).$pathname, '/character');
+  const bareProps = pageviewProperties({ location: bare, first: false });
+  assert.equal(bareProps.$pathname, '/character');
+  assert.equal(bareProps.$current_url, 'https://mackoz.github.io/fefw-gifts/#/character');
+});
+
+// --- ROUTE_ID_PATTERN: only a real id reaches PostHog as one
+
+test('a hash id that is not kebab-case is dropped, and no property carries it', () => {
+  const location = {
+    ...SITE, hash: '#/gift/Hello World', href: 'https://mackoz.github.io/fefw-gifts/#/gift/Hello World',
+  };
+  const props = pageviewProperties({ location, first: false });
+  assert.equal(props.id, null);
+  assert.equal(props.$pathname, '/gift');
+  assert.ok(!Object.values(props).some((v) => String(v).includes('Hello')), 'no property may carry the typed text');
+});
+
+test('a hash id longer than 80 characters is dropped; exactly 80 is kept', () => {
+  const tooLong = 'a'.repeat(81);
+  const location81 = {
+    ...SITE, hash: `#/gift/${tooLong}`, href: `https://mackoz.github.io/fefw-gifts/#/gift/${tooLong}`,
+  };
+  assert.equal(pageviewProperties({ location: location81, first: false }).id, null);
+
+  const justRight = 'a'.repeat(80);
+  const location80 = {
+    ...SITE, hash: `#/gift/${justRight}`, href: `https://mackoz.github.io/fefw-gifts/#/gift/${justRight}`,
+  };
+  assert.equal(pageviewProperties({ location: location80, first: false }).id, justRight);
+});
+
+test('extra hash segments past the id are dropped from both the id and the rebuilt URL', () => {
+  const location = {
+    ...SITE,
+    hash: '#/character/seteth/extra/stuff',
+    href: 'https://mackoz.github.io/fefw-gifts/#/character/seteth/extra/stuff',
+  };
+  const props = pageviewProperties({ location, first: false });
+  assert.equal(props.id, 'seteth');
+  assert.ok(props.$current_url.endsWith('#/character/seteth'), props.$current_url);
+  assert.ok(!props.$current_url.includes('extra'), props.$current_url);
+});
+
+test('against the real committed data, every character and gift id matches ROUTE_ID_PATTERN', async () => {
+  const { characters, gifts } = await loadDataset('data');
+  assert.ok(characters.length > 0);
+  assert.ok(gifts.length > 0);
+  for (const c of characters) assert.match(c.id, ROUTE_ID_PATTERN, `character id ${c.id}`);
+  for (const g of gifts) assert.match(g.id, ROUTE_ID_PATTERN, `gift id ${g.id}`);
 });
 
 test('referrerDomain keeps the hostname only and falls back to $direct', () => {

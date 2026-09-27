@@ -37,10 +37,14 @@ export function telemetryEnabled({ key, host, location }) {
     && !LOCAL_HOSTNAMES.has(location.hostname);
 }
 
-function postJson(url, body) {
+// text/plain keeps this a CORS simple request, so no preflight round-trip
+// precedes every event (and keepalive never meets a preflight). PostHog
+// parses the body as JSON regardless of the content type; checked against
+// the capture endpoint on 2026-09-27.
+function postEvent(url, body) {
   fetch(url, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'text/plain' },
     body,
     keepalive: true,
     credentials: 'omit',
@@ -50,7 +54,7 @@ function postJson(url, body) {
 // track() never throws and returns nothing to await: a blocked request or a
 // PostHog outage must leave the page exactly as it would be without telemetry.
 export function createTelemetry({
-  key, host, location, send = postJson, randomId = () => crypto.randomUUID(),
+  key, host, location, send = postEvent, randomId = () => crypto.randomUUID(),
 } = {}) {
   if (!telemetryEnabled({ key, host, location })) return DISABLED;
   let distinctId;
@@ -80,19 +84,29 @@ export function referrerDomain(referrer) {
   }
 }
 
+// Every character and gift id in data/ is kebab-case (verified against the
+// committed dataset in test/telemetry.test.mjs), so anything else that lands
+// in the hash -- a typo, a stray extra segment, pasted or typed text -- is
+// not a real id and must not reach PostHog as one.
+export const ROUTE_ID_PATTERN = /^[a-z0-9-]{1,80}$/;
+
 // The hash route doubles as the path, so PostHog's page reports read as
 // /character/seteth rather than one page with a changing fragment. Only the
-// referrer's hostname is kept, and only on the first pageview of a load. The
-// query string is dropped from $current_url because ad click ids (fbclid,
-// gclid) are per-click identifiers, and GitHub Pages ignores it anyway.
+// referrer's hostname is kept, and only on the first pageview of a load.
+// $current_url is rebuilt from the parsed route rather than copied from
+// location.hash, so neither a query string (ad click ids like fbclid, gclid)
+// nor arbitrary hash text reaches PostHog -- only a view name and an id that
+// matches ROUTE_ID_PATTERN.
 export function pageviewProperties({ location, referrer, first }) {
-  const { view, id } = parseRoute(location.hash);
+  const { view, id: rawId } = parseRoute(location.hash);
+  const id = typeof rawId === 'string' && ROUTE_ID_PATTERN.test(rawId) ? rawId : null;
+  const $pathname = id ? `/${view}/${id}` : `/${view}`;
   const properties = {
     view,
     id,
-    $current_url: `${location.origin}${location.pathname}${location.hash}`,
+    $current_url: `${location.origin}${location.pathname}#${$pathname}`,
     $host: location.host,
-    $pathname: id ? `/${view}/${id}` : `/${view}`,
+    $pathname,
   };
   if (first) properties.$referring_domain = referrerDomain(referrer);
   return properties;

@@ -183,6 +183,29 @@ test('the voteCast telemetry event carries no vote direction', () => {
   assert.doesNotMatch(call[1], /direction|pendingVote|vote\./, 'voteCast must not carry a vote direction');
 });
 
+// app.js has no behavioural test, so these pin the wiring the telemetry spec
+// relies on: the report form gets a real onTelemetry, and every route change
+// (including the first render) is counted as a $pageview.
+test('app.js wires telemetry into the report form and counts every render as a pageview', () => {
+  const app = sourceOf('app.js');
+  assert.match(app, /onTelemetry:\s*telemetry\.track/, 'app.js must pass onTelemetry: telemetry.track to createReportForm');
+  assert.match(
+    app,
+    /addEventListener\('hashchange', \(\) => \{\s*render\(\);\s*trackPageview\(\);\s*\}\)/,
+    'the hashchange listener must render then count the pageview',
+  );
+  const renderThenTrack = app.match(/render\(\);\s*trackPageview\(\);/g) ?? [];
+  assert.ok(
+    renderThenTrack.length >= 2,
+    `expected render() immediately followed by trackPageview() at least twice (hashchange + first render), found ${renderThenTrack.length}`,
+  );
+  assert.match(
+    app,
+    /telemetry\.track\('filterToggled',\s*\{\s*filter:\s*box\.dataset\.filter,\s*on:\s*box\.checked\s*\}\)/,
+    'a filter checkbox change must be counted as filterToggled',
+  );
+});
+
 // A stray closing brace does not fail loudly: CSS error recovery silently
 // discards the NEXT rule, so one extra `}` after a block deletion cost the
 // whole .chip rule -- radius, border and background -- with no error anywhere.

@@ -55,7 +55,10 @@ traffic through the Worker for no gain once the proxy is reused).
   cannot enforce this; the setup step is documented in `README.md`.
 - The telemetry id is **never** attached to a report, a vote, or any request to
   the Worker, and no report id is ever attached to a telemetry event. No
-  identifier links browsing to contributing.
+  identifier links browsing to contributing. Timing still could: PostHog
+  timestamps `reportSubmitted`, and D1 stores each report's `created_at`, so
+  someone holding both could line up one page load with one report. Nothing
+  in either identifies a person.
 
 Consequence, accepted: PostHog cannot count unique or returning visitors,
 sessions or bounce rate. It counts page loads and events.
@@ -66,7 +69,7 @@ Event names are camelCase, matching uma-tools.
 
 | Event | When | Properties |
 |---|---|---|
-| `$pageview` | First render, and every `hashchange` | `view`, `id` (from `parseRoute`), `$current_url` (origin, path and hash; the query string is dropped), `$host`, `$pathname` (the hash route as a path, e.g. `/character/seteth`); on the first pageview of a page load only, `$referring_domain` (hostname of `document.referrer`, or `$direct`) |
+| `$pageview` | First render, and every `hashchange` | `view`, `id` (from `parseRoute`, kept only when it looks like a real id — kebab-case, ≤ 80 characters, matching `ROUTE_ID_PATTERN` — otherwise `null`), `$current_url` (rebuilt from the parsed route: origin, path and `#` plus `$pathname`; never copied from the raw hash, so neither a query string nor arbitrary hash text reaches it), `$host`, `$pathname` (the hash route as a path, e.g. `/character/seteth`); on the first pageview of a page load only, `$referring_domain` (hostname of `document.referrer`, or `$direct`) |
 | `search` | Search box idle for 1500 ms with a trimmed value of 2+ characters that differs from the last one sent | `query`: lower-cased, trimmed, cut to 60 characters |
 | `filterToggled` | A `[data-filter]` checkbox changes | `filter` (its `data-filter` name), `on` (boolean) |
 | `reportOpened` | The report dialog opens | none |
@@ -77,6 +80,14 @@ Deliberately absent: report contents (character, gift, reaction, item name),
 report ids, vote direction, full referrer URLs, screen size, user agent string,
 language. `voteCast` carries no direction so that no tally of any kind exists
 anywhere, in keeping with "Peer validation by voting".
+
+**One overlap, accepted.** Search text is sent as typed (bounded as above),
+and the Gifts tab pre-fills a missing-item report from the search box, so a
+`search` event can carry the name of an item that is then reported in the
+same page load, under the same id as its `reportSubmitted`. This is accepted:
+a search that finds nothing is exactly the signal search telemetry exists
+for, the PostHog project is readable only by the maintainer, and nothing in
+it identifies the reporter.
 
 The `search` debounce is separate from, and longer than, the 120 ms render
 debounce, so typing "seteth" sends one event rather than six prefixes.
@@ -91,11 +102,13 @@ by `node:test`.
 export function buildEvent({ key, distinctId, event, properties }) → object
 
 // Decides whether telemetry runs at all.
-export function telemetryEnabled({ key, location }) → boolean
+export function telemetryEnabled({ key, host, location }) → boolean
 
-// Returns { track(event, properties) }. track() never throws, never returns a
-// promise the caller must handle, and is a no-op when disabled.
-export function createTelemetry({ key, host, location, send, randomId }) → { track }
+// Returns { enabled, track(event, properties) }. enabled is false when
+// telemetry is off, so a caller can check it without calling track(). track()
+// never throws, never returns a promise the caller must handle, and is a
+// no-op when disabled.
+export function createTelemetry({ key, host, location, send, randomId }) → { enabled, track }
 ```
 
 - `buildEvent` returns `{ api_key, event, distinct_id, properties }` where
@@ -107,8 +120,10 @@ export function createTelemetry({ key, host, location, send, randomId }) → { t
   `location.hostname` is not `localhost`, `127.0.0.1` or `[::1]`. Local
   development and file previews therefore send nothing.
 - `send(url, body)` is injected. The browser default is
-  `fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' },
-  body, keepalive: true, credentials: 'omit' })`, with the promise's rejection
+  `fetch(url, { method: 'POST', headers: { 'content-type': 'text/plain' },
+  body, keepalive: true, credentials: 'omit' })` — `text/plain` keeps it a CORS
+  simple request with no preflight round-trip, and PostHog parses the body as
+  JSON regardless of the content type — with the promise's rejection
   swallowed. `url` is `${host}/i/v0/e/`.
 - `randomId` is injected (default `() => crypto.randomUUID()`) so tests are
   deterministic.
