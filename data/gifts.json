@@ -173,7 +173,7 @@
     "id": "pastry-cookbook",
     "name": "Pastry Cookbook",
     "category": "sweets",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -503,7 +503,7 @@
     "id": "shield-portrait",
     "name": "Shield Portrait",
     "category": "paintings",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
