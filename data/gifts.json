@@ -733,7 +733,7 @@
     "id": "horse-grooming-kit",
     "name": "Horse-Grooming Kit",
     "category": "horses",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
