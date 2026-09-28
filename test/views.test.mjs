@@ -371,12 +371,15 @@ test('categoryChips promotes a category to tested on a loved observation, even u
   ]);
 });
 
-// A favourite reaction only happens on an uncommon/rare item -- it says
+// A favourite reaction is specific to that item -- it says
 // something about that ITEM, not its category, so it must never promote the
 // whole category to confirmed. See categoryVerdicts's comment in shared.js,
 // and CLAUDE.md's "A favourite is about the item; only loved results confirm
-// a category."
-test('categoryChips does not promote a category on a FAVORITE observation', () => {
+// a category." `chamomile` (from testedBase) is `common` on purpose: a
+// favourite can happen on a gift of any rarity, and this is the fixture that
+// proves the common case specifically, not just uncommon/rare ones.
+test('categoryChips does not promote a category on a FAVORITE observation, even on a common gift', () => {
+  assert.equal(testedBase.gifts[0].rarity, 'common', 'this test is only meaningful while chamomile stays common');
   const idx = buildIndex({
     ...testedBase,
     characters: [testedCharacter()],
@@ -1910,15 +1913,24 @@ test('the real dataset marks Alexandra’s fashion chip and Seteth’s books chi
   assert.equal(setethBooks?.state, 'confirmed');
 });
 
-// Against the real committed dataset: this is the maintainer's rule from
-// play, in the data that motivated it. Ninae has a FAVORITE (double points)
-// on a fashion item plus several liked/slight results elsewhere, none of
-// which is a loved reaction -- so no category she's been tested on is
-// confirmed, and only her guide-linked categories render, all unconfirmed.
-// Fabio's FAVORITE sits on a books item, but he has no loved result on any
-// books item, so books stays unconfirmed even though his favourite is a book;
-// his loved results elsewhere confirm coffee and fermented-drinks normally.
-// Lysander has no FAVORITE at all, but a loved result confirms weapons.
+// Against the real committed dataset: a category chip is confirmed exactly
+// when the character has an approved loved result on a gift in that
+// category -- never by a favourite alone, however that favourite is
+// reported. `hasLoved` derives the expected state independently of
+// `categoryChips` so this stays true regardless of what data is added later:
+// a future loved book for Fabio, or a future loved weapon for Lysander,
+// would correctly flip that category to confirmed, and this test would
+// still pass. The favourite-item assertions below additionally confirm each
+// favourite sits inside the category it is being checked against, so the
+// "not confirmed by the favourite" checks aren't vacuous.
+function hasLoved(idx, characterId, categoryId) {
+  return idx.gifts.some((gift) => {
+    if (gift.category !== categoryId) return false;
+    const confidence = idx.confidenceFor(characterId, gift.id);
+    return confidence.state === 'CONFIRMED' && confidence.reaction === 'loved';
+  });
+}
+
 test('the real dataset confirms categories from loved results only, keeping favourites about the item', async () => {
   const idx = buildIndex(await loadDataset('data'));
 
@@ -1930,14 +1942,26 @@ test('the real dataset confirms categories from loved results only, keeping favo
 
   const fabio = idx.byCharacterId.get('fabio');
   assert.deepEqual(favouriteGifts(idx, fabio).map((g) => g.id), ['history-of-a-master']);
+  assert.equal(idx.byGiftId.get('history-of-a-master').category, 'books');
   const fabioConfirmedIds = categoryChips(idx, fabio).filter((c) => c.state === 'confirmed').map((c) => c.id);
   assert.ok(fabioConfirmedIds.includes('coffee'));
   assert.ok(fabioConfirmedIds.includes('fermented-drinks'));
-  assert.ok(!fabioConfirmedIds.includes('books'), 'a FAVORITE on a books item must not confirm books');
+  assert.equal(
+    fabioConfirmedIds.includes('books'),
+    hasLoved(idx, 'fabio', 'books'),
+    'books is confirmed only by a loved books result, never by the favourite',
+  );
 
   const lysander = idx.byCharacterId.get('lysander');
-  assert.deepEqual(favouriteGifts(idx, lysander), []);
-  assert.ok(categoryChips(idx, lysander).some((c) => c.id === 'weapons' && c.state === 'confirmed'));
+  assert.deepEqual(favouriteGifts(idx, lysander).map((g) => g.id), ['rugged-blade']);
+  assert.equal(idx.byGiftId.get('rugged-blade').category, 'weapons');
+  const lysanderConfirmedIds = categoryChips(idx, lysander).filter((c) => c.state === 'confirmed').map((c) => c.id);
+  assert.ok(lysanderConfirmedIds.includes('military'));
+  assert.equal(
+    lysanderConfirmedIds.includes('weapons'),
+    hasLoved(idx, 'lysander', 'weapons'),
+    'weapons is confirmed only by a loved weapons result, never by the favourite',
+  );
 });
 
 // Against the real committed dataset: Esmeralda has a loved result on
@@ -1973,7 +1997,7 @@ test('the real dataset reports characterSummary as loved counts, not every posit
   const idx = buildIndex(await loadDataset('data'));
   const summaryFor = (id) => characterSummary(idx, idx.byCharacterId.get(id));
   assert.equal(summaryFor('esmeralda'), '6 loved');
-  assert.equal(summaryFor('seteth'), '1 favourite, 11 loved');
+  assert.equal(summaryFor('seteth'), '1 favourite, 12 loved');
   assert.equal(summaryFor('loretta'), '1 loved');
   assert.equal(summaryFor('ninae'), '1 favourite');
 });
