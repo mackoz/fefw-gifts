@@ -53,8 +53,9 @@ judgment call. The game never displays a numeric support-point value, so no
 points field exists anywhere in this design.
 
 **Every character has at least one favorite item.** The double-points tier is
-reserved for it. No published guide has found them all — rare gifts are
-expensive and the search space is large.
+reserved for it, and it can be a gift of any rarity, common included. No
+published guide has found them all — the search space is large. A character
+can have more than one favorite.
 
 **Category matching has item-level exceptions.** Nydine likes horse grooming kits
 but not mane ornaments: she rides orniuses, which have no manes. Exceptions are
@@ -429,7 +430,6 @@ Tracked in the repo, not guessed at in the UI:
 - Do Likes and Interests behave differently for gifting, or are they equivalent?
 - Can a character's profile traits change over the course of the game?
 - Do any other characters have act-gated gifting restrictions like Bertrand's?
-- Can a character have more than one double-points favorite?
 
 ## Out of scope
 
