@@ -1503,5 +1503,89 @@
     "character": "olympia",
     "reaction": "slight",
     "date": "2026-09-28"
+  },
+  {
+    "id": "48b27f7c-1c9b-42b2-af4a-837c18c8fcdc",
+    "gift": "wing-fletching",
+    "character": "benditz",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "313ee149-d891-45c9-914c-07634446795f",
+    "gift": "potted-vegetables",
+    "character": "simon",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "76e80870-3459-486b-8424-fe8820ddfe38",
+    "gift": "strong-cervi",
+    "character": "mu",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "dace83dd-da7a-45f5-a27f-1ff6b90ab69e",
+    "gift": "pack-of-pastels",
+    "character": "seteth",
+    "reaction": "liked",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "8cc99aaa-7048-4947-ba27-74401b3da328",
+    "gift": "mane-ornament",
+    "character": "seteth",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "46346280-b1e5-43c7-bceb-7ccdf68b8bbe",
+    "gift": "kitten-figurine",
+    "character": "seteth",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "7f1ef89f-cd88-4d50-92ae-c3c52e84b9ae",
+    "gift": "full-sewing-kit",
+    "character": "seteth",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "4a8c9aa5-e2d2-4dc3-91ec-f3dbd02226d7",
+    "gift": "pickled-vegetables",
+    "character": "seteth",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "0e243f4a-7205-43f4-b913-215c85d68f47",
+    "gift": "protection-figurine",
+    "character": "diego",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "50cb7bc2-93b5-46c3-a0e6-b0a6488e8c8f",
+    "gift": "jamel-milk",
+    "character": "mu",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "cefffab9-3c04-437f-b362-9f5929258623",
+    "gift": "pastry-cookbook",
+    "character": "loretta",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "d907bcbe-0c11-4b82-bc48-fff969ef90fb",
+    "gift": "shield-portrait",
+    "character": "olympia",
+    "reaction": "favorite",
+    "date": "2026-09-28"
   }
 ]

@@ -1998,7 +1998,7 @@ test('the real dataset reports characterSummary as loved counts, not every posit
   const summaryFor = (id) => characterSummary(idx, idx.byCharacterId.get(id));
   assert.equal(summaryFor('esmeralda'), '6 loved');
   assert.equal(summaryFor('seteth'), '1 favourite, 12 loved');
-  assert.equal(summaryFor('loretta'), '1 loved');
+  assert.equal(summaryFor('io'), '1 loved');
   assert.equal(summaryFor('ninae'), '1 favourite');
 });
 
