@@ -32,8 +32,8 @@
   {
     "id": "strategy-manuscript",
     "name": "Strategy Manuscript",
-    "category": null,
-    "rarity": null,
+    "category": "training",
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -293,7 +293,7 @@
     "id": "full-sewing-kit",
     "name": "Full Sewing Kit",
     "category": "fashion",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
