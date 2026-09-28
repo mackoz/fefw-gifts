@@ -246,18 +246,8 @@ test('a favorite referencing an unknown gift is rejected', () => {
   assert.match(errors[0], /character c1: unknown favorite gift: ghost-gift/);
 });
 
-// A favourite (double support points) only ever happens on an uncommon
-// or rare item, per the maintainer's rule from play. Declaring one on a
-// common gift is a data error, not just an unusual case.
-test('a declared favorite naming a common gift is rejected', () => {
-  const d = base();
-  d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: 'common', description: '', sources: [] });
-  d.characters.push(character({ favorites: ['g1'] }));
-  const { errors } = validate(d);
-  assert.match(errors[0], /character c1: favorite gift g1 is common \(only uncommon or rare items can be favourites\)/);
-});
-
-for (const [label, rarity] of [['an uncommon gift', 'uncommon'], ['a rare gift', 'rare'], ['a gift of unknown rarity', null]]) {
+// A favourite (double support points) can happen on a gift of any rarity.
+for (const [label, rarity] of [['a common gift', 'common'], ['an uncommon gift', 'uncommon'], ['a rare gift', 'rare'], ['a gift of unknown rarity', null]]) {
   test(`a declared favorite naming ${label} is allowed`, () => {
     const d = base();
     d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity, description: '', sources: [] });
@@ -267,8 +257,8 @@ for (const [label, rarity] of [['an uncommon gift', 'uncommon'], ['a rare gift',
 }
 
 // The unknown-gift check above must not also crash this one: an unknown
-// favorite id has no gift to look up a rarity on.
-test('an unknown declared favorite does not also crash the common-favourite check', () => {
+// favorite id has no gift to look up.
+test('an unknown declared favorite does not also crash validation', () => {
   const d = base();
   d.characters.push(character({ favorites: ['ghost-gift'] }));
   assert.doesNotThrow(() => validate(d));
@@ -387,19 +377,8 @@ test('an observation with an unknown gift or invalid reaction is rejected', () =
   assert.ok(errors.some((e) => /observation o1: invalid reaction: meh/.test(e)));
 });
 
-// A favourite (double support points) only ever happens on an uncommon
-// or rare item, per the maintainer's rule from play. A reported favorite
-// reaction on a known-common gift is impossible and must be an error.
-test('a favorite observation on a common gift is rejected', () => {
-  const d = base();
-  d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: 'common', description: '', sources: [] });
-  d.characters.push(character());
-  d.observations.push({ id: 'o1', gift: 'g1', character: 'c1', reaction: 'favorite', date: '2026-09-20' });
-  const { errors } = validate(d);
-  assert.match(errors[0], /observation o1: favorite reaction on common gift g1 \(only uncommon or rare items can be favourites\)/);
-});
-
-for (const [label, rarity] of [['an uncommon gift', 'uncommon'], ['a rare gift', 'rare'], ['a gift of unknown rarity', null]]) {
+// A favourite (double support points) can happen on a gift of any rarity.
+for (const [label, rarity] of [['a common gift', 'common'], ['an uncommon gift', 'uncommon'], ['a rare gift', 'rare'], ['a gift of unknown rarity', null]]) {
   test(`a favorite observation on ${label} is allowed`, () => {
     const d = base();
     d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity, description: '', sources: [] });
@@ -410,8 +389,8 @@ for (const [label, rarity] of [['an uncommon gift', 'uncommon'], ['a rare gift',
 }
 
 // The unknown-gift check above must not also crash this one: an unknown gift
-// id has no gift to look up a rarity on.
-test('a favorite observation on an unknown gift does not also crash the common-favourite check', () => {
+// id has no gift to look up.
+test('a favorite observation on an unknown gift does not also crash validation', () => {
   const d = base();
   d.characters.push(character());
   d.observations.push({ id: 'o1', gift: 'ghost', character: 'c1', reaction: 'favorite', date: '2026-09-20' });

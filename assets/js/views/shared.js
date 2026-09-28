@@ -154,10 +154,10 @@ export function partitionRows(rows) {
 
 // A category's verdict for a character rests only on approved observations,
 // read through confidenceFor -- never a stored link and never an unreviewed
-// report. A favourite reaction only happens on an uncommon/rare item, so a
-// FAVORITE result says something about that item, not its category -- it
-// counts toward neither loved nor below-loved, and a common item in the same
-// category may not even be loved. CONTESTED, PENDING and PREDICTED are all
+// report. A favourite reaction is specific to that item, so a FAVORITE result
+// says something about that item, not its category -- it counts toward
+// neither loved nor below-loved, and another item in the same category may
+// not even be loved. CONTESTED, PENDING and PREDICTED are all
 // real signal elsewhere in the app, but none of them is a single, agreed
 // approved result, so none of them may promote or demote a category here --
 // see CLAUDE.md's "A pending report is not a confirmation." A liked, slight

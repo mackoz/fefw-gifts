@@ -371,7 +371,7 @@ test('categoryChips promotes a category to tested on a loved observation, even u
   ]);
 });
 
-// A favourite reaction only happens on an uncommon/rare item -- it says
+// A favourite reaction is specific to that item -- it says
 // something about that ITEM, not its category, so it must never promote the
 // whole category to confirmed. See categoryVerdicts's comment in shared.js,
 // and CLAUDE.md's "A favourite is about the item; only loved results confirm
