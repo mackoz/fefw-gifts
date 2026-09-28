@@ -63,7 +63,7 @@
     "id": "southern-ghosh",
     "name": "Southern Ghosh",
     "category": "fermented-drinks",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"

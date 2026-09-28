@@ -1468,5 +1468,40 @@
     "character": "io",
     "reaction": "loved",
     "date": "2026-09-28"
+  },
+  {
+    "id": "ef0c5eb0-f061-4c86-b460-97a181800387",
+    "gift": "mellow-pastries",
+    "character": "olympia",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "417ff164-237d-4272-b9ec-b93c301ab109",
+    "gift": "select-coffee",
+    "character": "olympia",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "7170f0d4-b858-414f-9dca-1f8cc7f8f50d",
+    "gift": "garum",
+    "character": "olympia",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "02e3877c-dc5e-4741-b5b3-e5aa38f60491",
+    "gift": "southern-ghosh",
+    "character": "olympia",
+    "reaction": "liked",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "208a5f0d-75c3-471c-98dd-d85cf43aef90",
+    "gift": "mature-shosh",
+    "character": "olympia",
+    "reaction": "slight",
+    "date": "2026-09-28"
   }
 ]
