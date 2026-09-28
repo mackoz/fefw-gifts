@@ -1426,5 +1426,12 @@
     "character": "ninae",
     "reaction": "liked",
     "date": "2026-09-27"
+  },
+  {
+    "id": "1f1ac381-fe63-45e3-95c9-9ca8f55989ea",
+    "gift": "full-sewing-kit",
+    "character": "ninae",
+    "reaction": "slight",
+    "date": "2026-09-27"
   }
 ]
