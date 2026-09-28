@@ -1419,5 +1419,12 @@
     "character": "sirocco",
     "reaction": "liked",
     "date": "2026-09-27"
+  },
+  {
+    "id": "939b4476-d145-47bd-a09e-bd790be39550",
+    "gift": "horse-grooming-kit",
+    "character": "ninae",
+    "reaction": "liked",
+    "date": "2026-09-27"
   }
 ]
