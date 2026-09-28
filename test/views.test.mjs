@@ -1918,7 +1918,8 @@ test('the real dataset marks Alexandra’s fashion chip and Seteth’s books chi
 // Fabio's FAVORITE sits on a books item, but he has no loved result on any
 // books item, so books stays unconfirmed even though his favourite is a book;
 // his loved results elsewhere confirm coffee and fermented-drinks normally.
-// Lysander has no FAVORITE at all, but a loved result confirms weapons.
+// Lysander's FAVORITE is a common weapons item with no loved weapons result
+// beside it, so weapons stays unconfirmed; his loved results confirm military.
 test('the real dataset confirms categories from loved results only, keeping favourites about the item', async () => {
   const idx = buildIndex(await loadDataset('data'));
 
@@ -1936,8 +1937,10 @@ test('the real dataset confirms categories from loved results only, keeping favo
   assert.ok(!fabioConfirmedIds.includes('books'), 'a FAVORITE on a books item must not confirm books');
 
   const lysander = idx.byCharacterId.get('lysander');
-  assert.deepEqual(favouriteGifts(idx, lysander), []);
-  assert.ok(categoryChips(idx, lysander).some((c) => c.id === 'weapons' && c.state === 'confirmed'));
+  assert.deepEqual(favouriteGifts(idx, lysander).map((g) => g.id), ['rugged-blade']);
+  const lysanderConfirmedIds = categoryChips(idx, lysander).filter((c) => c.state === 'confirmed').map((c) => c.id);
+  assert.ok(lysanderConfirmedIds.includes('military'));
+  assert.ok(!lysanderConfirmedIds.includes('weapons'), 'a FAVORITE on a common weapons item must not confirm weapons');
 });
 
 // Against the real committed dataset: Esmeralda has a loved result on
@@ -1973,7 +1976,7 @@ test('the real dataset reports characterSummary as loved counts, not every posit
   const idx = buildIndex(await loadDataset('data'));
   const summaryFor = (id) => characterSummary(idx, idx.byCharacterId.get(id));
   assert.equal(summaryFor('esmeralda'), '6 loved');
-  assert.equal(summaryFor('seteth'), '1 favourite, 11 loved');
+  assert.equal(summaryFor('seteth'), '1 favourite, 12 loved');
   assert.equal(summaryFor('loretta'), '1 loved');
   assert.equal(summaryFor('ninae'), '1 favourite');
 });
