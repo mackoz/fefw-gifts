@@ -2,14 +2,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildIndex } from '../assets/js/data.js';
 import { loadDataset } from '../scripts/validate.mjs';
+import { category, gift, character, observation, dataset as makeDataset } from '../test-support/fixtures.mjs';
 
-const dataset = {
-  categories: [{ id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] }],
-  gifts: [{ id: 'g1', name: 'Book', category: 'books', rarity: 'common', description: '', sources: [] }],
-  characters: [{ id: 'c1', name: 'C', giftable: true, spoiler: false, traits: [], categories: { books: { state: 'profile', source: null } }, rarityPreference: null, favorites: [], notes: null }],
-  observations: [{ id: 'o1', gift: 'g1', character: 'c1', reaction: 'loved', date: '2026-09-20' }],
-  sources: [],
-};
+const dataset = makeDataset({
+  categories: [category()],
+  gifts: [gift({ name: 'Book' })],
+  characters: [character({ categories: { books: { state: 'profile', source: null } } })],
+  observations: [observation({ reaction: 'loved' })],
+});
 
 test('lookups resolve entities by id', () => {
   const idx = buildIndex(dataset);
@@ -43,23 +43,15 @@ test('the real committed dataset builds and derives without throwing', async () 
 // Two gifts sharing a category, two characters: buildIndex must derive loved
 // categories per (character, gift) pair from `observations` only, and pass
 // them into confidenceFor as a play link -- never mutating character.categories.
-const lovedDataset = (over = {}) => ({
-  categories: [{ id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] }],
-  gifts: [
-    { id: 'a', name: 'A', category: 'books', rarity: 'common', description: '', sources: [] },
-    { id: 'b', name: 'B', category: 'books', rarity: 'common', description: '', sources: [] },
-  ],
-  characters: [
-    { id: 'c1', name: 'C1', giftable: true, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null },
-    { id: 'c2', name: 'C2', giftable: true, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null },
-  ],
-  observations: [],
-  sources: [],
+const lovedDataset = (over = {}) => makeDataset({
+  categories: [category()],
+  gifts: [gift({ id: 'a', name: 'A' }), gift({ id: 'b', name: 'B' })],
+  characters: [character({ name: 'C1' }), character({ id: 'c2', name: 'C2' })],
   ...over,
 });
 
 test('a loved result on one gift predicts the rest of its category through play, for that character only', () => {
-  const idx = buildIndex(lovedDataset({ observations: [{ id: 'o1', gift: 'a', character: 'c1', reaction: 'loved', date: '2026-09-20' }] }));
+  const idx = buildIndex(lovedDataset({ observations: [observation({ gift: 'a', reaction: 'loved' })] }));
   const b = idx.confidenceFor('c1', 'b');
   assert.equal(b.state, 'PREDICTED');
   assert.equal(b.predicted, 'positive');
@@ -69,7 +61,7 @@ test('a loved result on one gift predicts the rest of its category through play,
 });
 
 test('a favourite reaction never makes a play link -- a favourite is about the item', () => {
-  const idx = buildIndex(lovedDataset({ observations: [{ id: 'o1', gift: 'a', character: 'c1', reaction: 'favorite', date: '2026-09-20' }] }));
+  const idx = buildIndex(lovedDataset({ observations: [observation({ gift: 'a', reaction: 'favorite' })] }));
   assert.equal(idx.confidenceFor('c1', 'b').state, 'UNTESTED');
 });
 
@@ -83,8 +75,8 @@ test('a below-loved reaction never makes a play link', () => {
 test('a contested pair never makes a play link', () => {
   const idx = buildIndex(lovedDataset({
     observations: [
-      { id: 'o1', gift: 'a', character: 'c1', reaction: 'loved', date: '2026-09-20' },
-      { id: 'o2', gift: 'a', character: 'c1', reaction: 'slight', date: '2026-09-21' },
+      observation({ gift: 'a', reaction: 'loved' }),
+      observation({ id: 'o2', gift: 'a', reaction: 'slight', date: '2026-09-21' }),
     ],
   }));
   assert.equal(idx.confidenceFor('c1', 'a').state, 'CONTESTED');
@@ -98,7 +90,7 @@ test('a pending loved report never makes a play link', () => {
 });
 
 test('buildIndex never writes a play link back into character.categories', () => {
-  const ds = lovedDataset({ observations: [{ id: 'o1', gift: 'a', character: 'c1', reaction: 'loved', date: '2026-09-20' }] });
+  const ds = lovedDataset({ observations: [observation({ gift: 'a', reaction: 'loved' })] });
   const before = structuredClone(ds.characters.find((c) => c.id === 'c1').categories);
   const idx = buildIndex(ds);
   idx.confidenceFor('c1', 'b');

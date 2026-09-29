@@ -4,21 +4,20 @@ import { buildIndex } from '../assets/js/data.js';
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
 import { weaveModel, weaveSummary } from '../assets/js/views/weave.js';
 import { loadDataset } from '../scripts/validate.mjs';
+import { category, gift, character, dataset as makeDataset } from '../test-support/fixtures.mjs';
 
-const dataset = {
-  categories: [{ id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] }],
+const dataset = makeDataset({
+  categories: [category()],
   gifts: [
-    { id: 'book', name: 'Book', category: 'books', rarity: null, description: '', sources: [] },
-    { id: 'rock', name: 'Rock', category: null, rarity: null, description: '', sources: [] },
+    gift({ id: 'book', name: 'Book', rarity: null }),
+    gift({ id: 'rock', name: 'Rock', category: null, rarity: null }),
   ],
   characters: [
-    { id: 'c1', name: 'C1', giftable: true, spoiler: false, traits: [], categories: { books: { state: 'guide', source: null } }, rarityPreference: null, favorites: [], notes: null },
-    { id: 'c2', name: 'C2', giftable: true, spoiler: true, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null },
-    { id: 'c3', name: 'C3', giftable: false, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null },
+    character({ name: 'C1', categories: { books: { state: 'guide', source: null } } }),
+    character({ id: 'c2', name: 'C2', spoiler: true }),
+    character({ id: 'c3', name: 'C3', giftable: false }),
   ],
-  observations: [],
-  sources: [],
-};
+});
 
 const clone = (extra) => ({ ...dataset, ...extra });
 

@@ -2,9 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { deriveConfidence, REACTIONS, POSITIVE_REACTIONS } from '../assets/js/confidence.js';
 
-const gift = (over = {}) => ({ id: 'g1', name: 'G', category: 'books', rarity: 'common', ...over });
-const character = (over = {}) => ({ id: 'c1', name: 'C', giftable: true, categories: {}, rarityPreference: null, favorites: [], ...over });
-const obs = (over = {}) => ({ id: 'o1', gift: 'g1', character: 'c1', reaction: 'liked', date: '2026-09-20', ...over });
+import { gift, character, observation } from '../test-support/fixtures.mjs';
 
 test('no link and no observation is untested', () => {
   const c = deriveConfidence({ character: character(), gift: gift(), observations: [] });
@@ -42,32 +40,32 @@ test('a gift with no category can never be predicted', () => {
 });
 
 test('an observation confirms and reports its reaction', () => {
-  const c = deriveConfidence({ character: character(), gift: gift(), observations: [obs({ reaction: 'loved' })] });
+  const c = deriveConfidence({ character: character(), gift: gift(), observations: [observation({ reaction: 'loved' })] });
   assert.equal(c.state, 'CONFIRMED');
   assert.equal(c.reaction, 'loved');
   assert.equal(c.observationCount, 1);
 });
 
 test('a double-points reaction is a favorite', () => {
-  const c = deriveConfidence({ character: character(), gift: gift(), observations: [obs({ reaction: 'favorite' })] });
+  const c = deriveConfidence({ character: character(), gift: gift(), observations: [observation({ reaction: 'favorite' })] });
   assert.equal(c.state, 'FAVORITE');
 });
 
 test('disagreeing observations are contested, not silently resolved', () => {
-  const c = deriveConfidence({ character: character(), gift: gift(), observations: [obs({ reaction: 'loved' }), obs({ id: 'o2', reaction: 'none' })] });
+  const c = deriveConfidence({ character: character(), gift: gift(), observations: [observation({ reaction: 'loved' }), observation({ id: 'o2', reaction: 'none' })] });
   assert.equal(c.state, 'CONTESTED');
   assert.equal(c.observationCount, 2);
 });
 
 test('agreeing observations are not contested', () => {
-  const c = deriveConfidence({ character: character(), gift: gift(), observations: [obs({ reaction: 'liked' }), obs({ id: 'o2', reaction: 'liked' })] });
+  const c = deriveConfidence({ character: character(), gift: gift(), observations: [observation({ reaction: 'liked' }), observation({ id: 'o2', reaction: 'liked' })] });
   assert.equal(c.state, 'CONFIRMED');
   assert.equal(c.observationCount, 2);
 });
 
 test('an observation contradicting a positive prediction is flagged as an exception', () => {
   const character_ = character({ categories: { horses: { state: 'guide', source: 'polygon-2026-09-17' } } });
-  const c = deriveConfidence({ character: character_, gift: gift({ category: 'horses' }), observations: [obs({ reaction: 'none' })] });
+  const c = deriveConfidence({ character: character_, gift: gift({ category: 'horses' }), observations: [observation({ reaction: 'none' })] });
   assert.equal(c.state, 'CONFIRMED');
   assert.equal(c.reaction, 'none');
   assert.equal(c.isException, true);
@@ -75,13 +73,13 @@ test('an observation contradicting a positive prediction is flagged as an except
 
 test('an observation matching its prediction is not an exception', () => {
   const character_ = character({ categories: { books: { state: 'profile', source: null } } });
-  const c = deriveConfidence({ character: character_, gift: gift(), observations: [obs({ reaction: 'liked' })] });
+  const c = deriveConfidence({ character: character_, gift: gift(), observations: [observation({ reaction: 'liked' })] });
   assert.equal(c.isException, false);
 });
 
 test('an off-profile like is an exception against a negative prediction', () => {
   const character_ = character({ categories: { books: { state: 'refuted', source: null } } });
-  const c = deriveConfidence({ character: character_, gift: gift(), observations: [obs({ reaction: 'loved' })] });
+  const c = deriveConfidence({ character: character_, gift: gift(), observations: [observation({ reaction: 'loved' })] });
   assert.equal(c.isException, true);
 });
 
@@ -108,9 +106,9 @@ test('unknown rarity never reports a mismatch', () => {
   assert.equal(c.rarityMismatch, false);
 });
 
-const CHAR = { id: 'c1', name: 'C', giftable: true, categories: { books: { state: 'guide', source: 's1' } }, rarityPreference: null };
-const BOOK = { id: 'book', name: 'Book', category: 'books', rarity: 'common' };
-const ROCK = { id: 'rock', name: 'Rock', category: null, rarity: null };
+const CHAR = character({ categories: { books: { state: 'guide', source: 's1' } } });
+const BOOK = gift({ id: 'book', name: 'Book' });
+const ROCK = gift({ id: 'rock', name: 'Rock', category: null, rarity: null });
 const PENDING_ROW = { id: 'r1', character: 'c1', gift: 'book', reaction: 'loved' };
 
 test('a pending report outranks a prediction without becoming a confirmation', () => {
@@ -198,13 +196,13 @@ test('a category absent from lovedCategories behaves exactly like before', () =>
 });
 
 test('a tested pair in a loved category still flags a below-prediction exception', () => {
-  const c = deriveConfidence({ character: character(), gift: gift(), observations: [obs({ reaction: 'none' })], lovedCategories: new Set(['books']) });
+  const c = deriveConfidence({ character: character(), gift: gift(), observations: [observation({ reaction: 'none' })], lovedCategories: new Set(['books']) });
   assert.equal(c.state, 'CONFIRMED');
   assert.equal(c.isException, true);
 });
 
 test('a loved result in a loved category is not an exception', () => {
-  const c = deriveConfidence({ character: character(), gift: gift(), observations: [obs({ reaction: 'loved' })], lovedCategories: new Set(['books']) });
+  const c = deriveConfidence({ character: character(), gift: gift(), observations: [observation({ reaction: 'loved' })], lovedCategories: new Set(['books']) });
   assert.equal(c.state, 'CONFIRMED');
   assert.equal(c.isException, false);
 });

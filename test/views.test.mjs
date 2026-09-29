@@ -8,22 +8,19 @@ import {
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
 import { giftRows, giftIndexModel, missingItemButton } from '../assets/js/views/gift.js';
 import { loadDataset } from '../scripts/validate.mjs';
+import { category, gift, character, source } from '../test-support/fixtures.mjs';
 
 const dataset = {
   categories: [
-    { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
-    { id: 'coffee', label: 'Coffee', inGameDescriptor: null, aliases: [] },
+    category(),
+    category({ id: 'coffee', label: 'Coffee' }),
   ],
   gifts: [
-    { id: 'book', name: 'Book', category: 'books', rarity: 'common', description: '', sources: [] },
-    { id: 'brew', name: 'Brew', category: 'coffee', rarity: 'common', description: '', sources: [] },
-    { id: 'rock', name: 'Rock', category: null, rarity: null, description: '', sources: [] },
+    gift({ id: 'book', name: 'Book' }),
+    gift({ id: 'brew', name: 'Brew', category: 'coffee' }),
+    gift({ id: 'rock', name: 'Rock', category: null, rarity: null }),
   ],
-  characters: [{
-    id: 'c1', name: 'C', giftable: true, spoiler: false, traits: [],
-    categories: { books: { state: 'profile', source: null } },
-    rarityPreference: null, favorites: [], notes: null,
-  }],
+  characters: [character({ categories: { books: { state: 'profile', source: null } } })],
   observations: [{ id: 'o1', gift: 'brew', character: 'c1', reaction: 'favorite', date: '2026-09-20' }],
   sources: [],
 };
@@ -132,21 +129,17 @@ test('badge classes a below-loved result as state-liked/state-slight/state-none,
 // and a tested (CONFIRMED) badge gets none at all.
 test('badge titles a play-backed prediction as found through play, keeps the guide title, and adds none once tested', () => {
   const ds = {
-    categories: [{ id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] }],
+    categories: [category()],
     gifts: [
-      { id: 'a', name: 'A', category: 'books', rarity: 'common', description: '', sources: [] },
-      { id: 'b', name: 'B', category: 'books', rarity: 'common', description: '', sources: [] },
+      gift({ id: 'a', name: 'A' }),
+      gift({ id: 'b', name: 'B' }),
     ],
     characters: [
-      { id: 'c1', name: 'C1', giftable: true, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null },
-      {
-        id: 'c2', name: 'C2', giftable: true, spoiler: false, traits: [],
-        categories: { books: { state: 'guide', source: 'polygon-1' } },
-        rarityPreference: null, favorites: [], notes: null,
-      },
+      character({ name: 'C1' }),
+      character({ id: 'c2', name: 'C2', categories: { books: { state: 'guide', source: 'polygon-1' } } }),
     ],
     observations: [{ id: 'o1', gift: 'a', character: 'c1', reaction: 'loved', date: '2026-09-20' }],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   };
   const idx = buildIndex(ds);
 
@@ -165,8 +158,8 @@ test('giftRows lists giftable characters ranked by confidence', () => {
     ...dataset,
     characters: [
       dataset.characters[0],
-      { id: 'c2', name: 'D', giftable: true, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null },
-      { id: 'c3', name: 'E', giftable: false, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null },
+      character({ id: 'c2', name: 'D' }),
+      character({ id: 'c3', name: 'E', giftable: false }),
     ],
   });
   const rows = giftRows(idx, 'book', DEFAULT_FILTERS);
@@ -221,8 +214,8 @@ test('suggestions rank rare items first', () => {
     ...dataset,
     observations: [],
     gifts: [
-      { id: 'cheap', name: 'Cheap Book', category: 'books', rarity: 'common', description: '', sources: [] },
-      { id: 'posh', name: 'Posh Book', category: 'books', rarity: 'rare', description: '', sources: [] },
+      gift({ id: 'cheap', name: 'Cheap Book', rarity: 'common' }),
+      gift({ id: 'posh', name: 'Posh Book', rarity: 'rare' }),
     ],
   });
   const m = favoritesModel(idx, DEFAULT_FILTERS);
@@ -302,9 +295,9 @@ test('the matrix has a symbol for pending that no other state uses', () => {
 });
 
 const OVERLAY_DATASET = {
-  categories: [{ id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] }],
-  gifts: [{ id: 'book', name: 'Book', category: 'books', rarity: 'common', description: '', sources: [] }],
-  characters: [{ id: 'c1', name: 'C', giftable: true, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null }],
+  categories: [category()],
+  gifts: [gift({ id: 'book', name: 'Book' })],
+  characters: [character()],
   observations: [],
   sources: [],
 };
@@ -379,25 +372,17 @@ test('categoryChips tolerates a character with no categories key', () => {
 // actually worked, independent of any stored link. `tea` carries no link at
 // all here.
 const testedBase = {
-  categories: [{ id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] }],
-  gifts: [{ id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] }],
+  categories: [category({ id: 'tea', label: 'Tea' })],
+  gifts: [gift({ id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common' })],
   characters: [],
   observations: [],
   sources: [],
 };
 
-function testedCharacter(overrides = {}) {
-  return {
-    id: 'p1', name: 'P', giftable: true, spoiler: false, traits: [],
-    categories: {}, rarityPreference: null, favorites: [], notes: null,
-    ...overrides,
-  };
-}
-
 test('categoryChips promotes a category to tested on a loved observation, even unlinked', () => {
   const idx = buildIndex({
     ...testedBase,
-    characters: [testedCharacter()],
+    characters: [character({ id: 'p1', name: 'P' })],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
@@ -416,7 +401,7 @@ test('categoryChips does not promote a category on a FAVORITE observation, even 
   assert.equal(testedBase.gifts[0].rarity, 'common', 'this test is only meaningful while chamomile stays common');
   const idx = buildIndex({
     ...testedBase,
-    characters: [testedCharacter()],
+    characters: [character({ id: 'p1', name: 'P' })],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'favorite', date: '2026-09-23' }],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
@@ -428,7 +413,7 @@ test('categoryChips does not promote a category on a FAVORITE observation, even 
 test('a CONFIRMED "none" reaction never counts as tested', () => {
   const idx = buildIndex({
     ...testedBase,
-    characters: [testedCharacter()],
+    characters: [character({ id: 'p1', name: 'P' })],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'none', date: '2026-09-23' }],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
@@ -440,7 +425,7 @@ test('a CONFIRMED "none" reaction never counts as tested', () => {
 test('a slight reaction does not count as confirmed', () => {
   const idx = buildIndex({
     ...testedBase,
-    characters: [testedCharacter()],
+    characters: [character({ id: 'p1', name: 'P' })],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'slight', date: '2026-09-23' }],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
@@ -451,7 +436,7 @@ test('a slight reaction does not count as confirmed', () => {
 test('a liked reaction does not count as confirmed', () => {
   const idx = buildIndex({
     ...testedBase,
-    characters: [testedCharacter()],
+    characters: [character({ id: 'p1', name: 'P' })],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'liked', date: '2026-09-23' }],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
@@ -463,8 +448,8 @@ test('a liked reaction does not count as confirmed', () => {
 test('a gift with no category is never promoted, even with an approved loved result', () => {
   const idx = buildIndex({
     categories: [],
-    gifts: [{ id: 'mystery', name: 'Mystery', category: null, rarity: null, description: '', sources: [] }],
-    characters: [testedCharacter()],
+    gifts: [gift({ id: 'mystery', name: 'Mystery', category: null, rarity: null })],
+    characters: [character({ id: 'p1', name: 'P' })],
     observations: [{ id: 'o1', character: 'p1', gift: 'mystery', reaction: 'loved', date: '2026-09-23' }],
     sources: [],
   });
@@ -474,7 +459,7 @@ test('a gift with no category is never promoted, even with an approved loved res
 test('a contested pair never counts as tested', () => {
   const idx = buildIndex({
     ...testedBase,
-    characters: [testedCharacter()],
+    characters: [character({ id: 'p1', name: 'P' })],
     observations: [
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'chamomile', reaction: 'none', date: '2026-09-23' },
@@ -488,7 +473,7 @@ test('a contested pair never counts as tested', () => {
 // able to promote a category on its own.
 test('a pending report never counts as tested', () => {
   const idx = buildIndex(
-    { ...testedBase, characters: [testedCharacter()] },
+    { ...testedBase, characters: [character({ id: 'p1', name: 'P' })] },
     [{ id: 'r1', character: 'p1', gift: 'chamomile', reaction: 'loved', created_at: '2026-09-23' }],
   );
   assert.equal(idx.confidenceFor('p1', 'chamomile').state, 'PENDING');
@@ -498,9 +483,9 @@ test('a pending report never counts as tested', () => {
 test('a tested category with a guide link keeps the link’s source and is not duplicated', () => {
   const idx = buildIndex({
     ...testedBase,
-    characters: [testedCharacter({ categories: { tea: { state: 'guide', source: 'polygon-1' } } })],
+    characters: [character({ id: 'p1', name: 'P', categories: { tea: { state: 'guide', source: 'polygon-1' } } })],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
     { id: 'tea', label: 'Tea', state: 'confirmed', source: 'polygon-1' },
@@ -512,9 +497,9 @@ test('a tested category with a guide link keeps the link’s source and is not d
 test('a refuted link with an approved positive result shows as tested, not dropped', () => {
   const idx = buildIndex({
     ...testedBase,
-    characters: [testedCharacter({ categories: { tea: { state: 'refuted', source: 'polygon-1' } } })],
+    characters: [character({ id: 'p1', name: 'P', categories: { tea: { state: 'refuted', source: 'polygon-1' } } })],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
     { id: 'tea', label: 'Tea', state: 'confirmed', source: 'polygon-1' },
@@ -528,16 +513,18 @@ test('a refuted link with an approved positive result shows as tested, not dropp
 test('tested chips are ordered by categories.json position and precede link-only chips', () => {
   const orderedDataset = {
     categories: [
-      { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
-      { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
-      { id: 'coffee', label: 'Coffee', inGameDescriptor: null, aliases: [] },
+      category({ id: 'tea', label: 'Tea' }),
+      category(),
+      category({ id: 'coffee', label: 'Coffee' }),
     ],
     gifts: [
-      { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
-      { id: 'novel', name: 'Novel', category: 'books', rarity: 'common', description: '', sources: [] },
-      { id: 'espresso', name: 'Espresso', category: 'coffee', rarity: 'common', description: '', sources: [] },
+      gift({ id: 'chamomile', name: 'Chamomile', category: 'tea' }),
+      gift({ id: 'novel', name: 'Novel' }),
+      gift({ id: 'espresso', name: 'Espresso', category: 'coffee' }),
     ],
-    characters: [testedCharacter({
+    characters: [character({
+      id: 'p1',
+      name: 'P',
       categories: {
         books: { state: 'guide', source: 'polygon-1' },
         coffee: { state: 'guide', source: 'polygon-1' },
@@ -547,7 +534,7 @@ test('tested chips are ordered by categories.json position and precede link-only
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'novel', reaction: 'loved', date: '2026-09-23' },
     ],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   };
   const idx = buildIndex(orderedDataset);
   const chips = categoryChips(idx, idx.byCharacterId.get('p1'));
@@ -562,10 +549,10 @@ test('tested chips are ordered by categories.json position and precede link-only
 // on the other can coexist -- the single-gift `testedBase` fixture above
 // cannot produce a mixed verdict at all.
 const mixedBase = {
-  categories: [{ id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] }],
+  categories: [category({ id: 'tea', label: 'Tea' })],
   gifts: [
-    { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
-    { id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'uncommon', description: '', sources: [] },
+    gift({ id: 'chamomile', name: 'Chamomile', category: 'tea' }),
+    gift({ id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'uncommon' }),
   ],
   characters: [],
   observations: [],
@@ -580,7 +567,7 @@ for (const weaker of ['slight', 'liked', 'none']) {
   test(`loved plus ${weaker} in the same category shows as mixed`, () => {
     const idx = buildIndex({
       ...mixedBase,
-      characters: [testedCharacter()],
+      characters: [character({ id: 'p1', name: 'P' })],
       observations: [
         { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
         { id: 'o2', character: 'p1', gift: 'green-tea', reaction: weaker, date: '2026-09-23' },
@@ -597,7 +584,7 @@ for (const weaker of ['slight', 'liked', 'none']) {
 test('loved plus favorite in the same category stays confirmed, not mixed', () => {
   const idx = buildIndex({
     ...mixedBase,
-    characters: [testedCharacter()],
+    characters: [character({ id: 'p1', name: 'P' })],
     observations: [
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'favorite', date: '2026-09-23' },
@@ -616,7 +603,7 @@ test('loved plus a pending report in the same category stays confirmed', () => {
   const idx = buildIndex(
     {
       ...mixedBase,
-      characters: [testedCharacter()],
+      characters: [character({ id: 'p1', name: 'P' })],
       observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
     },
     [{ id: 'r1', character: 'p1', gift: 'green-tea', reaction: 'none' }],
@@ -630,7 +617,7 @@ test('loved plus a pending report in the same category stays confirmed', () => {
 test('loved plus a contested pair in the same category stays confirmed', () => {
   const idx = buildIndex({
     ...mixedBase,
-    characters: [testedCharacter()],
+    characters: [character({ id: 'p1', name: 'P' })],
     observations: [
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'loved', date: '2026-09-23' },
@@ -649,7 +636,7 @@ test('loved plus a contested pair in the same category stays confirmed', () => {
 test('loved plus an untested gift in the same category stays confirmed', () => {
   const idx = buildIndex({
     ...mixedBase,
-    characters: [testedCharacter()],
+    characters: [character({ id: 'p1', name: 'P' })],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
   });
   assert.equal(idx.confidenceFor('p1', 'green-tea').state, 'PREDICTED');
@@ -664,12 +651,12 @@ test('loved plus an untested gift in the same category stays confirmed', () => {
 test('a mixed category with a guide link keeps the link’s source', () => {
   const idx = buildIndex({
     ...mixedBase,
-    characters: [testedCharacter({ categories: { tea: { state: 'guide', source: 'polygon-1' } } })],
+    characters: [character({ id: 'p1', name: 'P', categories: { tea: { state: 'guide', source: 'polygon-1' } } })],
     observations: [
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'slight', date: '2026-09-23' },
     ],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
     { id: 'tea', label: 'Tea', state: 'mixed', source: 'polygon-1' },
@@ -682,12 +669,12 @@ test('a mixed category with a guide link keeps the link’s source', () => {
 test('a mixed verdict replaces a refuted link rather than being dropped', () => {
   const idx = buildIndex({
     ...mixedBase,
-    characters: [testedCharacter({ categories: { tea: { state: 'refuted', source: 'polygon-1' } } })],
+    characters: [character({ id: 'p1', name: 'P', categories: { tea: { state: 'refuted', source: 'polygon-1' } } })],
     observations: [
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'liked', date: '2026-09-23' },
     ],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
     { id: 'tea', label: 'Tea', state: 'mixed', source: 'polygon-1' },
@@ -705,7 +692,7 @@ test('a mixed verdict replaces a refuted link rather than being dropped', () => 
 test('an unrecognised CONFIRMED reaction is neither loved nor below-loved', () => {
   const idx = buildIndex({
     ...mixedBase,
-    characters: [testedCharacter()],
+    characters: [character({ id: 'p1', name: 'P' })],
     observations: [
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'unknown-tier', date: '2026-09-23' },
@@ -721,26 +708,26 @@ test('an unrecognised CONFIRMED reaction is neither loved nor below-loved', () =
 test('categoryChips orders confirmed chips, then mixed chips, then stored links', () => {
   const orderedDataset = {
     categories: [
-      { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
-      { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
-      { id: 'herbs', label: 'Herbs', inGameDescriptor: null, aliases: [] },
-      { id: 'coffee', label: 'Coffee', inGameDescriptor: null, aliases: [] },
+      category({ id: 'tea', label: 'Tea' }),
+      category(),
+      category({ id: 'herbs', label: 'Herbs' }),
+      category({ id: 'coffee', label: 'Coffee' }),
     ],
     gifts: [
-      { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
-      { id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'uncommon', description: '', sources: [] },
-      { id: 'novel', name: 'Novel', category: 'books', rarity: 'common', description: '', sources: [] },
-      { id: 'basil', name: 'Basil', category: 'herbs', rarity: 'common', description: '', sources: [] },
-      { id: 'espresso', name: 'Espresso', category: 'coffee', rarity: 'common', description: '', sources: [] },
+      gift({ id: 'chamomile', name: 'Chamomile', category: 'tea' }),
+      gift({ id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'uncommon' }),
+      gift({ id: 'novel', name: 'Novel' }),
+      gift({ id: 'basil', name: 'Basil', category: 'herbs' }),
+      gift({ id: 'espresso', name: 'Espresso', category: 'coffee' }),
     ],
-    characters: [testedCharacter({ categories: { coffee: { state: 'guide', source: 'polygon-1' } } })],
+    characters: [character({ id: 'p1', name: 'P', categories: { coffee: { state: 'guide', source: 'polygon-1' } } })],
     observations: [
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'slight', date: '2026-09-23' },
       { id: 'o3', character: 'p1', gift: 'novel', reaction: 'loved', date: '2026-09-23' },
       { id: 'o4', character: 'p1', gift: 'basil', reaction: 'loved', date: '2026-09-23' },
     ],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   };
   const idx = buildIndex(orderedDataset);
   const chips = categoryChips(idx, idx.byCharacterId.get('p1'));
@@ -762,16 +749,16 @@ test('categoryChips orders confirmed chips, then mixed chips, then stored links'
 test('mixed chips are sorted by categories.json position, not by gift or insertion order', () => {
   const orderedDataset = {
     categories: [
-      { id: 'poems', label: 'Poems', inGameDescriptor: null, aliases: [] },
-      { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
+      category({ id: 'poems', label: 'Poems' }),
+      category({ id: 'tea', label: 'Tea' }),
     ],
     gifts: [
-      { id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'common', description: '', sources: [] },
-      { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
-      { id: 'poem-a', name: 'Poem A', category: 'poems', rarity: 'common', description: '', sources: [] },
-      { id: 'poem-b', name: 'Poem B', category: 'poems', rarity: 'common', description: '', sources: [] },
+      gift({ id: 'green-tea', name: 'Green Tea', category: 'tea' }),
+      gift({ id: 'chamomile', name: 'Chamomile', category: 'tea' }),
+      gift({ id: 'poem-a', name: 'Poem A', category: 'poems' }),
+      gift({ id: 'poem-b', name: 'Poem B', category: 'poems' }),
     ],
-    characters: [testedCharacter()],
+    characters: [character({ id: 'p1', name: 'P' })],
     observations: [
       { id: 'o1', character: 'p1', gift: 'green-tea', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'chamomile', reaction: 'slight', date: '2026-09-23' },
@@ -980,7 +967,7 @@ test('characterSummary reports a favourite alongside a loved count, not instead 
     ...dataset,
     gifts: [
       ...dataset.gifts,
-      { id: 'tome', name: 'Tome', category: 'books', rarity: 'common', description: '', sources: [] },
+      gift({ id: 'tome', name: 'Tome' }),
     ],
     observations: [
       { id: 'o1', character: 'c1', gift: 'brew', reaction: 'favorite', date: '2026-09-20' },
@@ -1012,7 +999,7 @@ test('characterSummary pluralises "favourites" alongside a loved count', () => {
     ...dataset,
     gifts: [
       ...dataset.gifts,
-      { id: 'tome', name: 'Tome', category: 'books', rarity: 'common', description: '', sources: [] },
+      gift({ id: 'tome', name: 'Tome' }),
     ],
     characters: [{ ...dataset.characters[0], favorites: ['rock'] }],
     observations: [
@@ -1168,28 +1155,24 @@ test('the "Reported to like" list carries no favourite chips, even when the page
 test('every character chip carries a state title, and a hidden suffix except favourites', () => {
   const idx = buildIndex({
     categories: [
-      { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
-      { id: 'coffee', label: 'Coffee', inGameDescriptor: null, aliases: [] },
-      { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
+      category({ id: 'tea', label: 'Tea' }),
+      category({ id: 'coffee', label: 'Coffee' }),
+      category(),
     ],
     gifts: [
-      { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
-      { id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'common', description: '', sources: [] },
-      { id: 'espresso', name: 'Espresso', category: 'coffee', rarity: 'common', description: '', sources: [] },
-      { id: 'novel', name: 'Novel', category: 'books', rarity: 'common', description: '', sources: [] },
-      { id: 'trinket', name: 'Trinket', category: null, rarity: 'rare', description: '', sources: [] },
+      gift({ id: 'chamomile', name: 'Chamomile', category: 'tea' }),
+      gift({ id: 'green-tea', name: 'Green Tea', category: 'tea' }),
+      gift({ id: 'espresso', name: 'Espresso', category: 'coffee' }),
+      gift({ id: 'novel', name: 'Novel' }),
+      gift({ id: 'trinket', name: 'Trinket', category: null, rarity: 'rare' }),
     ],
-    characters: [{
-      id: 'p1', name: 'P', giftable: true, spoiler: false, traits: [],
-      categories: { books: { state: 'guide', source: 'polygon-1' } },
-      rarityPreference: null, favorites: ['trinket'], notes: null,
-    }],
+    characters: [character({ id: 'p1', name: 'P', categories: { books: { state: 'guide', source: 'polygon-1' } }, favorites: ['trinket'] })],
     observations: [
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'slight', date: '2026-09-23' },
       { id: 'o3', character: 'p1', gift: 'espresso', reaction: 'loved', date: '2026-09-23' },
     ],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   });
 
   const container = fakeElement('div');
@@ -1228,18 +1211,18 @@ test('every character chip carries a state title, and a hidden suffix except fav
 // See CLAUDE.md's "Guide-derived links always carry provenance."
 const provenanceIndex = buildIndex({
   categories: [
-    { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
-    { id: 'coffee', label: 'Coffee', inGameDescriptor: null, aliases: [] },
-    { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
-    { id: 'drinks', label: 'Fermented Drinks', inGameDescriptor: null, aliases: [] },
-    { id: 'snacks', label: 'Snacks', inGameDescriptor: null, aliases: [] },
+    category(),
+    category({ id: 'coffee', label: 'Coffee' }),
+    category({ id: 'tea', label: 'Tea' }),
+    category({ id: 'drinks', label: 'Fermented Drinks' }),
+    category({ id: 'snacks', label: 'Snacks' }),
   ],
   gifts: [],
   characters: [],
   observations: [],
   sources: [
-    { id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' },
-    { id: 'game8-1', title: '', author: null, publisher: 'Game8', url: '', retrieved: '2026-09-23' },
+    source(),
+    source({ id: 'game8-1', publisher: 'Game8', retrieved: '2026-09-23' }),
   ],
 });
 
@@ -1518,7 +1501,7 @@ test('signalHeading returns "Awaiting review" for a pending-only table, but "Wha
 test('characterSummary reports contested and pending results rather than silence', () => {
   const bare = {
     ...dataset,
-    gifts: [{ id: 'b1', name: 'B1', category: null, rarity: null, description: '', sources: [] }],
+    gifts: [gift({ id: 'b1', name: 'B1', category: null, rarity: null })],
     characters: [{ ...dataset.characters[0], categories: {}, favorites: [] }],
     observations: [],
   };
@@ -1545,7 +1528,7 @@ test('characterSummary reports contested and pending results rather than silence
 test('characterSummary reports a liked, slight or neutral-reaction confirmation as "tested", never "loved"', () => {
   const base = {
     ...dataset,
-    gifts: [{ id: 'b1', name: 'B1', category: null, rarity: null, description: '', sources: [] }],
+    gifts: [gift({ id: 'b1', name: 'B1', category: null, rarity: null })],
     characters: [{ ...dataset.characters[0], categories: {}, favorites: [] }],
   };
 
@@ -1636,11 +1619,7 @@ const degradedDataset = {
   ...dataset,
   characters: [
     dataset.characters[0],
-    {
-      id: 'c2', name: 'D', giftable: true, spoiler: false, traits: [],
-      categories: { coffee: { state: 'profile', source: null } },
-      rarityPreference: null, favorites: [], notes: null,
-    },
+    character({ id: 'c2', name: 'D', categories: { coffee: { state: 'profile', source: null } } }),
   ],
 };
 
@@ -1910,20 +1889,16 @@ test('a character with no traits key renders without throwing and omits the Prof
 test('the character detail view renders the provenance note text from provenanceNote', () => {
   const idx = buildIndex({
     categories: [
-      { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
-      { id: 'drinks', label: 'Fermented Drinks', inGameDescriptor: null, aliases: [] },
+      category(),
+      category({ id: 'drinks', label: 'Fermented Drinks' }),
     ],
     gifts: [],
-    characters: [{
-      id: 'c1', name: 'C', giftable: true, spoiler: false, traits: [],
-      categories: {
+    characters: [character({ categories: {
         drinks: { state: 'discovered', source: null },
         books: { state: 'guide', source: 'polygon-1' },
-      },
-      rarityPreference: null, favorites: [], notes: null,
-    }],
+      } })],
     observations: [],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   });
 
   const container = fakeElement('div');
