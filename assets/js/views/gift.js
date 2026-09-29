@@ -172,7 +172,7 @@ export function render(container, index, state) {
     container.append(el('p', 'descriptor', `In-game description mentions: “${category.inGameDescriptor}”`));
   }
   if (!gift.category) {
-    container.append(el('p', 'help-wanted', 'Nobody has recorded this item’s category yet, so it has no predictions.'));
+    container.append(el('p', 'help-wanted', 'Nobody has recorded this item’s category yet, so only a guide that names it can predict who likes it.'));
   }
 
   const rows = giftRows(index, gift.id, state.filters);

@@ -410,17 +410,16 @@ Seed in four layers, each with its provenance recorded:
 3. **Character category preferences** — imported from published guides with state
    `guide` and a `sources.json` entry. **Unconfirmed.** These generate
    predictions and are never displayed as established fact.
-
-Prior art is credited in `sources.json` and in a Sources section of the README,
-with title, author, publisher and retrieval date. Because every seeded link
-carries its source id, guide-derived data can be audited or removed wholesale.
-
 4. **Item-level guide picks** — gifts a published guide names as loved, really
    liked or liked for a character, in `data/guide-gifts.json`, each row naming
    its sources (Raider King, `raiderking-2026-09-28`; Game8, `game8-gifts`).
    These are **predictions only, never results**: they show as PREDICTED with
    provenance `guide`, make no category chip, and are outranked by any
    observation or pending report.
+
+Prior art is credited in `sources.json` and in a Sources section of the README,
+with title, author, publisher and retrieval date. Because every seeded link
+carries its source id, guide-derived data can be audited or removed wholesale.
 
 Item-level results are **never** seeded. They are the thing being gathered, and
 every one of them comes from a real player report.

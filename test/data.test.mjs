@@ -117,3 +117,18 @@ test('buildIndex passes a guide pick through as a guide-sourced prediction', () 
   assert.equal(idx.confidenceFor('c1', 'b').state, 'UNTESTED');
   assert.deepEqual(idx.byCharacterId.get('c1').categories, {});
 });
+
+test('fetchDataset requests guide-gifts.json and returns its rows', async (t) => {
+  const original = globalThis.fetch;
+  t.after(() => { globalThis.fetch = original; });
+  const rows = [{ character: 'c1', gift: 'g1', sources: ['s1'] }];
+  const requested = [];
+  globalThis.fetch = async (url) => {
+    requested.push(url);
+    return { ok: true, status: 200, json: async () => (url.endsWith('/guide-gifts.json') ? rows : []) };
+  };
+  const { fetchDataset } = await import('../assets/js/data.js');
+  const loaded = await fetchDataset('./base');
+  assert.ok(requested.includes('./base/guide-gifts.json'));
+  assert.deepEqual(loaded['guide-gifts'], rows);
+});
