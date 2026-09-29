@@ -1874,5 +1874,12 @@
     "character": "zarcone",
     "reaction": "none",
     "date": "2026-09-28"
+  },
+  {
+    "id": "9ceead01-5dca-4236-9e8c-d221e19e1dbb",
+    "gift": "tome-from-away",
+    "character": "dante",
+    "reaction": "favorite",
+    "date": "2026-09-29"
   }
 ]

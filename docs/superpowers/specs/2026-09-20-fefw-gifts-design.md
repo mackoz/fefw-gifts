@@ -116,14 +116,23 @@ For any (character, gift item) pair the site derives one of:
   item in the category whose approved results are all `loved`; a favourite or
   contested result doesn't count). A play link is derived, never stored,
   carries provenance `discovered`, and takes the place of a missing, `guide`
-  or `refuted` link; a `profile` or `discovered` link is kept. Shaded by
-  provenance, so a `guide` prediction reads as weaker than a `profile` one.
+  or `refuted` link; a `profile` or `discovered` link is kept. Or a guide
+  pick: a published guide names this very item for this character
+  (`data/guide-gifts.json`), which gives a `guide` prediction sourced to the
+  pick's first source. A pair's link is chosen in this order: (1) a stored
+  `profile` or `discovered` link is kept; (2) a play link; (3) a guide pick;
+  (4) otherwise the stored `guide` or `refuted` link, or none. A pick replaces
+  a missing, `guide` or `refuted` link but never a `profile`, `discovered` or
+  play link. It is about one item, so it never makes a category chip and never
+  counts as a loved category. An observation or a pending report on the pair
+  outranks all of this. Shaded by provenance, so a `guide` prediction reads as
+  weaker than a `profile` one.
 - **CONTESTED** — observations for this pair disagree. Surfaced for review.
 - **PENDING** — a report exists but a maintainer has not approved it yet. Ranked
   between CONFIRMED and PREDICTED, labelled as awaiting review, and explicitly
   **not** a confirmation: it contributes no reaction, no tally and no negative
   verdict. Lives only in the Worker overlay, never in the repo.
-- **UNTESTED** — no link, no play link, no observation
+- **UNTESTED** — no link, no play link, no guide pick, no observation
 
 **Absence of a category match is never rendered as a dislike.** Only an
 observation can mark a pair as a dud. Given that profiles under-report and seeded
@@ -132,7 +141,7 @@ information at scale.
 
 ## Data model
 
-Five JSON files under `data/`, hand-editable, validated in CI.
+Six JSON files under `data/`, hand-editable, validated in CI.
 
 ```
 data/characters.json
@@ -171,6 +180,12 @@ D1 `reports` table (Worker-side, never committed)
 
 data/sources.json
   { id, title, author, publisher, url, retrieved }
+
+data/guide-gifts.json                                // array of item-level picks
+  { character: "<giftable character-id>", gift: "<gift-id>",
+    sources: [ "<source-id>" ] }                     // non-empty, no duplicates
+  // Exactly these keys: a pick never carries a reaction. One row per
+  // (character, gift). It predicts; it is never a result.
 ```
 
 `observations.json` is append-only. Confidence is derived at runtime, never
@@ -386,7 +401,7 @@ Tests use Node's built-in test runner (`node:test`). No test dependencies.
 
 ## Seeding and attribution
 
-Seed in three layers, each with its provenance recorded:
+Seed in four layers, each with its provenance recorded:
 
 1. **Roster and items** — character names, gift item names, categories, rarities.
    Facts about the game.
@@ -395,6 +410,12 @@ Seed in three layers, each with its provenance recorded:
 3. **Character category preferences** — imported from published guides with state
    `guide` and a `sources.json` entry. **Unconfirmed.** These generate
    predictions and are never displayed as established fact.
+4. **Item-level guide picks** — gifts a published guide names as loved, really
+   liked or liked for a character, in `data/guide-gifts.json`, each row naming
+   its sources (Raider King, `raiderking-2026-09-28`; Game8, `game8-gifts`).
+   These are **predictions only, never results**: they show as PREDICTED with
+   provenance `guide`, make no category chip, and are outranked by any
+   observation or pending report.
 
 Prior art is credited in `sources.json` and in a Sources section of the README,
 with title, author, publisher and retrieval date. Because every seeded link
