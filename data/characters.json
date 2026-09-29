@@ -44,28 +44,6 @@
     "notes": null
   },
   {
-    "id": "anna",
-    "name": "Anna",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
-  },
-  {
-    "id": "aurora",
-    "name": "Aurora",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
-  },
-  {
     "id": "benditz",
     "name": "Benditz",
     "giftable": true,
@@ -221,17 +199,6 @@
     "notes": null
   },
   {
-    "id": "creek",
-    "name": "Creek",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
-  },
-  {
     "id": "dadao",
     "name": "Dadao",
     "giftable": true,
@@ -311,17 +278,6 @@
     "notes": null
   },
   {
-    "id": "eshmel",
-    "name": "Eshmel",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
-  },
-  {
     "id": "esmeralda",
     "name": "Esmeralda",
     "giftable": true,
@@ -385,17 +341,6 @@
         "source": "polygon-2026-09-17"
       }
     },
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
-  },
-  {
-    "id": "fortuna",
-    "name": "Fortuna",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
     "rarityPreference": null,
     "favorites": [],
     "notes": null
@@ -489,17 +434,6 @@
     "notes": "Polygon reports he likes vegetable items, but not pickled ones."
   },
   {
-    "id": "hong-hua",
-    "name": "Hong Hua",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
-  },
-  {
     "id": "inyoni",
     "name": "Inyoni",
     "giftable": true,
@@ -574,17 +508,6 @@
     "rarityPreference": null,
     "favorites": [],
     "notes": "Polygon reports he takes honey pastries and Saraminian Sweets, but not mellow or simple pastries."
-  },
-  {
-    "id": "kalla",
-    "name": "Kalla",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
   },
   {
     "id": "kiroc",
@@ -731,28 +654,6 @@
     "notes": null
   },
   {
-    "id": "maria",
-    "name": "Maria",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
-  },
-  {
-    "id": "mars",
-    "name": "Mars",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
-  },
-  {
     "id": "mikaela",
     "name": "Mikaela",
     "giftable": true,
@@ -784,17 +685,6 @@
         "source": "polygon-2026-09-17"
       }
     },
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
-  },
-  {
-    "id": "nathan",
-    "name": "Nathan",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
     "rarityPreference": null,
     "favorites": [],
     "notes": null
@@ -1020,17 +910,6 @@
     "notes": null
   },
   {
-    "id": "raksha",
-    "name": "Raksha",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
-  },
-  {
     "id": "seteth",
     "name": "Seteth",
     "giftable": true,
@@ -1135,28 +1014,6 @@
     "notes": null
   },
   {
-    "id": "solel",
-    "name": "Solel",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
-  },
-  {
-    "id": "sothis",
-    "name": "Sothis",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
-  },
-  {
     "id": "talimun",
     "name": "Talimun",
     "giftable": true,
@@ -1184,17 +1041,6 @@
         "source": "polygon-2026-09-17"
       }
     },
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
-  },
-  {
-    "id": "the-lady-of-lillies",
-    "name": "The Lady Of Lillies",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
     "rarityPreference": null,
     "favorites": [],
     "notes": null
@@ -1267,17 +1113,6 @@
         "source": "polygon-2026-09-17"
       }
     },
-    "rarityPreference": null,
-    "favorites": [],
-    "notes": null
-  },
-  {
-    "id": "troy",
-    "name": "Troy",
-    "giftable": false,
-    "spoiler": false,
-    "traits": [],
-    "categories": {},
     "rarityPreference": null,
     "favorites": [],
     "notes": null
