@@ -67,7 +67,7 @@ test('a favourite reaction never makes a play link -- a favourite is about the i
 
 test('a below-loved reaction never makes a play link', () => {
   for (const reaction of ['liked', 'slight', 'none']) {
-    const idx = buildIndex(lovedDataset({ observations: [{ id: 'o1', gift: 'a', character: 'c1', reaction, date: '2026-09-20' }] }));
+    const idx = buildIndex(lovedDataset({ observations: [observation({ gift: 'a', reaction })] }));
     assert.equal(idx.confidenceFor('c1', 'b').state, 'UNTESTED', reaction);
   }
 });

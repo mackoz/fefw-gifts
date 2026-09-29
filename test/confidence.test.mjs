@@ -1,7 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { deriveConfidence, REACTIONS, POSITIVE_REACTIONS } from '../assets/js/confidence.js';
-
 import { gift, character, observation } from '../test-support/fixtures.mjs';
 
 test('no link and no observation is untested', () => {

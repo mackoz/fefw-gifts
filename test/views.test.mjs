@@ -87,8 +87,7 @@ test('sortByConfidence keeps original order for ties within the same reaction', 
   ];
   assert.deepEqual(sortByConfidence(rows).map((r) => r.gift.id), ['a', 'b']);
 
-  // Folded in from the removed "stable for equal states": ties among
-  // PREDICTED rows, which carry no reaction, also keep their order.
+  // Ties among PREDICTED rows, which carry no reaction, also keep their order.
   const predicted = [
     { gift: { id: 'a' }, confidence: { state: 'PREDICTED' } },
     { gift: { id: 'b' }, confidence: { state: 'PREDICTED' } },
@@ -1347,9 +1346,8 @@ test('provenanceNote: two confirmed categories plus a mixed chip uses "each have
 // answer is not "What we know" either: these rows are still pure guesswork,
 // and that heading may only appear over something somebody observed.
 test('signalHeading does not call a refuted-category prediction "worth trying"', () => {
-  // Folded in from the removed "never claims knowledge over a table of pure
-  // guesswork": a lone positive prediction is "Worth trying", and one
-  // observed row alongside a guess is what earns "What we know".
+  // A lone positive prediction is "Worth trying", and one observed row
+  // alongside a guess is what earns "What we know".
   assert.equal(signalHeading([{ confidence: { state: 'PREDICTED', predicted: 'positive' } }]), 'Worth trying');
   assert.equal(
     signalHeading([
