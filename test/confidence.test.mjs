@@ -145,6 +145,69 @@ test('pending defaults to empty, so every existing caller is unaffected', () => 
   assert.equal(deriveConfidence({ character: CHAR, gift: BOOK, observations: [] }).pendingCount, 0);
 });
 
+// Loved-category play links: a category a character has loved through play
+// (every observation on some gift in it is 'loved') predicts the rest of that
+// category, taking the place of a missing/guide/refuted stored link -- see the
+// spec's "Pair confidence" section. `lovedCategories` is a Set the caller
+// derives (buildIndex does the deriving); deriveConfidence only consults it.
+test('a loved category with no stored link predicts positively as found through play', () => {
+  const c = deriveConfidence({ character: character(), gift: gift(), observations: [], lovedCategories: new Set(['books']) });
+  assert.equal(c.state, 'PREDICTED');
+  assert.equal(c.predicted, 'positive');
+  assert.equal(c.provenance, 'discovered');
+  assert.equal(c.source, null);
+});
+
+test('a loved category overrides a stored guide link, dropping its source', () => {
+  const character_ = character({ categories: { books: { state: 'guide', source: 'polygon-2026-09-17' } } });
+  const c = deriveConfidence({ character: character_, gift: gift(), observations: [], lovedCategories: new Set(['books']) });
+  assert.equal(c.provenance, 'discovered');
+  assert.equal(c.source, null);
+});
+
+test('a loved category overrides a stored refuted link into a positive prediction', () => {
+  const character_ = character({ categories: { books: { state: 'refuted', source: null } } });
+  const c = deriveConfidence({ character: character_, gift: gift(), observations: [], lovedCategories: new Set(['books']) });
+  assert.equal(c.predicted, 'positive');
+  assert.equal(c.provenance, 'discovered');
+});
+
+test('a loved category never overrides a stored profile link', () => {
+  const character_ = character({ categories: { books: { state: 'profile', source: null } } });
+  const c = deriveConfidence({ character: character_, gift: gift(), observations: [], lovedCategories: new Set(['books']) });
+  assert.equal(c.provenance, 'profile');
+});
+
+test('an undefined lovedCategories behaves exactly like before', () => {
+  const c = deriveConfidence({ character: character(), gift: gift(), observations: [] });
+  assert.equal(c.state, 'UNTESTED');
+  assert.equal(c.provenance, null);
+});
+
+test('a category absent from lovedCategories behaves exactly like before', () => {
+  const c = deriveConfidence({ character: character(), gift: gift(), observations: [], lovedCategories: new Set(['horses']) });
+  assert.equal(c.state, 'UNTESTED');
+  assert.equal(c.provenance, null);
+});
+
+test('a tested pair in a loved category still flags a below-prediction exception', () => {
+  const c = deriveConfidence({ character: character(), gift: gift(), observations: [obs({ reaction: 'none' })], lovedCategories: new Set(['books']) });
+  assert.equal(c.state, 'CONFIRMED');
+  assert.equal(c.isException, true);
+});
+
+test('a loved result in a loved category is not an exception', () => {
+  const c = deriveConfidence({ character: character(), gift: gift(), observations: [obs({ reaction: 'loved' })], lovedCategories: new Set(['books']) });
+  assert.equal(c.state, 'CONFIRMED');
+  assert.equal(c.isException, false);
+});
+
+test('a gift with no category never gets a play link, even if lovedCategories contains null', () => {
+  const c = deriveConfidence({ character: character(), gift: gift({ category: null }), observations: [], lovedCategories: new Set([null, undefined]) });
+  assert.equal(c.state, 'UNTESTED');
+  assert.equal(c.predicted, null);
+});
+
 test('the reaction vocabulary has one definition', () => {
   assert.deepEqual(REACTIONS, ['none', 'slight', 'liked', 'loved', 'favorite']);
   assert.deepEqual(POSITIVE_REACTIONS, REACTIONS.filter((r) => r !== 'none'));

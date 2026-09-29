@@ -609,16 +609,16 @@ test('loved plus a contested pair in the same category stays confirmed', () => {
   ]);
 });
 
-// The second gift in the category has no observation at all -- an untested
-// pair is not evidence of anything, so it must not pull a loved category
-// down to mixed either.
+// The second gift in the category has no observation at all -- the loved
+// result only predicts it (worth trying), which is not a result, so it must
+// not pull a loved category down to mixed either.
 test('loved plus an untested gift in the same category stays confirmed', () => {
   const idx = buildIndex({
     ...mixedBase,
     characters: [testedCharacter()],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
   });
-  assert.equal(idx.confidenceFor('p1', 'green-tea').state, 'UNTESTED');
+  assert.equal(idx.confidenceFor('p1', 'green-tea').state, 'PREDICTED');
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
     { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
   ]);
@@ -2061,6 +2061,52 @@ test('on the real dataset, every character’s card summary is built from loved 
   for (const branch of ['loved only', 'worth trying']) {
     assert.ok(branchesSeen.has(branch), `expected at least one character in the "${branch}" branch`);
   }
+});
+
+// A loved result on any gift in a category predicts the rest of that category
+// as worth trying, in place of a missing/guide/refuted stored link -- computed
+// here independently of buildIndex, against the real committed data.
+test('on the real dataset, every untested gift in a category a character loved is worth trying', async () => {
+  const idx = buildIndex(await loadDataset('data'));
+
+  const lovedByCharacter = new Map();
+  for (const characterId of idx.byCharacterId.keys()) {
+    const loved = new Set();
+    for (const gift of idx.gifts) {
+      if (!gift.category) continue;
+      const obs = idx.observationsFor(characterId, gift.id);
+      if (obs.length > 0 && obs.every((o) => o.reaction === 'loved')) loved.add(gift.category);
+    }
+    lovedByCharacter.set(characterId, loved);
+  }
+
+  let checked = 0;
+  for (const ch of idx.characters) {
+    if (!ch.giftable) continue;
+    const loved = lovedByCharacter.get(ch.id);
+    if (!loved || loved.size === 0) continue;
+
+    for (const gift of idx.gifts) {
+      if (!gift.category || !loved.has(gift.category)) continue;
+      if (idx.observationsFor(ch.id, gift.id).length > 0) continue;
+      if (idx.pendingFor(ch.id, gift.id).length > 0) continue;
+
+      const confidence = idx.confidenceFor(ch.id, gift.id);
+      const stored = ch.categories?.[gift.category];
+      if (stored && (stored.state === 'profile' || stored.state === 'discovered')) {
+        assert.equal(confidence.provenance, stored.state, `${ch.id} / ${gift.id}`);
+      } else {
+        assert.equal(confidence.state, 'PREDICTED', `${ch.id} / ${gift.id}`);
+        assert.equal(confidence.predicted, 'positive', `${ch.id} / ${gift.id}`);
+        assert.equal(confidence.provenance, 'discovered', `${ch.id} / ${gift.id}`);
+      }
+      checked += 1;
+    }
+  }
+
+  // 129 such pairs exist in the committed data today; any positive count is a
+  // valid guard so a future edit to data/ can't turn this test red by accident.
+  assert.ok(checked > 0, 'expected at least one play-backed prediction in the real dataset');
 });
 
 // The Gifts tab's second entry point into a missing-item report. Like the

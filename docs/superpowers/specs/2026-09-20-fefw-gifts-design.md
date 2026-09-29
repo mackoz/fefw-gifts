@@ -113,7 +113,10 @@ For any (character, gift item) pair the site derives one of:
   one is known
 - **PREDICTED** — no observation for this item, but a character-to-category link
   exists. Shaded by that link's provenance, so a `guide` prediction reads as
-  weaker than a `profile` one.
+  weaker than a `profile` one. The link can come from a character-to-category
+  link, or from an approved loved result on another item in that category (a
+  play-backed prediction, shown as found through play), which takes the place
+  of a guide or refuted link for that category.
 - **CONTESTED** — observations for this pair disagree. Surfaced for review.
 - **PENDING** — a report exists but a maintainer has not approved it yet. Ranked
   between CONFIRMED and PREDICTED, labelled as awaiting review, and explicitly
