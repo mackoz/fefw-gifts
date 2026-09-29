@@ -83,6 +83,14 @@ test('sortByConfidence keeps original order for ties within the same reaction', 
     { gift: { id: 'b' }, confidence: { state: 'CONFIRMED', reaction: 'slight' } },
   ];
   assert.deepEqual(sortByConfidence(rows).map((r) => r.gift.id), ['a', 'b']);
+
+  // Folded in from the removed "stable for equal states": ties among
+  // PREDICTED rows, which carry no reaction, also keep their order.
+  const predicted = [
+    { gift: { id: 'a' }, confidence: { state: 'PREDICTED' } },
+    { gift: { id: 'b' }, confidence: { state: 'PREDICTED' } },
+  ];
+  assert.deepEqual(sortByConfidence(predicted).map((r) => r.gift.id), ['a', 'b']);
 });
 
 // I-1: badge() classes a below-loved CONFIRMED row as state-liked/-slight/-none,
@@ -871,8 +879,22 @@ test('characterSummary falls back through loved, tested, predicted, then nothing
   // c1 likes books, and `book` is a books item, so exactly one prediction.
   assert.equal(characterSummary(predictedOnly, predictedOnly.byCharacterId.get('c1')), '1 worth trying');
 
-  // The tested and loved cases live in "characterSummary reports a liked,
-  // slight or neutral-reaction confirmation as tested, never loved".
+  // A `liked` reaction is a real, approved CONFIRMED result, but it is not a
+  // `loved` one -- see the minmax-bond rationale in characterSummary's
+  // comment -- so it falls into "tested", not "loved".
+  const tested = buildIndex({
+    ...dataset,
+    characters: [base],
+    observations: [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'liked', date: '2026-09-21' }],
+  });
+  assert.equal(characterSummary(tested, tested.byCharacterId.get('c1')), '1 tested, none loved yet');
+
+  const loved = buildIndex({
+    ...dataset,
+    characters: [base],
+    observations: [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-21' }],
+  });
+  assert.equal(characterSummary(loved, loved.byCharacterId.get('c1')), '1 loved');
 
   const bare = buildIndex({ ...dataset, characters: [{ ...base, categories: {} }], observations: [] });
   assert.equal(characterSummary(bare, bare.byCharacterId.get('c1')), 'nothing tested yet');
