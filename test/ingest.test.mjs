@@ -6,6 +6,7 @@ import {
   applyItemReports, fetchItemBatch, itemSkippedWarning, itemResultDroppedWarning, appendCategoryLines, ingestSummary,
 } from '../scripts/ingest.mjs';
 import { validate } from '../scripts/validate.mjs';
+import { category, gift, character, dataset } from '../test-support/fixtures.mjs';
 
 const ROW = {
   id: '9f1c2f7a-0000-4000-8000-000000000001',
@@ -102,16 +103,11 @@ test('skippedRowWarning escapes %, \\r and \\n in interpolated fields, leaving n
 
 // --- Missing items ---
 
-const DATASET = {
-  categories: [{ id: 'horses', label: 'Horses', inGameDescriptor: 'those who love horses', aliases: [] }],
-  gifts: [{ id: 'horse-grooming-kit', name: 'Horse-Grooming Kit', category: 'horses', rarity: null, description: '', sources: [] }],
-  characters: [{
-    id: 'alexandra', name: 'Alexandra', giftable: true, spoiler: false, traits: [],
-    categories: {}, rarityPreference: null, favorites: [], notes: null,
-  }],
-  observations: [],
-  sources: [],
-};
+const DATASET = dataset({
+  categories: [category({ id: 'horses', label: 'Horses', inGameDescriptor: 'those who love horses' })],
+  gifts: [gift({ id: 'horse-grooming-kit', name: 'Horse-Grooming Kit', category: 'horses', rarity: null })],
+  characters: [character({ id: 'alexandra', name: 'Alexandra' })],
+});
 
 const LANTERNS = { id: 'lanterns', label: 'Lanterns', inGameDescriptor: 'lantern lovers' };
 
@@ -281,10 +277,7 @@ test('a result naming a character that no longer exists drops only the result, a
 });
 
 test('a result naming a character that is no longer giftable drops only the result, and the gift is still created', () => {
-  const dataset = { ...DATASET, characters: [...DATASET.characters, {
-    id: 'ghost-npc', name: 'Ghost', giftable: false, spoiler: false, traits: [],
-    categories: {}, rarityPreference: null, favorites: [], notes: null,
-  }] };
+  const dataset = { ...DATASET, characters: [...DATASET.characters, character({ id: 'ghost-npc', name: 'Ghost', giftable: false })] };
   const bad = approvedItem('bad-giftable', { category: 'horses', includeResult: true }, { character: 'ghost-npc', reaction: 'loved' });
   const out = applyItemReports(dataset, [bad, approvedItem('good')]);
   assert.deepEqual(out.skipped, []);

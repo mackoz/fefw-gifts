@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { createApi } from '../assets/js/api.js';
 import { buildPendingIndex } from '../assets/js/overlay.js';
 import { WORKER_URL, TURNSTILE_SITE_KEY } from '../assets/js/config.js';
@@ -186,4 +187,34 @@ test('an unreachable Worker on an item report reads as a service problem', async
   const result = await createApi({ baseUrl: 'https://api.test', fetchImpl }).submitItemReport({});
   assert.equal(result.ok, false);
   assert.match(result.error, /could not reach/i);
+});
+
+// CLAUDE.md: the telemetry id "is never attached to a report, a vote or a
+// Worker request". report-form.test.mjs checks the payload keys; this checks
+// the rest of every request api.js can send.
+test('no Worker request carries a telemetry id, in its URL, headers or credentials', async () => {
+  const fetchImpl = stubFetch(() => ok({ pending: [] }));
+  const api = createApi({ baseUrl: 'https://worker.example', token: 'tok', fetchImpl });
+  await api.fetchPending();
+  await api.submitReport({ character: 'c1', gift: 'g1', reaction: 'loved' });
+  await api.sendVote({ id: 'r1', direction: 'up' });
+  await api.submitItemReport({ name: 'Lantern Oil' });
+  await api.fetchReview();
+  await api.decide('r1', 'approve');
+  await api.fetchItemReview();
+  await api.decideItem('i1', { decision: 'reject' });
+
+  assert.equal(fetchImpl.calls.length, 8, 'every api method reached fetch');
+  for (const { url, init } of fetchImpl.calls) {
+    assert.equal(new URL(url).search, '', `${url} carries a query string`);
+    for (const name of new Headers(init.headers ?? {}).keys()) {
+      assert.ok(['content-type', 'authorization'].includes(name), `${url} sends header ${name}`);
+    }
+    assert.notEqual(init.credentials, 'include', `${url} sends cookies`);
+  }
+});
+
+test('api.js never imports telemetry', async () => {
+  const source = await readFile(new URL('../assets/js/api.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /telemetry/i);
 });

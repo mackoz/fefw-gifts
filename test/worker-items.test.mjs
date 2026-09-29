@@ -119,18 +119,18 @@ test('an oversized item report is refused before it is parsed', async () => {
 
 // --- The public feed is untouched ---
 
-test('listPending never reads item_reports', async () => {
-  const db = fakeD1([{ results: [] }]);
-  await listPending(db);
-  assert.doesNotMatch(db.calls[0].sql, /item_reports/);
-});
-
 test('GET /pending issues exactly one statement, against reports only', async () => {
   const db = fakeD1([{ results: [] }]);
   await handle(new Request('https://api.test/pending', { headers: { Origin: ORIGIN } }), env(db), deps());
   assert.equal(db.calls.length, 1);
   assert.match(db.calls[0].sql, /FROM reports/);
   assert.doesNotMatch(db.calls[0].sql, /item_reports/);
+
+  // listPending itself, called directly, must not reach item_reports either.
+  const direct = fakeD1([{ results: [] }]);
+  await listPending(direct);
+  assert.equal(direct.calls.length, 1);
+  assert.doesNotMatch(direct.calls[0].sql, /item_reports/);
 });
 
 // --- Store ---

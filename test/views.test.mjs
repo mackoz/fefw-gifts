@@ -8,22 +8,22 @@ import {
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
 import { giftRows, giftIndexModel, missingItemButton } from '../assets/js/views/gift.js';
 import { loadDataset } from '../scripts/validate.mjs';
+import { category, gift, character, source } from '../test-support/fixtures.mjs';
+
+// The character most tests observe: one id, one name, everything else default.
+const tested = (over = {}) => character({ id: 'p1', name: 'P', ...over });
 
 const dataset = {
   categories: [
-    { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
-    { id: 'coffee', label: 'Coffee', inGameDescriptor: null, aliases: [] },
+    category(),
+    category({ id: 'coffee', label: 'Coffee' }),
   ],
   gifts: [
-    { id: 'book', name: 'Book', category: 'books', rarity: 'common', description: '', sources: [] },
-    { id: 'brew', name: 'Brew', category: 'coffee', rarity: 'common', description: '', sources: [] },
-    { id: 'rock', name: 'Rock', category: null, rarity: null, description: '', sources: [] },
+    gift({ id: 'book', name: 'Book' }),
+    gift({ id: 'brew', name: 'Brew', category: 'coffee' }),
+    gift({ id: 'rock', name: 'Rock', category: null, rarity: null }),
   ],
-  characters: [{
-    id: 'c1', name: 'C', giftable: true, spoiler: false, traits: [],
-    categories: { books: { state: 'profile', source: null } },
-    rarityPreference: null, favorites: [], notes: null,
-  }],
+  characters: [character({ categories: { books: { state: 'profile', source: null } } })],
   observations: [{ id: 'o1', gift: 'brew', character: 'c1', reaction: 'favorite', date: '2026-09-20' }],
   sources: [],
 };
@@ -32,11 +32,6 @@ test('favorites sort above predictions, which sort above untested', () => {
   const idx = buildIndex(dataset);
   const rows = characterRows(idx, 'c1', DEFAULT_FILTERS);
   assert.deepEqual(rows.map((r) => r.gift.id), ['brew', 'book', 'rock']);
-});
-
-test('every gift appears when no filter is applied', () => {
-  const idx = buildIndex(dataset);
-  assert.equal(characterRows(idx, 'c1', DEFAULT_FILTERS).length, 3);
 });
 
 test('hideUntested drops the uncategorised gift', () => {
@@ -62,14 +57,6 @@ test('state labels never describe an untested pair as disliked', () => {
   // Pins the branch itself, so it cannot be deleted and leave the loop above
   // scanning a string nobody renders.
   assert.equal(stateLabel({ state: 'PREDICTED', reaction: null, predicted: 'negative' }), 'Predicted: probably no gain');
-});
-
-test('sortByConfidence is stable for equal states', () => {
-  const rows = [
-    { gift: { id: 'a' }, confidence: { state: 'PREDICTED' } },
-    { gift: { id: 'b' }, confidence: { state: 'PREDICTED' } },
-  ];
-  assert.deepEqual(sortByConfidence(rows).map((r) => r.gift.id), ['a', 'b']);
 });
 
 // A CONFIRMED slight or liked row used to share rank 1 with a CONFIRMED loved
@@ -99,6 +86,13 @@ test('sortByConfidence keeps original order for ties within the same reaction', 
     { gift: { id: 'b' }, confidence: { state: 'CONFIRMED', reaction: 'slight' } },
   ];
   assert.deepEqual(sortByConfidence(rows).map((r) => r.gift.id), ['a', 'b']);
+
+  // Ties among PREDICTED rows, which carry no reaction, also keep their order.
+  const predicted = [
+    { gift: { id: 'a' }, confidence: { state: 'PREDICTED' } },
+    { gift: { id: 'b' }, confidence: { state: 'PREDICTED' } },
+  ];
+  assert.deepEqual(sortByConfidence(predicted).map((r) => r.gift.id), ['a', 'b']);
 });
 
 // I-1: badge() classes a below-loved CONFIRMED row as state-liked/-slight/-none,
@@ -132,21 +126,17 @@ test('badge classes a below-loved result as state-liked/state-slight/state-none,
 // and a tested (CONFIRMED) badge gets none at all.
 test('badge titles a play-backed prediction as found through play, keeps the guide title, and adds none once tested', () => {
   const ds = {
-    categories: [{ id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] }],
+    categories: [category()],
     gifts: [
-      { id: 'a', name: 'A', category: 'books', rarity: 'common', description: '', sources: [] },
-      { id: 'b', name: 'B', category: 'books', rarity: 'common', description: '', sources: [] },
+      gift({ id: 'a', name: 'A' }),
+      gift({ id: 'b', name: 'B' }),
     ],
     characters: [
-      { id: 'c1', name: 'C1', giftable: true, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null },
-      {
-        id: 'c2', name: 'C2', giftable: true, spoiler: false, traits: [],
-        categories: { books: { state: 'guide', source: 'polygon-1' } },
-        rarityPreference: null, favorites: [], notes: null,
-      },
+      character({ name: 'C1' }),
+      character({ id: 'c2', name: 'C2', categories: { books: { state: 'guide', source: 'polygon-1' } } }),
     ],
     observations: [{ id: 'o1', gift: 'a', character: 'c1', reaction: 'loved', date: '2026-09-20' }],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   };
   const idx = buildIndex(ds);
 
@@ -165,8 +155,8 @@ test('giftRows lists giftable characters ranked by confidence', () => {
     ...dataset,
     characters: [
       dataset.characters[0],
-      { id: 'c2', name: 'D', giftable: true, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null },
-      { id: 'c3', name: 'E', giftable: false, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null },
+      character({ id: 'c2', name: 'D' }),
+      character({ id: 'c3', name: 'E', giftable: false }),
     ],
   });
   const rows = giftRows(idx, 'book', DEFAULT_FILTERS);
@@ -221,8 +211,8 @@ test('suggestions rank rare items first', () => {
     ...dataset,
     observations: [],
     gifts: [
-      { id: 'cheap', name: 'Cheap Book', category: 'books', rarity: 'common', description: '', sources: [] },
-      { id: 'posh', name: 'Posh Book', category: 'books', rarity: 'rare', description: '', sources: [] },
+      gift({ id: 'cheap', name: 'Cheap Book', rarity: 'common' }),
+      gift({ id: 'posh', name: 'Posh Book', rarity: 'rare' }),
     ],
   });
   const m = favoritesModel(idx, DEFAULT_FILTERS);
@@ -302,9 +292,9 @@ test('the matrix has a symbol for pending that no other state uses', () => {
 });
 
 const OVERLAY_DATASET = {
-  categories: [{ id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] }],
-  gifts: [{ id: 'book', name: 'Book', category: 'books', rarity: 'common', description: '', sources: [] }],
-  characters: [{ id: 'c1', name: 'C', giftable: true, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null }],
+  categories: [category()],
+  gifts: [gift({ id: 'book', name: 'Book' })],
+  characters: [character()],
   observations: [],
   sources: [],
 };
@@ -379,31 +369,73 @@ test('categoryChips tolerates a character with no categories key', () => {
 // actually worked, independent of any stored link. `tea` carries no link at
 // all here.
 const testedBase = {
-  categories: [{ id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] }],
-  gifts: [{ id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] }],
+  categories: [category({ id: 'tea', label: 'Tea' })],
+  gifts: [gift({ id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common' })],
   characters: [],
   observations: [],
   sources: [],
 };
 
-function testedCharacter(overrides = {}) {
-  return {
-    id: 'p1', name: 'P', giftable: true, spoiler: false, traits: [],
-    categories: {}, rarityPreference: null, favorites: [], notes: null,
-    ...overrides,
-  };
-}
-
 test('categoryChips promotes a category to tested on a loved observation, even unlinked', () => {
   const idx = buildIndex({
     ...testedBase,
-    characters: [testedCharacter()],
+    characters: [tested()],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
     { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
   ]);
 });
+
+// Each row is a result that must leave the character with no category chip at
+// all. `testedBase` has no stored link for `tea`, so "no chip" means nothing
+// promoted it.
+for (const { name, data, observations } of [
+  // The report form's first option is "They didn't like it": a CONFIRMED "none"
+  // reaction is a real, reviewed result, but not a positive one, so it must
+  // never promote the category -- and with no stored link, no chip at all.
+  {
+    name: 'a CONFIRMED "none" reaction never counts as tested',
+    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'none', date: '2026-09-23' }],
+  },
+  // A `slight` reaction is a real, approved, positive result, but it is weaker
+  // than `loved` and must not promote the category on its own -- only `loved`
+  // does. See categoryVerdicts in shared.js.
+  {
+    name: 'a slight reaction does not count as confirmed',
+    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'slight', date: '2026-09-23' }],
+  },
+  // Same as `slight`: a real, approved, positive result that still stops short
+  // of confirming the whole category.
+  {
+    name: 'a liked reaction does not count as confirmed',
+    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'liked', date: '2026-09-23' }],
+  },
+  // A gift with no category (e.g. `rock` in the main fixture) can never be
+  // promoted, no matter how positive the result on it is -- there is no
+  // category to add to the confirmed set.
+  {
+    name: 'a gift with no category is never promoted, even with an approved loved result',
+    data: {
+      categories: [],
+      gifts: [gift({ id: 'mystery', name: 'Mystery', category: null, rarity: null })],
+      sources: [],
+    },
+    observations: [{ id: 'o1', character: 'p1', gift: 'mystery', reaction: 'loved', date: '2026-09-23' }],
+  },
+  {
+    name: 'a contested pair never counts as tested',
+    observations: [
+      { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o2', character: 'p1', gift: 'chamomile', reaction: 'none', date: '2026-09-23' },
+    ],
+  },
+]) {
+  test(name, () => {
+    const idx = buildIndex({ ...testedBase, ...data, characters: [tested()], observations });
+    assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
+  });
+}
 
 // A favourite reaction is specific to that item -- it says
 // something about that ITEM, not its category, so it must never promote the
@@ -416,69 +448,8 @@ test('categoryChips does not promote a category on a FAVORITE observation, even 
   assert.equal(testedBase.gifts[0].rarity, 'common', 'this test is only meaningful while chamomile stays common');
   const idx = buildIndex({
     ...testedBase,
-    characters: [testedCharacter()],
+    characters: [tested()],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'favorite', date: '2026-09-23' }],
-  });
-  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
-});
-
-// The report form's first option is "They didn't like it": a CONFIRMED "none"
-// reaction is a real, reviewed result, but not a positive one, so it must
-// never promote the category -- and with no stored link, no chip at all.
-test('a CONFIRMED "none" reaction never counts as tested', () => {
-  const idx = buildIndex({
-    ...testedBase,
-    characters: [testedCharacter()],
-    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'none', date: '2026-09-23' }],
-  });
-  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
-});
-
-// A `slight` reaction is a real, approved, positive result, but it is weaker
-// than `loved` and must not promote the category on its own -- only `loved`
-// does. See categoryVerdicts in shared.js.
-test('a slight reaction does not count as confirmed', () => {
-  const idx = buildIndex({
-    ...testedBase,
-    characters: [testedCharacter()],
-    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'slight', date: '2026-09-23' }],
-  });
-  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
-});
-
-// Same as `slight`: a real, approved, positive result that still stops short
-// of confirming the whole category.
-test('a liked reaction does not count as confirmed', () => {
-  const idx = buildIndex({
-    ...testedBase,
-    characters: [testedCharacter()],
-    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'liked', date: '2026-09-23' }],
-  });
-  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
-});
-
-// A gift with no category (e.g. `rock` in the main fixture) can never be
-// promoted, no matter how positive the result on it is -- there is no
-// category to add to the confirmed set.
-test('a gift with no category is never promoted, even with an approved loved result', () => {
-  const idx = buildIndex({
-    categories: [],
-    gifts: [{ id: 'mystery', name: 'Mystery', category: null, rarity: null, description: '', sources: [] }],
-    characters: [testedCharacter()],
-    observations: [{ id: 'o1', character: 'p1', gift: 'mystery', reaction: 'loved', date: '2026-09-23' }],
-    sources: [],
-  });
-  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
-});
-
-test('a contested pair never counts as tested', () => {
-  const idx = buildIndex({
-    ...testedBase,
-    characters: [testedCharacter()],
-    observations: [
-      { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
-      { id: 'o2', character: 'p1', gift: 'chamomile', reaction: 'none', date: '2026-09-23' },
-    ],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), []);
 });
@@ -488,7 +459,7 @@ test('a contested pair never counts as tested', () => {
 // able to promote a category on its own.
 test('a pending report never counts as tested', () => {
   const idx = buildIndex(
-    { ...testedBase, characters: [testedCharacter()] },
+    { ...testedBase, characters: [tested()] },
     [{ id: 'r1', character: 'p1', gift: 'chamomile', reaction: 'loved', created_at: '2026-09-23' }],
   );
   assert.equal(idx.confidenceFor('p1', 'chamomile').state, 'PENDING');
@@ -498,9 +469,9 @@ test('a pending report never counts as tested', () => {
 test('a tested category with a guide link keeps the link’s source and is not duplicated', () => {
   const idx = buildIndex({
     ...testedBase,
-    characters: [testedCharacter({ categories: { tea: { state: 'guide', source: 'polygon-1' } } })],
+    characters: [tested({ categories: { tea: { state: 'guide', source: 'polygon-1' } } })],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
     { id: 'tea', label: 'Tea', state: 'confirmed', source: 'polygon-1' },
@@ -512,9 +483,9 @@ test('a tested category with a guide link keeps the link’s source and is not d
 test('a refuted link with an approved positive result shows as tested, not dropped', () => {
   const idx = buildIndex({
     ...testedBase,
-    characters: [testedCharacter({ categories: { tea: { state: 'refuted', source: 'polygon-1' } } })],
+    characters: [tested({ categories: { tea: { state: 'refuted', source: 'polygon-1' } } })],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
     { id: 'tea', label: 'Tea', state: 'confirmed', source: 'polygon-1' },
@@ -528,16 +499,16 @@ test('a refuted link with an approved positive result shows as tested, not dropp
 test('tested chips are ordered by categories.json position and precede link-only chips', () => {
   const orderedDataset = {
     categories: [
-      { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
-      { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
-      { id: 'coffee', label: 'Coffee', inGameDescriptor: null, aliases: [] },
+      category({ id: 'tea', label: 'Tea' }),
+      category(),
+      category({ id: 'coffee', label: 'Coffee' }),
     ],
     gifts: [
-      { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
-      { id: 'novel', name: 'Novel', category: 'books', rarity: 'common', description: '', sources: [] },
-      { id: 'espresso', name: 'Espresso', category: 'coffee', rarity: 'common', description: '', sources: [] },
+      gift({ id: 'chamomile', name: 'Chamomile', category: 'tea' }),
+      gift({ id: 'novel', name: 'Novel' }),
+      gift({ id: 'espresso', name: 'Espresso', category: 'coffee' }),
     ],
-    characters: [testedCharacter({
+    characters: [tested({
       categories: {
         books: { state: 'guide', source: 'polygon-1' },
         coffee: { state: 'guide', source: 'polygon-1' },
@@ -547,7 +518,7 @@ test('tested chips are ordered by categories.json position and precede link-only
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'novel', reaction: 'loved', date: '2026-09-23' },
     ],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   };
   const idx = buildIndex(orderedDataset);
   const chips = categoryChips(idx, idx.byCharacterId.get('p1'));
@@ -562,10 +533,10 @@ test('tested chips are ordered by categories.json position and precede link-only
 // on the other can coexist -- the single-gift `testedBase` fixture above
 // cannot produce a mixed verdict at all.
 const mixedBase = {
-  categories: [{ id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] }],
+  categories: [category({ id: 'tea', label: 'Tea' })],
   gifts: [
-    { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
-    { id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'uncommon', description: '', sources: [] },
+    gift({ id: 'chamomile', name: 'Chamomile', category: 'tea' }),
+    gift({ id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'uncommon' }),
   ],
   characters: [],
   observations: [],
@@ -580,7 +551,7 @@ for (const weaker of ['slight', 'liked', 'none']) {
   test(`loved plus ${weaker} in the same category shows as mixed`, () => {
     const idx = buildIndex({
       ...mixedBase,
-      characters: [testedCharacter()],
+      characters: [tested()],
       observations: [
         { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
         { id: 'o2', character: 'p1', gift: 'green-tea', reaction: weaker, date: '2026-09-23' },
@@ -592,71 +563,73 @@ for (const weaker of ['slight', 'liked', 'none']) {
   });
 }
 
-// A FAVORITE result is about the item, not the category (see favouriteGifts),
-// so it must never drag a loved category down to mixed.
-test('loved plus favorite in the same category stays confirmed, not mixed', () => {
-  const idx = buildIndex({
-    ...mixedBase,
-    characters: [testedCharacter()],
+// Alongside a loved result, none of these may drag the category down to mixed
+// (and a reaction the code does not recognise must not either).
+// Each row also checks the state of the second gift, so a row cannot pass just
+// because the second gift was never counted at all.
+for (const { name, pending = [], observations, state } of [
+  // A FAVORITE result is about the item, not the category (see favouriteGifts),
+  // so it must never drag a loved category down to mixed.
+  {
+    name: 'loved plus favorite in the same category stays confirmed, not mixed',
     observations: [
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'favorite', date: '2026-09-23' },
     ],
-  });
-  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
-    { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
-  ]);
-});
-
-// A pending or contested pair is real signal elsewhere, but neither is an
-// approved result -- see CLAUDE.md's "A pending report is not a
-// confirmation." Alongside a loved result, it must not turn the category
-// mixed.
-test('loved plus a pending report in the same category stays confirmed', () => {
-  const idx = buildIndex(
-    {
-      ...mixedBase,
-      characters: [testedCharacter()],
-      observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
-    },
-    [{ id: 'r1', character: 'p1', gift: 'green-tea', reaction: 'none' }],
-  );
-  assert.equal(idx.confidenceFor('p1', 'green-tea').state, 'PENDING');
-  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
-    { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
-  ]);
-});
-
-test('loved plus a contested pair in the same category stays confirmed', () => {
-  const idx = buildIndex({
-    ...mixedBase,
-    characters: [testedCharacter()],
+    state: 'FAVORITE',
+  },
+  // A pending or contested pair is real signal elsewhere, but neither is an
+  // approved result -- see CLAUDE.md's "A pending report is not a
+  // confirmation." Alongside a loved result, it must not turn the category
+  // mixed.
+  {
+    name: 'loved plus a pending report in the same category stays confirmed',
+    observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
+    pending: [{ id: 'r1', character: 'p1', gift: 'green-tea', reaction: 'none' }],
+    state: 'PENDING',
+  },
+  {
+    name: 'loved plus a contested pair in the same category stays confirmed',
     observations: [
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'loved', date: '2026-09-23' },
       { id: 'o3', character: 'p1', gift: 'green-tea', reaction: 'none', date: '2026-09-23' },
     ],
-  });
-  assert.equal(idx.confidenceFor('p1', 'green-tea').state, 'CONTESTED');
-  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
-    { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
-  ]);
-});
-
-// The second gift in the category has no observation at all -- the loved
-// result only predicts it (worth trying), which is not a result, so it must
-// not pull a loved category down to mixed either.
-test('loved plus an untested gift in the same category stays confirmed', () => {
-  const idx = buildIndex({
-    ...mixedBase,
-    characters: [testedCharacter()],
+    state: 'CONTESTED',
+  },
+  // The second gift in the category has no observation at all -- the loved
+  // result only predicts it (worth trying), which is not a result, so it must
+  // not pull a loved category down to mixed either.
+  {
+    name: 'loved plus an untested gift in the same category stays confirmed',
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
+    state: 'PREDICTED',
+  },
+  // Today a CONFIRMED pair only ever carries `liked`,
+  // `slight` or `none` -- `deriveConfidence` turns a `favorite` reaction into
+  // its own FAVORITE state -- so treating "any non-loved CONFIRMED reaction"
+  // as below-loved happens to agree with the explicit list. If a new reaction
+  // tier is ever added without updating this list, it must NOT silently count
+  // as below-loved. `unknown-tier` stands in for that not-yet-invented tier:
+  // it bypasses the report form and validate.mjs (which would reject it), the
+  // same way this file's other fixtures construct data directly.
+  {
+    name: 'an unrecognised CONFIRMED reaction is neither loved nor below-loved',
+    observations: [
+      { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
+      { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'unknown-tier', date: '2026-09-23' },
+    ],
+    state: 'CONFIRMED',
+  },
+]) {
+  test(name, () => {
+    const idx = buildIndex({ ...mixedBase, characters: [tested()], observations }, pending);
+    assert.equal(idx.confidenceFor('p1', 'green-tea').state, state);
+    assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
+      { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
+    ]);
   });
-  assert.equal(idx.confidenceFor('p1', 'green-tea').state, 'PREDICTED');
-  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
-    { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
-  ]);
-});
+}
 
 // Testing outranks a stored link the same way it does for a confirmed
 // category (see the guide/refuted tests above): a mixed verdict still keeps
@@ -664,12 +637,12 @@ test('loved plus an untested gift in the same category stays confirmed', () => {
 test('a mixed category with a guide link keeps the link’s source', () => {
   const idx = buildIndex({
     ...mixedBase,
-    characters: [testedCharacter({ categories: { tea: { state: 'guide', source: 'polygon-1' } } })],
+    characters: [tested({ categories: { tea: { state: 'guide', source: 'polygon-1' } } })],
     observations: [
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'slight', date: '2026-09-23' },
     ],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
     { id: 'tea', label: 'Tea', state: 'mixed', source: 'polygon-1' },
@@ -682,37 +655,15 @@ test('a mixed category with a guide link keeps the link’s source', () => {
 test('a mixed verdict replaces a refuted link rather than being dropped', () => {
   const idx = buildIndex({
     ...mixedBase,
-    characters: [testedCharacter({ categories: { tea: { state: 'refuted', source: 'polygon-1' } } })],
+    characters: [tested({ categories: { tea: { state: 'refuted', source: 'polygon-1' } } })],
     observations: [
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'liked', date: '2026-09-23' },
     ],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   });
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
     { id: 'tea', label: 'Tea', state: 'mixed', source: 'polygon-1' },
-  ]);
-});
-
-// Today a CONFIRMED pair only ever carries `liked`,
-// `slight` or `none` -- `deriveConfidence` turns a `favorite` reaction into
-// its own FAVORITE state -- so treating "any non-loved CONFIRMED reaction"
-// as below-loved happens to agree with the explicit list. If a new reaction
-// tier is ever added without updating this list, it must NOT silently count
-// as below-loved. `unknown-tier` stands in for that not-yet-invented tier:
-// it bypasses the report form and validate.mjs (which would reject it), the
-// same way this file's other fixtures construct data directly.
-test('an unrecognised CONFIRMED reaction is neither loved nor below-loved', () => {
-  const idx = buildIndex({
-    ...mixedBase,
-    characters: [testedCharacter()],
-    observations: [
-      { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
-      { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'unknown-tier', date: '2026-09-23' },
-    ],
-  });
-  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
-    { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
   ]);
 });
 
@@ -721,26 +672,26 @@ test('an unrecognised CONFIRMED reaction is neither loved nor below-loved', () =
 test('categoryChips orders confirmed chips, then mixed chips, then stored links', () => {
   const orderedDataset = {
     categories: [
-      { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
-      { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
-      { id: 'herbs', label: 'Herbs', inGameDescriptor: null, aliases: [] },
-      { id: 'coffee', label: 'Coffee', inGameDescriptor: null, aliases: [] },
+      category({ id: 'tea', label: 'Tea' }),
+      category(),
+      category({ id: 'herbs', label: 'Herbs' }),
+      category({ id: 'coffee', label: 'Coffee' }),
     ],
     gifts: [
-      { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
-      { id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'uncommon', description: '', sources: [] },
-      { id: 'novel', name: 'Novel', category: 'books', rarity: 'common', description: '', sources: [] },
-      { id: 'basil', name: 'Basil', category: 'herbs', rarity: 'common', description: '', sources: [] },
-      { id: 'espresso', name: 'Espresso', category: 'coffee', rarity: 'common', description: '', sources: [] },
+      gift({ id: 'chamomile', name: 'Chamomile', category: 'tea' }),
+      gift({ id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'uncommon' }),
+      gift({ id: 'novel', name: 'Novel' }),
+      gift({ id: 'basil', name: 'Basil', category: 'herbs' }),
+      gift({ id: 'espresso', name: 'Espresso', category: 'coffee' }),
     ],
-    characters: [testedCharacter({ categories: { coffee: { state: 'guide', source: 'polygon-1' } } })],
+    characters: [tested({ categories: { coffee: { state: 'guide', source: 'polygon-1' } } })],
     observations: [
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'slight', date: '2026-09-23' },
       { id: 'o3', character: 'p1', gift: 'novel', reaction: 'loved', date: '2026-09-23' },
       { id: 'o4', character: 'p1', gift: 'basil', reaction: 'loved', date: '2026-09-23' },
     ],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   };
   const idx = buildIndex(orderedDataset);
   const chips = categoryChips(idx, idx.byCharacterId.get('p1'));
@@ -762,16 +713,16 @@ test('categoryChips orders confirmed chips, then mixed chips, then stored links'
 test('mixed chips are sorted by categories.json position, not by gift or insertion order', () => {
   const orderedDataset = {
     categories: [
-      { id: 'poems', label: 'Poems', inGameDescriptor: null, aliases: [] },
-      { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
+      category({ id: 'poems', label: 'Poems' }),
+      category({ id: 'tea', label: 'Tea' }),
     ],
     gifts: [
-      { id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'common', description: '', sources: [] },
-      { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
-      { id: 'poem-a', name: 'Poem A', category: 'poems', rarity: 'common', description: '', sources: [] },
-      { id: 'poem-b', name: 'Poem B', category: 'poems', rarity: 'common', description: '', sources: [] },
+      gift({ id: 'green-tea', name: 'Green Tea', category: 'tea' }),
+      gift({ id: 'chamomile', name: 'Chamomile', category: 'tea' }),
+      gift({ id: 'poem-a', name: 'Poem A', category: 'poems' }),
+      gift({ id: 'poem-b', name: 'Poem B', category: 'poems' }),
     ],
-    characters: [testedCharacter()],
+    characters: [tested()],
     observations: [
       { id: 'o1', character: 'p1', gift: 'green-tea', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'chamomile', reaction: 'slight', date: '2026-09-23' },
@@ -853,6 +804,14 @@ function fakeElement(tag) {
 }
 globalThis.document = { createElement: (tag) => fakeElement(tag) };
 
+// Renders a view into a fresh fake container and returns the container. Every
+// view's render takes (container, index, state).
+function renderView(render, idx, state) {
+  const container = fakeElement('div');
+  render(container, idx, state);
+  return container;
+}
+
 // Walk the stub tree. Only the matrix test needs these; everything else here
 // asserts on pure models.
 function collect(node, match, found = []) {
@@ -878,34 +837,114 @@ test('chip renders a link when given an href and a plain span otherwise', () => 
   assert.equal(label.href, undefined, 'a non-link chip must not look clickable');
 });
 
-// This is the contract character.js, gift.js and favorites.js all rely on:
-// app.js's delegated click listener finds `.report-button` and reads these
-// two dataset keys. Renaming the class or dropping a key makes every chip
-// built from reportChip() go inert with no error and no test catching it.
-test('reportChip carries the report-button class and both dataset ids', () => {
-  const button = reportChip('nydine', 'grooming-kit', 'Grooming kit', {
-    ariaLabel: 'Report a result for Grooming kit',
+// Each row builds one index from the shared `dataset` plus its overrides and
+// compares the one summary string for c1.
+for (const { name, over = {}, expected } of [
+  {
+    name: 'characterSummary reports the strongest true thing, never a negative',
+    // The fixture's c1 has one favourite observation on `brew`.
+    expected: '1 favourite',
+  },
+  {
+    name: 'characterSummary counts a declared favourite the Favourites tab would count',
+    over: { characters: [{ ...dataset.characters[0], favorites: ['rock'] }], observations: [] },
+    expected: '1 favourite',
+  },
+  // A character whose only category link is refuted has a guide guess that the
+  // gift will NOT land. That must never surface as "worth trying" -- see
+  // suggestionsFor in favorites.js, which this is made to agree with.
+  {
+    name: 'characterSummary does not count a refuted-category prediction as worth trying',
+    over: {
+      characters: [{ ...dataset.characters[0], categories: { books: { state: 'refuted', source: 'polygon' } } }],
+      observations: [],
+    },
+    expected: 'nothing tested yet',
+  },
+  // A `slight` result alongside a `loved` one must not inflate the loved count
+  // -- only the loved gift counts, and the slight one is silently absorbed
+  // rather than surfaced, since a favourite-free "N loved" summary has nowhere
+  // to mention "tested" too. See characterSummary's file comment.
+  {
+    name: 'characterSummary counts loved separately from a slight result on another gift',
+    over: {
+      observations: [
+        { id: 'o1', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-23' },
+        { id: 'o2', character: 'c1', gift: 'brew', reaction: 'slight', date: '2026-09-23' },
+      ],
+    },
+    expected: '1 loved',
+  },
+  {
+    name: 'characterSummary counts liked and slight together as "N tested" when nothing is loved',
+    over: {
+      observations: [
+        { id: 'o1', character: 'c1', gift: 'book', reaction: 'liked', date: '2026-09-23' },
+        { id: 'o2', character: 'c1', gift: 'brew', reaction: 'slight', date: '2026-09-23' },
+      ],
+    },
+    expected: '2 tested, none loved yet',
+  },
+  // A favourite is about one specific item; a loved count is about how many
+  // gifts overall land a big bond gain. Neither replaces the other, so both
+  // show at once once both are true.
+  {
+    name: 'characterSummary reports a favourite alongside a loved count, not instead of it',
+    over: {
+      gifts: [...dataset.gifts, gift({ id: 'tome', name: 'Tome' })],
+      observations: [
+        { id: 'o1', character: 'c1', gift: 'brew', reaction: 'favorite', date: '2026-09-20' },
+        { id: 'o2', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-23' },
+        { id: 'o3', character: 'c1', gift: 'tome', reaction: 'loved', date: '2026-09-23' },
+      ],
+    },
+    expected: '1 favourite, 2 loved',
+  },
+  // A gift can be both a declared favourite AND carry its
+  // own approved `loved` observation -- contradictory data the validator
+  // doesn't cross-check. Before this fix it counted in both buckets, reading
+  // "1 favourite, 1 loved" for what is really one item.
+  {
+    name: 'characterSummary does not double-count a loved gift that is also a favourite',
+    over: {
+      characters: [{ ...dataset.characters[0], favorites: ['book'] }],
+      observations: [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-23' }],
+    },
+    expected: '1 favourite',
+  },
+  // "2 favourites, N loved" pluralisation is never
+  // exercised elsewhere, so hard-coding the singular "favourite" would survive
+  // every other test here.
+  {
+    name: 'characterSummary pluralises "favourites" alongside a loved count',
+    // Favourites: observed `brew` (FAVORITE) plus declared `rock` -- two distinct items.
+    over: {
+      gifts: [...dataset.gifts, gift({ id: 'tome', name: 'Tome' })],
+      characters: [{ ...dataset.characters[0], favorites: ['rock'] }],
+      observations: [
+        { id: 'o1', character: 'c1', gift: 'brew', reaction: 'favorite', date: '2026-09-20' },
+        { id: 'o2', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-23' },
+        { id: 'o3', character: 'c1', gift: 'tome', reaction: 'loved', date: '2026-09-23' },
+      ],
+    },
+    expected: '2 favourites, 2 loved',
+  },
+  {
+    name: 'characterSummary pluralises "favourites" with no loved results either',
+    over: {
+      characters: [{ ...dataset.characters[0], favorites: ['rock'] }],
+      observations: [{ id: 'o1', character: 'c1', gift: 'brew', reaction: 'favorite', date: '2026-09-20' }],
+    },
+    expected: '2 favourites',
+  },
+]) {
+  test(name, () => {
+    const idx = buildIndex({ ...dataset, ...over });
+    assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), expected);
   });
-  assert.match(button.className, /\bchip\b/);
-  assert.match(button.className, /\bchip-action\b/);
-  assert.match(button.className, /\breport-button\b/);
-  assert.equal(button.dataset.character, 'nydine');
-  assert.equal(button.dataset.gift, 'grooming-kit');
-  assert.equal(button.getAttribute('aria-label'), 'Report a result for Grooming kit');
-});
+}
 
-test('characterSummary reports the strongest true thing, never a negative', () => {
-  const idx = buildIndex(dataset);
-  // The fixture's c1 has one favourite observation on `brew`.
-  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite');
-});
-
-test('characterSummary counts a declared favourite the Favourites tab would count', () => {
-  const characters = [{ ...dataset.characters[0], favorites: ['rock'] }];
-  const idx = buildIndex({ ...dataset, characters, observations: [] });
-  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite');
-});
-
+// This one builds four indexes and makes four assertions, so it stays a single test.
 test('characterSummary falls back through loved, tested, predicted, then nothing', () => {
   const base = { ...dataset.characters[0], favorites: [] };
 
@@ -932,106 +971,6 @@ test('characterSummary falls back through loved, tested, predicted, then nothing
 
   const bare = buildIndex({ ...dataset, characters: [{ ...base, categories: {} }], observations: [] });
   assert.equal(characterSummary(bare, bare.byCharacterId.get('c1')), 'nothing tested yet');
-});
-
-// A character whose only category link is refuted has a guide guess that the
-// gift will NOT land. That must never surface as "worth trying" -- see
-// suggestionsFor in favorites.js, which this is made to agree with.
-test('characterSummary does not count a refuted-category prediction as worth trying', () => {
-  const idx = buildIndex({
-    ...dataset,
-    characters: [{ ...dataset.characters[0], categories: { books: { state: 'refuted', source: 'polygon' } } }],
-    observations: [],
-  });
-  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), 'nothing tested yet');
-});
-
-// A `slight` result alongside a `loved` one must not inflate the loved count
-// -- only the loved gift counts, and the slight one is silently absorbed
-// rather than surfaced, since a favourite-free "N loved" summary has nowhere
-// to mention "tested" too. See characterSummary's file comment.
-test('characterSummary counts loved separately from a slight result on another gift', () => {
-  const idx = buildIndex({
-    ...dataset,
-    observations: [
-      { id: 'o1', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-23' },
-      { id: 'o2', character: 'c1', gift: 'brew', reaction: 'slight', date: '2026-09-23' },
-    ],
-  });
-  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 loved');
-});
-
-test('characterSummary counts liked and slight together as "N tested" when nothing is loved', () => {
-  const idx = buildIndex({
-    ...dataset,
-    observations: [
-      { id: 'o1', character: 'c1', gift: 'book', reaction: 'liked', date: '2026-09-23' },
-      { id: 'o2', character: 'c1', gift: 'brew', reaction: 'slight', date: '2026-09-23' },
-    ],
-  });
-  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '2 tested, none loved yet');
-});
-
-// A favourite is about one specific item; a loved count is about how many
-// gifts overall land a big bond gain. Neither replaces the other, so both
-// show at once once both are true.
-test('characterSummary reports a favourite alongside a loved count, not instead of it', () => {
-  const idx = buildIndex({
-    ...dataset,
-    gifts: [
-      ...dataset.gifts,
-      { id: 'tome', name: 'Tome', category: 'books', rarity: 'common', description: '', sources: [] },
-    ],
-    observations: [
-      { id: 'o1', character: 'c1', gift: 'brew', reaction: 'favorite', date: '2026-09-20' },
-      { id: 'o2', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-23' },
-      { id: 'o3', character: 'c1', gift: 'tome', reaction: 'loved', date: '2026-09-23' },
-    ],
-  });
-  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite, 2 loved');
-});
-
-// A gift can be both a declared favourite AND carry its
-// own approved `loved` observation -- contradictory data the validator
-// doesn't cross-check. Before this fix it counted in both buckets, reading
-// "1 favourite, 1 loved" for what is really one item.
-test('characterSummary does not double-count a loved gift that is also a favourite', () => {
-  const idx = buildIndex({
-    ...dataset,
-    characters: [{ ...dataset.characters[0], favorites: ['book'] }],
-    observations: [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-23' }],
-  });
-  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '1 favourite');
-});
-
-// "2 favourites, N loved" pluralisation is never
-// exercised elsewhere, so hard-coding the singular "favourite" would survive
-// every other test here.
-test('characterSummary pluralises "favourites" alongside a loved count', () => {
-  const idx = buildIndex({
-    ...dataset,
-    gifts: [
-      ...dataset.gifts,
-      { id: 'tome', name: 'Tome', category: 'books', rarity: 'common', description: '', sources: [] },
-    ],
-    characters: [{ ...dataset.characters[0], favorites: ['rock'] }],
-    observations: [
-      { id: 'o1', character: 'c1', gift: 'brew', reaction: 'favorite', date: '2026-09-20' },
-      { id: 'o2', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-23' },
-      { id: 'o3', character: 'c1', gift: 'tome', reaction: 'loved', date: '2026-09-23' },
-    ],
-  });
-  // Favourites: observed `brew` (FAVORITE) plus declared `rock` -- two distinct items.
-  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '2 favourites, 2 loved');
-});
-
-test('characterSummary pluralises "favourites" with no loved results either', () => {
-  const idx = buildIndex({
-    ...dataset,
-    characters: [{ ...dataset.characters[0], favorites: ['rock'] }],
-    observations: [{ id: 'o1', character: 'c1', gift: 'brew', reaction: 'favorite', date: '2026-09-20' }],
-  });
-  assert.equal(characterSummary(idx, idx.byCharacterId.get('c1')), '2 favourites');
 });
 
 test('characterIndexModel hides non-giftable characters and honours search', () => {
@@ -1073,8 +1012,7 @@ test('characterIndexModel carries the favourite gifts for each character, in ord
 // character-chips classes.
 test('the index card renders favourite chips before category chips, in one character-chips list', () => {
   const idx = buildIndex(dataset);
-  const container = fakeElement('div');
-  characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false });
+  const container = renderView(characterView.render, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false });
 
   const list = findFirst(container, (n) => (n.className ?? '').includes('character-chips'));
   assert.ok(list, 'the card should render a character-chips list');
@@ -1092,8 +1030,7 @@ test('the index card renders favourite chips before category chips, in one chara
 // chip-favourite class the Favourites tab uses.
 test('the character detail page renders a Favourites block before Reported to like', () => {
   const idx = buildIndex(dataset);
-  const container = fakeElement('div');
-  characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'c1' });
+  const container = renderView(characterView.render, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'c1' });
 
   const headings = collect(container, (n) => n.tagName === 'H3').map((n) => n.textContent);
   assert.deepEqual(
@@ -1122,8 +1059,7 @@ test('the index card renders a favourite chip even when it has no category chips
     characters: [{ ...dataset.characters[0], categories: {}, favorites: ['book'] }],
     observations: [],
   });
-  const container = fakeElement('div');
-  characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false });
+  const container = renderView(characterView.render, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false });
 
   const list = findFirst(container, (n) => (n.className ?? '').includes('character-chips'));
   assert.ok(list, 'a favourite with zero category chips must still render the chip list');
@@ -1137,8 +1073,7 @@ test('the index card renders a favourite chip even when it has no category chips
 // list on every character page, and no existing test caught it.
 test('a character detail page with no favourites renders no Favourites heading', () => {
   const idx = buildIndex({ ...dataset, observations: [] });
-  const container = fakeElement('div');
-  characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'c1' });
+  const container = renderView(characterView.render, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'c1' });
 
   const heading = findFirst(container, (n) => n.tagName === 'H3' && n.textContent === 'Favourites');
   assert.equal(heading, undefined, 'no favourites means no Favourites heading');
@@ -1149,8 +1084,7 @@ test('a character detail page with no favourites renders no Favourites heading',
 // duplicate the star chip(s) under that heading, and no existing test caught it.
 test('the "Reported to like" list carries no favourite chips, even when the page has some', () => {
   const idx = buildIndex(dataset);
-  const container = fakeElement('div');
-  characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'c1' });
+  const container = renderView(characterView.render, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'c1' });
 
   const lists = collect(container, (n) => (n.className ?? '').includes('character-chips'));
   assert.equal(lists.length, 2, 'a Favourites list and a Reported-to-like list');
@@ -1168,32 +1102,27 @@ test('the "Reported to like" list carries no favourite chips, even when the page
 test('every character chip carries a state title, and a hidden suffix except favourites', () => {
   const idx = buildIndex({
     categories: [
-      { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
-      { id: 'coffee', label: 'Coffee', inGameDescriptor: null, aliases: [] },
-      { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
+      category({ id: 'tea', label: 'Tea' }),
+      category({ id: 'coffee', label: 'Coffee' }),
+      category(),
     ],
     gifts: [
-      { id: 'chamomile', name: 'Chamomile', category: 'tea', rarity: 'common', description: '', sources: [] },
-      { id: 'green-tea', name: 'Green Tea', category: 'tea', rarity: 'common', description: '', sources: [] },
-      { id: 'espresso', name: 'Espresso', category: 'coffee', rarity: 'common', description: '', sources: [] },
-      { id: 'novel', name: 'Novel', category: 'books', rarity: 'common', description: '', sources: [] },
-      { id: 'trinket', name: 'Trinket', category: null, rarity: 'rare', description: '', sources: [] },
+      gift({ id: 'chamomile', name: 'Chamomile', category: 'tea' }),
+      gift({ id: 'green-tea', name: 'Green Tea', category: 'tea' }),
+      gift({ id: 'espresso', name: 'Espresso', category: 'coffee' }),
+      gift({ id: 'novel', name: 'Novel' }),
+      gift({ id: 'trinket', name: 'Trinket', category: null, rarity: 'rare' }),
     ],
-    characters: [{
-      id: 'p1', name: 'P', giftable: true, spoiler: false, traits: [],
-      categories: { books: { state: 'guide', source: 'polygon-1' } },
-      rarityPreference: null, favorites: ['trinket'], notes: null,
-    }],
+    characters: [tested({ categories: { books: { state: 'guide', source: 'polygon-1' } }, favorites: ['trinket'] })],
     observations: [
       { id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' },
       { id: 'o2', character: 'p1', gift: 'green-tea', reaction: 'slight', date: '2026-09-23' },
       { id: 'o3', character: 'p1', gift: 'espresso', reaction: 'loved', date: '2026-09-23' },
     ],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   });
 
-  const container = fakeElement('div');
-  characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'p1' });
+  const container = renderView(characterView.render, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'p1' });
 
   const lists = collect(container, (n) => (n.className ?? '').includes('character-chips'));
   assert.equal(lists.length, 2, 'a Favourites list and a Reported-to-like list');
@@ -1228,18 +1157,18 @@ test('every character chip carries a state title, and a hidden suffix except fav
 // See CLAUDE.md's "Guide-derived links always carry provenance."
 const provenanceIndex = buildIndex({
   categories: [
-    { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
-    { id: 'coffee', label: 'Coffee', inGameDescriptor: null, aliases: [] },
-    { id: 'tea', label: 'Tea', inGameDescriptor: null, aliases: [] },
-    { id: 'drinks', label: 'Fermented Drinks', inGameDescriptor: null, aliases: [] },
-    { id: 'snacks', label: 'Snacks', inGameDescriptor: null, aliases: [] },
+    category(),
+    category({ id: 'coffee', label: 'Coffee' }),
+    category({ id: 'tea', label: 'Tea' }),
+    category({ id: 'drinks', label: 'Fermented Drinks' }),
+    category({ id: 'snacks', label: 'Snacks' }),
   ],
   gifts: [],
   characters: [],
   observations: [],
   sources: [
-    { id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' },
-    { id: 'game8-1', title: '', author: null, publisher: 'Game8', url: '', retrieved: '2026-09-23' },
+    source(),
+    source({ id: 'game8-1', publisher: 'Game8', retrieved: '2026-09-23' }),
   ],
 });
 
@@ -1247,146 +1176,144 @@ const guideChip = (id, label, source) => ({ id, label, state: 'guide', source })
 const discoveredChip = (id, label) => ({ id, label, state: 'discovered', source: null });
 const profileChip = (id, label) => ({ id, label, state: 'profile', source: null });
 const confirmedChip = (id, label, source = null) => ({ id, label, state: 'confirmed', source });
-
-test('provenanceNote: guide-only, one publisher', () => {
-  const chips = [guideChip('books', 'Books', 'polygon-1')];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Category preferences carried over from Polygon. They’re predictions until a player reports loving an item in that category.',
-  );
-});
-
-test('provenanceNote: guide-only, two publishers', () => {
-  const chips = [guideChip('books', 'Books', 'polygon-1'), guideChip('coffee', 'Coffee', 'game8-1')];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Category preferences carried over from Polygon and Game8. They’re predictions until a player reports loving an item in that category.',
-  );
-});
-
-test('provenanceNote: guide plus one discovered', () => {
-  const chips = [discoveredChip('drinks', 'Fermented Drinks'), guideChip('books', 'Books', 'polygon-1')];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Fermented Drinks was found through play. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
-  );
-});
-
-test('provenanceNote: guide plus two discovered', () => {
-  const chips = [
-    discoveredChip('books', 'Books'),
-    discoveredChip('coffee', 'Coffee'),
-    guideChip('tea', 'Tea', 'polygon-1'),
-  ];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Books and Coffee were found through play. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
-  );
-});
-
-test('provenanceNote: guide plus three discovered', () => {
-  const chips = [
-    discoveredChip('books', 'Books'),
-    discoveredChip('coffee', 'Coffee'),
-    discoveredChip('tea', 'Tea'),
-    guideChip('snacks', 'Snacks', 'polygon-1'),
-  ];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Books, Coffee and Tea were found through play. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
-  );
-});
-
-test('provenanceNote: discovered only', () => {
-  const chips = [discoveredChip('books', 'Books')];
-  assert.equal(provenanceNote(provenanceIndex, chips), 'Found through play.');
-});
-
-test('provenanceNote: profile only, one', () => {
-  const chips = [profileChip('snacks', 'Snacks')];
-  assert.equal(provenanceNote(provenanceIndex, chips), 'Snacks is on the in-game profile.');
-});
-
-test('provenanceNote: discovered plus profile, no guide', () => {
-  const chips = [discoveredChip('drinks', 'Fermented Drinks'), profileChip('snacks', 'Snacks')];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Fermented Drinks was found through play. Snacks is on the in-game profile.',
-  );
-});
-
-test('provenanceNote: empty chips returns an empty string', () => {
-  assert.equal(provenanceNote(provenanceIndex, []), '');
-});
-
-test('provenanceNote: confirmed only, one category', () => {
-  const chips = [confirmedChip('books', 'Books')];
-  assert.equal(provenanceNote(provenanceIndex, chips), 'Books has at least one gift loved in testing.');
-});
-
-test('provenanceNote: confirmed only, two categories', () => {
-  const chips = [confirmedChip('books', 'Books'), confirmedChip('coffee', 'Coffee')];
-  assert.equal(provenanceNote(provenanceIndex, chips), 'Each has at least one gift loved in testing.');
-});
-
-test('provenanceNote: confirmed plus guide demotes the guide sentence to "the rest"', () => {
-  const chips = [confirmedChip('books', 'Books'), guideChip('coffee', 'Coffee', 'polygon-1')];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Books has at least one gift loved in testing. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
-  );
-});
-
-test('provenanceNote: confirmed plus discovered no longer says "Found through play."', () => {
-  const chips = [confirmedChip('books', 'Books'), discoveredChip('coffee', 'Coffee')];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Books has at least one gift loved in testing. Coffee was found through play.',
-  );
-});
-
-// The confirmed-only sentence's "only group" check must actually look at
-// profile chips, not just discovered/guide -- otherwise a confirmed category
-// sitting next to a profile one would wrongly take the bare "Each has..."
-// form instead of naming the category.
-test('provenanceNote: confirmed plus profile', () => {
-  const chips = [confirmedChip('books', 'Books'), profileChip('snacks', 'Snacks')];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Books has at least one gift loved in testing. Snacks is on the in-game profile.',
-  );
-});
-
-test('provenanceNote: two confirmed categories plus guide uses "each have"', () => {
-  const chips = [confirmedChip('books', 'Books'), confirmedChip('coffee', 'Coffee'), guideChip('tea', 'Tea', 'polygon-1')];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Books and Coffee each have at least one gift loved in testing. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
-  );
-});
-
-// Same "each have" form, but the other group present is profile rather than
-// guide -- pins that the "only group" check for 2+ confirmed chips reads
-// profile too, not just discovered/guide (see the M-2 test above for the
-// 1-chip case).
-test('provenanceNote: two confirmed categories plus profile uses "each have"', () => {
-  const chips = [confirmedChip('books', 'Books'), confirmedChip('coffee', 'Coffee'), profileChip('snacks', 'Snacks')];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Books and Coffee each have at least one gift loved in testing. Snacks is on the in-game profile.',
-  );
-});
-
 const mixedChip = (id, label) => ({ id, label, state: 'mixed', source: null });
 
-test('provenanceNote: mixed only, one category', () => {
-  const chips = [mixedChip('books', 'Books')];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Books has mixed results: at least one gift was loved, others less so.',
-  );
-});
+for (const { name, chips, expected } of [
+  {
+    name: 'guide-only, one publisher',
+    chips: [guideChip('books', 'Books', 'polygon-1')],
+    expected: 'Category preferences carried over from Polygon. They’re predictions until a player reports loving an item in that category.',
+  },
+  {
+    name: 'guide-only, two publishers',
+    chips: [guideChip('books', 'Books', 'polygon-1'), guideChip('coffee', 'Coffee', 'game8-1')],
+    expected: 'Category preferences carried over from Polygon and Game8. They’re predictions until a player reports loving an item in that category.',
+  },
+  {
+    name: 'guide plus one discovered',
+    chips: [discoveredChip('drinks', 'Fermented Drinks'), guideChip('books', 'Books', 'polygon-1')],
+    expected: 'Fermented Drinks was found through play. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
+  },
+  {
+    name: 'guide plus two discovered',
+    chips: [
+      discoveredChip('books', 'Books'),
+      discoveredChip('coffee', 'Coffee'),
+      guideChip('tea', 'Tea', 'polygon-1'),
+    ],
+    expected: 'Books and Coffee were found through play. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
+  },
+  {
+    name: 'guide plus three discovered',
+    chips: [
+      discoveredChip('books', 'Books'),
+      discoveredChip('coffee', 'Coffee'),
+      discoveredChip('tea', 'Tea'),
+      guideChip('snacks', 'Snacks', 'polygon-1'),
+    ],
+    expected: 'Books, Coffee and Tea were found through play. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
+  },
+  {
+    name: 'discovered only',
+    chips: [discoveredChip('books', 'Books')],
+    expected: 'Found through play.',
+  },
+  {
+    name: 'profile only, one',
+    chips: [profileChip('snacks', 'Snacks')],
+    expected: 'Snacks is on the in-game profile.',
+  },
+  {
+    name: 'discovered plus profile, no guide',
+    chips: [discoveredChip('drinks', 'Fermented Drinks'), profileChip('snacks', 'Snacks')],
+    expected: 'Fermented Drinks was found through play. Snacks is on the in-game profile.',
+  },
+  {
+    name: 'empty chips returns an empty string',
+    chips: [],
+    expected: '',
+  },
+  {
+    name: 'confirmed only, one category',
+    chips: [confirmedChip('books', 'Books')],
+    expected: 'Books has at least one gift loved in testing.',
+  },
+  {
+    name: 'confirmed only, two categories',
+    chips: [confirmedChip('books', 'Books'), confirmedChip('coffee', 'Coffee')],
+    expected: 'Each has at least one gift loved in testing.',
+  },
+  {
+    name: 'confirmed plus guide demotes the guide sentence to "the rest"',
+    chips: [confirmedChip('books', 'Books'), guideChip('coffee', 'Coffee', 'polygon-1')],
+    expected: 'Books has at least one gift loved in testing. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
+  },
+  {
+    name: 'confirmed plus discovered no longer says "Found through play."',
+    chips: [confirmedChip('books', 'Books'), discoveredChip('coffee', 'Coffee')],
+    expected: 'Books has at least one gift loved in testing. Coffee was found through play.',
+  },
+  // The confirmed-only sentence's "only group" check must actually look at
+  // profile chips, not just discovered/guide -- otherwise a confirmed category
+  // sitting next to a profile one would wrongly take the bare "Each has..."
+  // form instead of naming the category.
+  {
+    name: 'confirmed plus profile',
+    chips: [confirmedChip('books', 'Books'), profileChip('snacks', 'Snacks')],
+    expected: 'Books has at least one gift loved in testing. Snacks is on the in-game profile.',
+  },
+  {
+    name: 'two confirmed categories plus guide uses "each have"',
+    chips: [confirmedChip('books', 'Books'), confirmedChip('coffee', 'Coffee'), guideChip('tea', 'Tea', 'polygon-1')],
+    expected: 'Books and Coffee each have at least one gift loved in testing. The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
+  },
+  // Same "each have" form, but the other group present is profile rather than
+  // guide -- pins that the "only group" check for 2+ confirmed chips reads
+  // profile too, not just discovered/guide (see the M-2 test above for the
+  // 1-chip case).
+  {
+    name: 'two confirmed categories plus profile uses "each have"',
+    chips: [confirmedChip('books', 'Books'), confirmedChip('coffee', 'Coffee'), profileChip('snacks', 'Snacks')],
+    expected: 'Books and Coffee each have at least one gift loved in testing. Snacks is on the in-game profile.',
+  },
+  {
+    name: 'mixed only, one category',
+    chips: [mixedChip('books', 'Books')],
+    expected: 'Books has mixed results: at least one gift was loved, others less so.',
+  },
+  // The spec's own worked example: confirmed Cooking, mixed Books, guide
+  // Fishing -- pins the exact sentence order and wording across all three
+  // groups at once.
+  {
+    name: 'confirmed plus mixed plus guide reads in strength order',
+    chips: [confirmedChip('cooking', 'Cooking'), mixedChip('books', 'Books'), guideChip('fishing', 'Fishing', 'polygon-1')],
+    expected: 'Cooking has at least one gift loved in testing. Books has mixed results: at least one gift was loved, others less so. '
+      + 'The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
+  },
+  // A mixed chip is still a "stronger than a stored link" group -- alongside
+  // it, discovered must use its labelled form, never the bare "Found through
+  // play." reserved for when discovered is the only group.
+  {
+    name: 'discovered plus mixed uses the labelled discovered form',
+    chips: [discoveredChip('drinks', 'Fermented Drinks'), mixedChip('books', 'Books')],
+    expected: 'Books has mixed results: at least one gift was loved, others less so. Fermented Drinks was found through play.',
+  },
+  // Same guard on the guide side: a mixed chip must demote the guide sentence
+  // to "The rest are ..." exactly like a confirmed, discovered or profile chip
+  // would.
+  {
+    name: 'guide plus mixed uses "The rest are ..." form',
+    chips: [guideChip('books', 'Books', 'polygon-1'), mixedChip('coffee', 'Coffee')],
+    expected: 'Coffee has mixed results: at least one gift was loved, others less so. '
+      + 'The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
+  },
+]) {
+  test(`provenanceNote: ${name}`, () => {
+    assert.equal(provenanceNote(provenanceIndex, chips), expected);
+  });
+}
 
+// These two assert more than the note's text, so they stay their own tests.
 test('provenanceNote: mixed only, two categories', () => {
   const chips = [mixedChip('books', 'Books'), mixedChip('coffee', 'Coffee')];
   const note = provenanceNote(provenanceIndex, chips);
@@ -1395,18 +1322,6 @@ test('provenanceNote: mixed only, two categories', () => {
   // discovered one -- mixed is its own group with its own sentence.
   assert.doesNotMatch(note, /Each has/);
   assert.doesNotMatch(note, /Found through play/);
-});
-
-// The spec's own worked example: confirmed Cooking, mixed Books, guide
-// Fishing -- pins the exact sentence order and wording across all three
-// groups at once.
-test('provenanceNote: confirmed plus mixed plus guide reads in strength order', () => {
-  const chips = [confirmedChip('cooking', 'Cooking'), mixedChip('books', 'Books'), guideChip('fishing', 'Fishing', 'polygon-1')];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Cooking has at least one gift loved in testing. Books has mixed results: at least one gift was loved, others less so. '
-      + 'The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
-  );
 });
 
 // Removing the `mixed.length === 0 &&` guard from the
@@ -1425,40 +1340,15 @@ test('provenanceNote: two confirmed categories plus a mixed chip uses "each have
   assert.doesNotMatch(note, /Each has/);
 });
 
-// A mixed chip is still a "stronger than a stored link" group -- alongside
-// it, discovered must use its labelled form, never the bare "Found through
-// play." reserved for when discovered is the only group.
-test('provenanceNote: discovered plus mixed uses the labelled discovered form', () => {
-  const chips = [discoveredChip('drinks', 'Fermented Drinks'), mixedChip('books', 'Books')];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Books has mixed results: at least one gift was loved, others less so. Fermented Drinks was found through play.',
-  );
-});
-
-// Same guard on the guide side: a mixed chip must demote the guide sentence
-// to "The rest are ..." exactly like a confirmed, discovered or profile chip
-// would.
-test('provenanceNote: guide plus mixed uses "The rest are ..." form', () => {
-  const chips = [guideChip('books', 'Books', 'polygon-1'), mixedChip('coffee', 'Coffee')];
-  assert.equal(
-    provenanceNote(provenanceIndex, chips),
-    'Coffee has mixed results: at least one gift was loved, others less so. '
-      + 'The rest are carried over from Polygon and are predictions until a player reports loving an item in that category.',
-  );
-});
-
-test('signalHeading never claims knowledge over a table of pure guesswork', () => {
+// A refuted-category prediction is a guess the gift will NOT land. Counting it
+// toward "Worth trying" would invite players to spend gifts on items a guide
+// says will not work -- the inverse of this project's core rule. But the
+// answer is not "What we know" either: these rows are still pure guesswork,
+// and that heading may only appear over something somebody observed.
+test('signalHeading does not call a refuted-category prediction "worth trying"', () => {
+  // A lone positive prediction is "Worth trying", and one observed row
+  // alongside a guess is what earns "What we know".
   assert.equal(signalHeading([{ confidence: { state: 'PREDICTED', predicted: 'positive' } }]), 'Worth trying');
-  // All guesses, but one says the gift will NOT land: not "worth trying", and
-  // emphatically not something we know.
-  assert.equal(
-    signalHeading([
-      { confidence: { state: 'PREDICTED', predicted: 'positive' } },
-      { confidence: { state: 'PREDICTED', predicted: 'negative' } },
-    ]),
-    'Predictions',
-  );
   assert.equal(
     signalHeading([
       { confidence: { state: 'PREDICTED', predicted: 'positive' } },
@@ -1466,18 +1356,6 @@ test('signalHeading never claims knowledge over a table of pure guesswork', () =
     ]),
     'What we know',
   );
-  // A pending report is a real player's result, but nobody has reviewed it
-  // yet, so it is not "What we know" either -- see I2 in the fix brief: this
-  // assertion used to expect 'What we know' here, which was the bug.
-  assert.equal(signalHeading([{ confidence: { state: 'PENDING' } }]), 'Awaiting review');
-});
-
-// A refuted-category prediction is a guess the gift will NOT land. Counting it
-// toward "Worth trying" would invite players to spend gifts on items a guide
-// says will not work -- the inverse of this project's core rule. But the
-// answer is not "What we know" either: these rows are still pure guesswork,
-// and that heading may only appear over something somebody observed.
-test('signalHeading does not call a refuted-category prediction "worth trying"', () => {
   assert.equal(
     signalHeading([{ confidence: { state: 'PREDICTED', predicted: 'negative' } }]),
     'Predictions',
@@ -1518,7 +1396,7 @@ test('signalHeading returns "Awaiting review" for a pending-only table, but "Wha
 test('characterSummary reports contested and pending results rather than silence', () => {
   const bare = {
     ...dataset,
-    gifts: [{ id: 'b1', name: 'B1', category: null, rarity: null, description: '', sources: [] }],
+    gifts: [gift({ id: 'b1', name: 'B1', category: null, rarity: null })],
     characters: [{ ...dataset.characters[0], categories: {}, favorites: [] }],
     observations: [],
   };
@@ -1545,7 +1423,7 @@ test('characterSummary reports contested and pending results rather than silence
 test('characterSummary reports a liked, slight or neutral-reaction confirmation as "tested", never "loved"', () => {
   const base = {
     ...dataset,
-    gifts: [{ id: 'b1', name: 'B1', category: null, rarity: null, description: '', sources: [] }],
+    gifts: [gift({ id: 'b1', name: 'B1', category: null, rarity: null })],
     characters: [{ ...dataset.characters[0], categories: {}, favorites: [] }],
   };
 
@@ -1598,8 +1476,7 @@ test('giftIndexModel returns nothing when the search matches nothing', () => {
 // character. Nothing else in the suite renders matrix DOM.
 test('every matrix row carries the same number of cells as the header', () => {
   const idx = buildIndex(dataset);
-  const container = fakeElement('div');
-  renderMatrix(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false });
+  const container = renderView(renderMatrix, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false });
 
   const table = findFirst(container, (n) => n.className === 'matrix');
   assert.ok(table, 'render should produce a .matrix table');
@@ -1636,11 +1513,7 @@ const degradedDataset = {
   ...dataset,
   characters: [
     dataset.characters[0],
-    {
-      id: 'c2', name: 'D', giftable: true, spoiler: false, traits: [],
-      categories: { coffee: { state: 'profile', source: null } },
-      rarityPreference: null, favorites: [], notes: null,
-    },
+    character({ id: 'c2', name: 'D', categories: { coffee: { state: 'profile', source: null } } }),
   ],
 };
 
@@ -1662,8 +1535,7 @@ test('with submissions off, no view renders a report control', () => {
     ['gift detail', giftView.render, { ...off, id: 'book' }],
     ['favourites', favoritesView.render, off],
   ]) {
-    const container = fakeElement('div');
-    render(container, idx, state);
+    const container = renderView(render, idx, state);
     const triggers = collect(container, (n) => (n.className ?? '').includes('report-button'));
     assert.equal(triggers.length, 0, `${name} rendered ${triggers.length} report controls with submissions off`);
     const buttons = collect(container, (n) => n.tagName === 'BUTTON');
@@ -1682,8 +1554,7 @@ test('with submissions on, the detail views do render report controls', () => {
     ['gift detail', giftView.render, { ...on, id: 'book' }],
     ['favourites', favoritesView.render, on],
   ]) {
-    const container = fakeElement('div');
-    render(container, idx, state);
+    const container = renderView(render, idx, state);
     const triggers = collect(container, (n) => (n.className ?? '').includes('report-button'));
     assert.ok(triggers.length > 0, `${name} renders no report control with submissions on`);
     for (const t of triggers) {
@@ -1704,8 +1575,7 @@ test('the character and gift detail tables are wrapped in a .table-scroll', () =
     ['character detail', characterView.render, { ...on, id: 'c1' }],
     ['gift detail', giftView.render, { ...on, id: 'book' }],
   ]) {
-    const container = fakeElement('div');
-    render(container, idx, state);
+    const container = renderView(render, idx, state);
     const scroller = findFirst(container, (n) => (n.className ?? '').includes('table-scroll'));
     assert.ok(scroller, `${name} should render a .table-scroll wrapper`);
     const table = collect(scroller, (n) => (n.className ?? '').includes('gift-table'));
@@ -1729,6 +1599,15 @@ test('reportButton and reportChip both emit the .report-button class app.js clos
     assert.equal(node.dataset.character, 'nydine', `${name} must carry the character id`);
     assert.equal(node.dataset.gift, 'grooming-kit', `${name} must carry the gift id`);
   }
+  // character.js, gift.js and favorites.js build their chips with reportChip(),
+  // so it must also keep the chip look and honour a caller's aria-label.
+  const chipNode = reportChip('nydine', 'grooming-kit', 'Grooming kit', {
+    ariaLabel: 'Report a result for Grooming kit',
+  });
+  assert.match(chipNode.className, /\bchip\b/);
+  assert.match(chipNode.className, /\bchip-action\b/);
+  assert.match(chipNode.className, /\breport-button\b/);
+  assert.equal(chipNode.getAttribute('aria-label'), 'Report a result for Grooming kit');
 });
 
 // A2: a CONFIRMED pair whose reaction is liked, slight or "none" is a real,
@@ -1808,8 +1687,7 @@ for (const [reaction, cellState_, symbol] of [['none', 'none', '0'], ['slight', 
       ...dataset,
       observations: [{ id: 'o1', gift: 'book', character: 'c1', reaction, date: '2026-09-20' }],
     });
-    const container = fakeElement('div');
-    renderMatrix(container, idx, { filters: DEFAULT_FILTERS, search: 'book', submissionsEnabled: false });
+    const container = renderView(renderMatrix, idx, { filters: DEFAULT_FILTERS, search: 'book', submissionsEnabled: false });
 
     const cells = collect(container, (n) => n.tagName === 'TD' && (n.className ?? '').startsWith('cell-'));
     assert.equal(cells.length, 1, 'the search should narrow this to one gift row and one character column');
@@ -1852,8 +1730,7 @@ test('"Hide untested pairs" keeps a slight (below-loved) pair, not just a loved 
 // per row a prediction reads as a known favourite.
 test('the favourites hunt labels a suggestion "worth trying" and a solved row a known favourite', () => {
   const idx = buildIndex(degradedDataset);
-  const container = fakeElement('div');
-  favoritesView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, storage: undefined });
+  const container = renderView(favoritesView.render, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, storage: undefined });
   const hints = collect(container, (n) => n.className === 'hunt-hint').map((n) => n.textContent);
   // Unknown section first, then Found: c2 is a prediction, c1 has a favourite.
   assert.deepEqual(hints, ['worth trying', 'known favourite']);
@@ -1864,8 +1741,7 @@ test('a row with more than one known favourite says favourites', () => {
     ...dataset,
     characters: [{ ...dataset.characters[0], favorites: ['book'] }],
   });
-  const container = fakeElement('div');
-  favoritesView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, storage: undefined });
+  const container = renderView(favoritesView.render, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, storage: undefined });
   const hints = collect(container, (n) => n.className === 'hunt-hint').map((n) => n.textContent);
   assert.deepEqual(hints, ['known favourites']);
 });
@@ -1877,13 +1753,11 @@ test('every list the stylesheet un-lists keeps an explicit list role', () => {
   const idx = buildIndex(degradedDataset);
   const state = { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, storage: undefined };
 
-  const matrix = fakeElement('div');
-  renderMatrix(matrix, idx, state);
+  const matrix = renderView(renderMatrix, idx, state);
   const legend = findFirst(matrix, (n) => n.className === 'matrix-legend');
   assert.equal(legend.getAttribute('role'), 'list', 'the matrix legend needs role="list"');
 
-  const hunt = fakeElement('div');
-  favoritesView.render(hunt, idx, state);
+  const hunt = renderView(favoritesView.render, idx, state);
   const lists = collect(hunt, (n) => n.className === 'hunt-list');
   assert.equal(lists.length, 2, 'the hunt renders an unknown list and a found list');
   for (const list of lists) assert.equal(list.getAttribute('role'), 'list', 'every .hunt-list needs role="list"');
@@ -1910,24 +1784,21 @@ test('a character with no traits key renders without throwing and omits the Prof
 test('the character detail view renders the provenance note text from provenanceNote', () => {
   const idx = buildIndex({
     categories: [
-      { id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] },
-      { id: 'drinks', label: 'Fermented Drinks', inGameDescriptor: null, aliases: [] },
+      category(),
+      category({ id: 'drinks', label: 'Fermented Drinks' }),
     ],
     gifts: [],
-    characters: [{
-      id: 'c1', name: 'C', giftable: true, spoiler: false, traits: [],
+    characters: [character({
       categories: {
         drinks: { state: 'discovered', source: null },
         books: { state: 'guide', source: 'polygon-1' },
       },
-      rarityPreference: null, favorites: [], notes: null,
-    }],
+    })],
     observations: [],
-    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+    sources: [source()],
   });
 
-  const container = fakeElement('div');
-  characterView.render(container, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'c1' });
+  const container = renderView(characterView.render, idx, { filters: DEFAULT_FILTERS, search: '', submissionsEnabled: false, id: 'c1' });
   const note = findFirst(container, (n) => (n.className ?? '').includes('provenance-note'));
   assert.equal(
     note.textContent,
@@ -2151,8 +2022,7 @@ test('a search that matches no gift offers to report it, but only with submissio
   const idx = buildIndex(dataset);
   const base = { filters: DEFAULT_FILTERS, search: 'lantern oil', searchText: 'Lantern Oil', storage: undefined };
 
-  const on = fakeElement('div');
-  giftView.render(on, idx, { ...base, submissionsEnabled: true });
+  const on = renderView(giftView.render, idx, { ...base, submissionsEnabled: true });
   const buttons = collect(on, (n) => (n.className ?? '').includes('missing-item-button'));
   assert.equal(buttons.length, 1);
   assert.equal(buttons[0].tagName, 'BUTTON');
@@ -2160,24 +2030,21 @@ test('a search that matches no gift offers to report it, but only with submissio
   assert.equal(buttons[0].dataset.name, 'Lantern Oil', 'carries the query as typed, not lower-cased');
   assert.equal(buttons[0].textContent, 'Report ‘Lantern Oil’ as a missing item');
 
-  const off = fakeElement('div');
-  giftView.render(off, idx, { ...base, submissionsEnabled: false });
+  const off = renderView(giftView.render, idx, { ...base, submissionsEnabled: false });
   assert.equal(collect(off, (n) => n.tagName === 'BUTTON').length, 0, 'no button with submissions off');
 });
 
 test('a search that finds a gift, or no search at all, offers no missing-item report', () => {
   const idx = buildIndex(dataset);
   for (const search of ['bre', '']) {
-    const container = fakeElement('div');
-    giftView.render(container, idx, { filters: DEFAULT_FILTERS, search, searchText: search, submissionsEnabled: true, storage: undefined });
+    const container = renderView(giftView.render, idx, { filters: DEFAULT_FILTERS, search, searchText: search, submissionsEnabled: true, storage: undefined });
     assert.equal(collect(container, (n) => (n.className ?? '').includes('missing-item-button')).length, 0, JSON.stringify(search));
   }
 });
 
 test('the missing-item button falls back to the matching text when no typed text is given', () => {
   const idx = buildIndex(dataset);
-  const container = fakeElement('div');
-  giftView.render(container, idx, { filters: DEFAULT_FILTERS, search: 'zz', submissionsEnabled: true, storage: undefined });
+  const container = renderView(giftView.render, idx, { filters: DEFAULT_FILTERS, search: 'zz', submissionsEnabled: true, storage: undefined });
   assert.equal(collect(container, (n) => (n.className ?? '').includes('missing-item-button'))[0].dataset.name, 'zz');
 });
 

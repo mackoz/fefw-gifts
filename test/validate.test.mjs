@@ -1,13 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validate } from '../scripts/validate.mjs';
+import { category, gift, character, observation, source, dataset } from '../test-support/fixtures.mjs';
 
-const base = () => ({
-  categories: [{ id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] }],
-  gifts: [],
-  characters: [],
-  observations: [],
-  sources: [{ id: 's1', title: 'T', author: null, publisher: 'P', url: 'https://e.x', retrieved: '2026-09-20' }],
+const base = () => dataset({
+  categories: [category()],
+  sources: [source({ id: 's1', title: 'T', publisher: 'P', url: 'https://e.x' })],
 });
 
 test('a minimal valid dataset produces no errors', () => {
@@ -16,7 +14,7 @@ test('a minimal valid dataset produces no errors', () => {
 
 test('duplicate category ids are rejected', () => {
   const d = base();
-  d.categories.push({ id: 'books', label: 'Books again', inGameDescriptor: null, aliases: [] });
+  d.categories.push(category({ label: 'Books again' }));
   const { errors } = validate(d);
   assert.equal(errors.length, 1);
   assert.match(errors[0], /duplicate category id: books/);
@@ -24,7 +22,7 @@ test('duplicate category ids are rejected', () => {
 
 test('duplicate source ids are rejected', () => {
   const d = base();
-  d.sources.push({ id: 's1', title: 'T2', author: null, publisher: 'P', url: 'https://e.y', retrieved: '2026-09-20' });
+  d.sources.push(source({ id: 's1', title: 'T2', publisher: 'P', url: 'https://e.y' }));
   const { errors } = validate(d);
   assert.match(errors[0], /duplicate source id: s1/);
 });
@@ -45,42 +43,37 @@ test('observations must not carry identifying fields', () => {
 
 test('a gift referencing an unknown category is rejected', () => {
   const d = base();
-  d.gifts.push({ id: 'g1', name: 'G', category: 'nope', rarity: 'common', description: '', sources: [] });
+  d.gifts.push(gift({ category: 'nope' }));
   const { errors } = validate(d);
   assert.match(errors[0], /gift g1: unknown category: nope/);
 });
 
 test('a gift with a null category is allowed as not yet recorded', () => {
   const d = base();
-  d.gifts.push({ id: 'g1', name: 'G', category: null, rarity: null, description: '', sources: [] });
+  d.gifts.push(gift({ category: null, rarity: null }));
   assert.deepEqual(validate(d).errors, []);
 });
 
 test('an invalid rarity is rejected', () => {
   const d = base();
-  d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: 'legendary', description: '', sources: [] });
+  d.gifts.push(gift({ rarity: 'legendary' }));
   const { errors } = validate(d);
   assert.match(errors[0], /gift g1: invalid rarity: legendary/);
 });
 
 test('a gift referencing an unknown source is rejected', () => {
   const d = base();
-  d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: 'rare', description: '', sources: ['ghost'] });
+  d.gifts.push(gift({ rarity: 'rare', sources: ['ghost'] }));
   const { errors } = validate(d);
   assert.match(errors[0], /gift g1: unknown source: ghost/);
 });
 
 test('duplicate gift ids are rejected', () => {
   const d = base();
-  const g = { id: 'g1', name: 'G', category: 'books', rarity: 'rare', description: '', sources: [] };
+  const g = gift({ rarity: 'rare' });
   d.gifts.push(g, { ...g, name: 'G2' });
   const { errors } = validate(d);
   assert.ok(errors.some((e) => /duplicate gift id: g1/.test(e)));
-});
-
-const character = (over = {}) => ({
-  id: 'c1', name: 'C', giftable: true, spoiler: false,
-  traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null, ...over,
 });
 
 test('a character category link with an unknown category is rejected', () => {
@@ -250,7 +243,7 @@ test('a favorite referencing an unknown gift is rejected', () => {
 for (const [label, rarity] of [['a common gift', 'common'], ['an uncommon gift', 'uncommon'], ['a rare gift', 'rare'], ['a gift of unknown rarity', null]]) {
   test(`a declared favorite naming ${label} is allowed`, () => {
     const d = base();
-    d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity, description: '', sources: [] });
+    d.gifts.push(gift({ rarity }));
     d.characters.push(character({ favorites: ['g1'] }));
     assert.deepEqual(validate(d).errors, []);
   });
@@ -262,15 +255,6 @@ test('an unknown declared favorite does not also crash validation', () => {
   const d = base();
   d.characters.push(character({ favorites: ['ghost-gift'] }));
   assert.doesNotThrow(() => validate(d));
-});
-
-test('a character with no traits key is rejected', () => {
-  const d = base();
-  const c = character();
-  delete c.traits;
-  d.characters.push(c);
-  const { errors } = validate(d);
-  assert.deepEqual(errors, ['character c1: traits must be an array']);
 });
 
 test('a character with an empty traits array produces no error', () => {
@@ -312,7 +296,7 @@ for (const [label, value] of [['an object', {}], ['a number', 7]]) {
 
   test(`a gift whose sources is ${label} is reported, not fatal`, () => {
     const d = base();
-    d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: null, description: '', sources: value });
+    d.gifts.push(gift({ rarity: null, sources: value }));
     assert.deepEqual(validate(d).errors, ['gift g1: sources must be an array']);
   });
 }
@@ -345,7 +329,7 @@ for (const [label, apply] of [
 
   test(`a gift whose sources is ${label} is reported`, () => {
     const d = base();
-    const g = { id: 'g1', name: 'G', category: 'books', rarity: null, description: '', sources: [] };
+    const g = gift({ rarity: null });
     apply(g, 'sources');
     d.gifts.push(g);
     assert.deepEqual(validate(d).errors, ['gift g1: sources must be an array']);
@@ -361,9 +345,9 @@ test('an invalid rarityPreference is rejected', () => {
 
 test('an observation against a non-giftable character is rejected', () => {
   const d = base();
-  d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: null, description: '', sources: [] });
+  d.gifts.push(gift({ rarity: null }));
   d.characters.push(character({ giftable: false }));
-  d.observations.push({ id: 'o1', gift: 'g1', character: 'c1', reaction: 'liked', date: '2026-09-20' });
+  d.observations.push(observation());
   const { errors } = validate(d);
   assert.match(errors[0], /observation o1: character c1 is not giftable/);
 });
@@ -371,7 +355,7 @@ test('an observation against a non-giftable character is rejected', () => {
 test('an observation with an unknown gift or invalid reaction is rejected', () => {
   const d = base();
   d.characters.push(character());
-  d.observations.push({ id: 'o1', gift: 'ghost', character: 'c1', reaction: 'meh', date: '2026-09-20' });
+  d.observations.push(observation({ gift: 'ghost', reaction: 'meh' }));
   const { errors } = validate(d);
   assert.ok(errors.some((e) => /observation o1: unknown gift: ghost/.test(e)));
   assert.ok(errors.some((e) => /observation o1: invalid reaction: meh/.test(e)));
@@ -381,9 +365,9 @@ test('an observation with an unknown gift or invalid reaction is rejected', () =
 for (const [label, rarity] of [['a common gift', 'common'], ['an uncommon gift', 'uncommon'], ['a rare gift', 'rare'], ['a gift of unknown rarity', null]]) {
   test(`a favorite observation on ${label} is allowed`, () => {
     const d = base();
-    d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity, description: '', sources: [] });
+    d.gifts.push(gift({ rarity }));
     d.characters.push(character());
-    d.observations.push({ id: 'o1', gift: 'g1', character: 'c1', reaction: 'favorite', date: '2026-09-20' });
+    d.observations.push(observation({ reaction: 'favorite' }));
     assert.deepEqual(validate(d).errors, []);
   });
 }
@@ -393,7 +377,7 @@ for (const [label, rarity] of [['a common gift', 'common'], ['an uncommon gift',
 test('a favorite observation on an unknown gift does not also crash validation', () => {
   const d = base();
   d.characters.push(character());
-  d.observations.push({ id: 'o1', gift: 'ghost', character: 'c1', reaction: 'favorite', date: '2026-09-20' });
+  d.observations.push(observation({ gift: 'ghost', reaction: 'favorite' }));
   assert.doesNotThrow(() => validate(d));
 });
 
@@ -416,7 +400,7 @@ for (const name of FILE_NAMES) {
 test('a non-array categories does not cascade into an unknown-category error from a gift', () => {
   const d = base();
   d.categories = 7;
-  d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: null, description: '', sources: [] });
+  d.gifts.push(gift({ rarity: null }));
   const { errors } = validate(d);
   assert.deepEqual(errors, ['categories must be an array']);
 });
@@ -457,15 +441,15 @@ for (const name of FILE_NAMES) {
 // dataset it is handed rather than naming ids ('g', 'c') that exist nowhere;
 // the other factories ignore that argument, having nothing to reference.
 const VALID_ITEM = {
-  categories: () => ({ id: 'x', label: 'L', inGameDescriptor: null, aliases: [] }),
-  gifts: () => ({ id: 'x', name: 'G', category: null, rarity: null, description: '', sources: [] }),
+  categories: () => category({ id: 'x', label: 'L' }),
+  gifts: () => gift({ id: 'x', category: null, rarity: null }),
   characters: () => character({ id: 'x' }),
   observations: (d) => {
-    d.gifts.push({ id: 'g', name: 'G', category: null, rarity: null, description: '', sources: [] });
+    d.gifts.push(gift({ id: 'g', category: null, rarity: null }));
     d.characters.push(character({ id: 'c' }));
-    return { id: 'x', gift: 'g', character: 'c', reaction: 'liked', date: '2026-09-20' };
+    return observation({ id: 'x', gift: 'g', character: 'c' });
   },
-  sources: () => ({ id: 'x', title: 'T', author: null, publisher: 'P', url: 'https://e.x', retrieved: '2026-09-20' }),
+  sources: () => source({ id: 'x', title: 'T', publisher: 'P', url: 'https://e.x' }),
 };
 
 // Holds the word "VALID" in VALID_ITEM true: each entry, placed into base(),
@@ -511,13 +495,6 @@ test('a character with a bad id and no name produces only the id error', () => {
   assert.deepEqual(errors, ['characters[0]: id must be a non-empty string']);
 });
 
-test('an observation with no id is rejected', () => {
-  const d = base();
-  d.observations.push({ gift: 'g', character: 'c', reaction: 'liked', date: '2026-09-20' });
-  const { errors } = validate(d);
-  assert.deepEqual(errors, ['observations[0]: id must be a non-empty string']);
-});
-
 // A bad entry is excluded, and anything that points at it would then report
 // "unknown". Against the real data, deleting one source's id produced 102
 // errors with the cause on line one. Validation stops after the shape pass so
@@ -526,7 +503,7 @@ test('an observation with no id is rejected', () => {
 test('a category with a bad id stops validation before its references cascade', () => {
   const d = base();
   d.categories = [{ label: 'Books', inGameDescriptor: null, aliases: [] }];
-  d.gifts.push({ id: 'g1', name: 'G', category: 'books', rarity: null, description: '', sources: [] });
+  d.gifts.push(gift({ rarity: null }));
   d.characters.push(character({ categories: { books: { state: 'profile', source: null } } }));
   const { errors } = validate(d);
   assert.deepEqual(errors, ['categories[0]: id must be a non-empty string']);
@@ -535,7 +512,7 @@ test('a category with a bad id stops validation before its references cascade', 
 test('a source with a bad id stops validation before its references cascade', () => {
   const d = base();
   d.sources = [{ title: 'T', author: null, publisher: 'P', url: 'https://e.x', retrieved: '2026-09-20' }];
-  d.gifts.push({ id: 'g1', name: 'G', category: null, rarity: null, description: '', sources: ['s1'] });
+  d.gifts.push(gift({ category: null, rarity: null, sources: ['s1'] }));
   const { errors } = validate(d);
   assert.deepEqual(errors, ['sources[0]: id must be a non-empty string']);
 });
