@@ -99,6 +99,8 @@ export function badge(confidence, index) {
   if (confidence.state === 'PREDICTED' && confidence.source) {
     // Title only: the visible text must keep saying "predicted", not who guessed.
     node.title = `Prediction carried over from ${sourceName(index, confidence.source)} — no player has confirmed it.`;
+  } else if (confidence.state === 'PREDICTED' && confidence.provenance === 'discovered' && !confidence.source) {
+    node.title = 'Found through play — nobody has tried this item yet.';
   }
   return node;
 }

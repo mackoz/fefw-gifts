@@ -43,6 +43,9 @@
   **loved** result, and shows as **mixed** when the same category also has a
   liked, slight or "didn't like it" result. Liked and slight results alone
   never make a chip. See `categoryChips` in `assets/js/views/shared.js`.
+  A loved result also makes the rest of its category worth trying for that
+  character: `buildIndex` derives that prediction as found through play,
+  never stored, replacing a guide or refuted link for the category.
 - **The Worker collects no personal data.** No name, email, IP, hashed IP,
   session id or fingerprint, in the D1 schema, the Worker or the client.
   Turnstile is called without `remoteip`. Adding any of these is a design

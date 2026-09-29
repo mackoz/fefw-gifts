@@ -126,6 +126,40 @@ test('badge classes a below-loved result as state-liked/state-slight/state-none,
   assert.equal(slightBadge.textContent, 'Tested: Small gain');
 });
 
+// M2: a play-backed PREDICTED badge (no stored link, no source) explains
+// itself the same way a guide prediction does, so a player can see why an
+// untested item is "worth trying". A guide prediction keeps its own title,
+// and a tested (CONFIRMED) badge gets none at all.
+test('badge titles a play-backed prediction as found through play, keeps the guide title, and adds none once tested', () => {
+  const ds = {
+    categories: [{ id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] }],
+    gifts: [
+      { id: 'a', name: 'A', category: 'books', rarity: 'common', description: '', sources: [] },
+      { id: 'b', name: 'B', category: 'books', rarity: 'common', description: '', sources: [] },
+    ],
+    characters: [
+      { id: 'c1', name: 'C1', giftable: true, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null },
+      {
+        id: 'c2', name: 'C2', giftable: true, spoiler: false, traits: [],
+        categories: { books: { state: 'guide', source: 'polygon-1' } },
+        rarityPreference: null, favorites: [], notes: null,
+      },
+    ],
+    observations: [{ id: 'o1', gift: 'a', character: 'c1', reaction: 'loved', date: '2026-09-20' }],
+    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+  };
+  const idx = buildIndex(ds);
+
+  const playBadge = badge(idx.confidenceFor('c1', 'b'), idx);
+  assert.equal(playBadge.title, 'Found through play — nobody has tried this item yet.');
+
+  const guideBadge = badge(idx.confidenceFor('c2', 'b'), idx);
+  assert.equal(guideBadge.title, 'Prediction carried over from Polygon — no player has confirmed it.');
+
+  const confirmedBadge = badge(idx.confidenceFor('c1', 'a'), idx);
+  assert.equal(confirmedBadge.title, undefined);
+});
+
 test('giftRows lists giftable characters ranked by confidence', () => {
   const idx = buildIndex({
     ...dataset,
@@ -609,16 +643,16 @@ test('loved plus a contested pair in the same category stays confirmed', () => {
   ]);
 });
 
-// The second gift in the category has no observation at all -- an untested
-// pair is not evidence of anything, so it must not pull a loved category
-// down to mixed either.
+// The second gift in the category has no observation at all -- the loved
+// result only predicts it (worth trying), which is not a result, so it must
+// not pull a loved category down to mixed either.
 test('loved plus an untested gift in the same category stays confirmed', () => {
   const idx = buildIndex({
     ...mixedBase,
     characters: [testedCharacter()],
     observations: [{ id: 'o1', character: 'p1', gift: 'chamomile', reaction: 'loved', date: '2026-09-23' }],
   });
-  assert.equal(idx.confidenceFor('p1', 'green-tea').state, 'UNTESTED');
+  assert.equal(idx.confidenceFor('p1', 'green-tea').state, 'PREDICTED');
   assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('p1')), [
     { id: 'tea', label: 'Tea', state: 'confirmed', source: null },
   ]);
@@ -2061,6 +2095,54 @@ test('on the real dataset, every character’s card summary is built from loved 
   for (const branch of ['loved only', 'worth trying']) {
     assert.ok(branchesSeen.has(branch), `expected at least one character in the "${branch}" branch`);
   }
+});
+
+// A loved result on any gift in a category predicts the rest of that category
+// as worth trying, in place of a missing/guide/refuted stored link -- computed
+// here independently of buildIndex, against the real committed data.
+test('on the real dataset, every untested gift in a category a character loved is worth trying', async () => {
+  const idx = buildIndex(await loadDataset('data'));
+
+  const lovedByCharacter = new Map();
+  for (const characterId of idx.byCharacterId.keys()) {
+    const loved = new Set();
+    for (const gift of idx.gifts) {
+      if (!gift.category) continue;
+      const obs = idx.observationsFor(characterId, gift.id);
+      if (obs.length > 0 && obs.every((o) => o.reaction === 'loved')) loved.add(gift.category);
+    }
+    lovedByCharacter.set(characterId, loved);
+  }
+
+  let checked = 0;
+  for (const ch of idx.characters) {
+    if (!ch.giftable) continue;
+    const loved = lovedByCharacter.get(ch.id);
+    if (!loved || loved.size === 0) continue;
+
+    for (const gift of idx.gifts) {
+      if (!gift.category || !loved.has(gift.category)) continue;
+      if (idx.observationsFor(ch.id, gift.id).length > 0) continue;
+      if (idx.pendingFor(ch.id, gift.id).length > 0) continue;
+
+      const confidence = idx.confidenceFor(ch.id, gift.id);
+      assert.equal(confidence.state, 'PREDICTED', `${ch.id} / ${gift.id}`);
+      assert.equal(confidence.predicted, 'positive', `${ch.id} / ${gift.id}`);
+
+      const stored = ch.categories?.[gift.category];
+      if (stored && (stored.state === 'profile' || stored.state === 'discovered')) {
+        assert.equal(confidence.provenance, stored.state, `${ch.id} / ${gift.id}`);
+      } else {
+        assert.equal(confidence.provenance, 'discovered', `${ch.id} / ${gift.id}`);
+      }
+      checked += 1;
+    }
+  }
+
+  // Every such pair in the committed data today is checked above; any
+  // positive count is a valid guard so a future edit to data/ can't turn this
+  // test red by accident.
+  assert.ok(checked > 0, 'expected at least one play-backed prediction in the real dataset');
 });
 
 // The Gifts tab's second entry point into a missing-item report. Like the
