@@ -2053,3 +2053,42 @@ test('missingItemButton carries its query where app.js reads it', () => {
   assert.equal(button.className, 'missing-item-button');
   assert.equal(button.dataset.name, 'Lantern Oil');
 });
+
+// A guide pick is about one item: it predicts that item and nothing else, so
+// it must never add or change a category chip.
+test('a guide pick does not create a category chip', () => {
+  const d = {
+    categories: [category()],
+    gifts: [gift({ id: 'a', name: 'A' })],
+    characters: [character()],
+    observations: [],
+    sources: [],
+    'guide-gifts': [{ character: 'c1', gift: 'a', sources: ['s1'] }],
+  };
+  const idx = buildIndex(d);
+  assert.equal(idx.confidenceFor('c1', 'a').state, 'PREDICTED');
+  assert.deepEqual(categoryChips(idx, idx.byCharacterId.get('c1')), []);
+});
+
+test('the real dataset shows every untested guide pick as a positive prediction and changes no chip', async () => {
+  const dataset = await loadDataset('data');
+  const idx = buildIndex(dataset);
+  const without = buildIndex({ ...dataset, 'guide-gifts': [] });
+  assert.ok(dataset['guide-gifts'].length > 0, 'expected guide picks');
+
+  for (const row of dataset['guide-gifts']) {
+    if (idx.observationsFor(row.character, row.gift).length > 0) continue;
+    if (idx.pendingFor(row.character, row.gift).length > 0) continue;
+    const confidence = idx.confidenceFor(row.character, row.gift);
+    assert.equal(confidence.state, 'PREDICTED', `${row.character} / ${row.gift}`);
+    assert.equal(confidence.predicted, 'positive', `${row.character} / ${row.gift}`);
+  }
+
+  for (const ch of idx.characters) {
+    assert.deepEqual(
+      categoryChips(idx, ch),
+      categoryChips(without, without.byCharacterId.get(ch.id)),
+      `${ch.id}: chips must not depend on guide picks`,
+    );
+  }
+});
