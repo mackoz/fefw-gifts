@@ -11,7 +11,7 @@ const stripComments = (sql) => sql.replace(/--.*$/gm, '');
 function columns(sql) {
   const body = stripComments(sql);
   const found = [];
-  for (const [, table, cols] of body.matchAll(/CREATE TABLE (?:IF NOT EXISTS )?(\w+) \(([\s\S]*?)\);/gi)) {
+  for (const [, table, cols] of body.matchAll(/CREATE\s+(?:\w+\s+)*?TABLE\s+(?:IF NOT EXISTS\s+)?(\w+)\s*\(([\s\S]*?)\);/gi)) {
     for (const line of cols.split(',')) {
       const m = line.trim().match(/^"?(\w+)"?/);
       if (m) found.push(`${table}.${m[1]}`);
@@ -42,7 +42,7 @@ test('the schema adds no column by ALTER TABLE, which the parser would not see',
 });
 
 test('the parser finds every CREATE TABLE in the schema', () => {
-  const declared = (stripComments(schema).match(/CREATE\s+TABLE/gi) ?? []).length;
+  const declared = (stripComments(schema).match(/CREATE\s+(?:\w+\s+)*?TABLE/gi) ?? []).length;
   const parsed = new Set(COLUMNS.map((c) => c.split('.')[0])).size;
   assert.equal(parsed, declared);
 });
