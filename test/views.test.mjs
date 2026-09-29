@@ -1901,18 +1901,6 @@ test('the character detail view renders the provenance note text from provenance
   );
 });
 
-// Against the real committed dataset, not a fixture: Alexandra has seven
-// approved loved results on Fashion items, and Seteth has approved loved and
-// favorite results on Books items -- both categories should show as tested,
-// which is the bug this feature fixes (see the brief's example).
-test('the real dataset marks Alexandra’s fashion chip and Seteth’s books chip as tested', async () => {
-  const idx = buildIndex(await loadDataset('data'));
-  const alexandraFashion = categoryChips(idx, idx.byCharacterId.get('alexandra')).find((c) => c.id === 'fashion');
-  const setethBooks = categoryChips(idx, idx.byCharacterId.get('seteth')).find((c) => c.id === 'books');
-  assert.equal(alexandraFashion?.state, 'confirmed');
-  assert.equal(setethBooks?.state, 'confirmed');
-});
-
 // Against the real committed dataset: a category chip is confirmed exactly
 // when the character has an approved loved result on a gift in that
 // category -- never by a favourite alone, however that favourite is
@@ -1964,42 +1952,115 @@ test('the real dataset confirms categories from loved results only, keeping favo
   );
 });
 
-// Against the real committed dataset: Esmeralda has a loved result on
-// `eastern-love-story` (books) and a slight one on `everyday-scenes` (also
-// books) -- the exact mixed case this feature exists for. Her cooking,
-// sweets and animals categories each have loved results only, so they stay
-// confirmed.
-test('the real dataset shows Esmeralda’s books category as mixed and her other tested categories as confirmed', async () => {
+// A reaction below 'loved' that still counts as an approved result, kept as
+// a literal here rather than imported so the expectation can't move in step
+// with the app's own list.
+const BELOW_LOVED = ['liked', 'slight', 'none'];
+
+// Every category chip on every giftable character, checked against a state
+// computed independently from confidenceFor: a loved result confirms, a
+// loved-plus-below-loved result goes mixed, and anything else falls back to
+// the stored link. The only coverage guard here is backed by 57 chips today,
+// so a new valid result can't turn this test red.
+test('on the real dataset, every character’s category chips follow the loved / mixed rule', async () => {
   const idx = buildIndex(await loadDataset('data'));
-  const chips = categoryChips(idx, idx.byCharacterId.get('esmeralda'));
-  const stateOf = (id) => chips.find((c) => c.id === id)?.state;
-  assert.equal(stateOf('books'), 'mixed');
-  assert.equal(stateOf('cooking'), 'confirmed');
-  assert.equal(stateOf('sweets'), 'confirmed');
-  assert.equal(stateOf('animals'), 'confirmed');
+  let confirmedSeen = 0;
+
+  for (const ch of idx.characters) {
+    if (!ch.giftable) continue;
+    const chips = categoryChips(idx, ch);
+    const chipIds = chips.map((c) => c.id);
+    assert.deepEqual(chipIds, [...new Set(chipIds)], `${ch.id} has duplicate chip ids`);
+
+    for (const category of idx.categories) {
+      const id = category.id;
+      const loved = idx.gifts.some((gift) => {
+        if (gift.category !== id) return false;
+        const confidence = idx.confidenceFor(ch.id, gift.id);
+        return confidence.state === 'CONFIRMED' && confidence.reaction === 'loved';
+      });
+      const below = idx.gifts.some((gift) => {
+        if (gift.category !== id) return false;
+        const confidence = idx.confidenceFor(ch.id, gift.id);
+        return confidence.state === 'CONFIRMED' && BELOW_LOVED.includes(confidence.reaction);
+      });
+
+      let expected;
+      if (loved && below) expected = 'mixed';
+      else if (loved) expected = 'confirmed';
+      else if (ch.categories?.[id] && ch.categories[id].state !== 'refuted') expected = ch.categories[id].state;
+      else expected = undefined;
+
+      if (expected === 'confirmed') confirmedSeen += 1;
+
+      const actual = chips.find((c) => c.id === id)?.state;
+      assert.equal(actual, expected, `${ch.id} / ${id}`);
+    }
+  }
+
+  assert.ok(confirmedSeen > 0, 'expected at least one confirmed chip across the dataset');
 });
 
-// Against the real committed dataset: Alexandra's fashion items are all
-// loved, and her one cooking item (`garum`) is also loved -- both categories
-// are uniform hits and stay confirmed rather than mixed.
-test('the real dataset confirms Alexandra’s fashion and cooking categories', async () => {
+// Every giftable character's card summary, built independently from
+// confidenceFor and ch.favorites rather than pinned per character, covering
+// every branch characterSummary can return. The coverage guards only require
+// a favourite, a loved-only character and a worth-trying character to exist
+// -- each backed by ten or more characters today -- so a new valid result
+// can't turn this test red.
+test('on the real dataset, every character’s card summary is built from loved and favourite results', async () => {
   const idx = buildIndex(await loadDataset('data'));
-  const chips = categoryChips(idx, idx.byCharacterId.get('alexandra'));
-  assert.equal(chips.find((c) => c.id === 'fashion')?.state, 'confirmed');
-  assert.equal(chips.find((c) => c.id === 'cooking')?.state, 'confirmed');
-});
+  const branchesSeen = new Set();
+  let sawFavourite = false;
 
-// Against the real committed dataset: pins the minmax-bond summary line for
-// four characters chosen for their different shapes -- loved only, a
-// favourite plus loved, exactly one loved, and a favourite with no loved
-// result at all.
-test('the real dataset reports characterSummary as loved counts, not every positive result', async () => {
-  const idx = buildIndex(await loadDataset('data'));
-  const summaryFor = (id) => characterSummary(idx, idx.byCharacterId.get(id));
-  assert.equal(summaryFor('esmeralda'), '6 loved');
-  assert.equal(summaryFor('seteth'), '1 favourite, 12 loved');
-  assert.equal(summaryFor('io'), '1 loved');
-  assert.equal(summaryFor('ninae'), '1 favourite');
+  for (const ch of idx.characters) {
+    if (!ch.giftable) continue;
+
+    const favouriteIds = new Set();
+    for (const gift of idx.gifts) {
+      if (idx.confidenceFor(ch.id, gift.id).state === 'FAVORITE') favouriteIds.add(gift.id);
+    }
+    for (const id of ch.favorites ?? []) {
+      if (idx.byGiftId.has(id)) favouriteIds.add(id);
+    }
+    const f = favouriteIds.size;
+    if (f > 0) sawFavourite = true;
+
+    let loved = 0;
+    let tested = 0;
+    let contested = 0;
+    let pending = 0;
+    let predicted = 0;
+    for (const gift of idx.gifts) {
+      const confidence = idx.confidenceFor(ch.id, gift.id);
+      if (confidence.state === 'CONFIRMED' && confidence.reaction === 'loved' && !favouriteIds.has(gift.id)) {
+        loved += 1;
+      } else if (confidence.state === 'CONFIRMED' && BELOW_LOVED.includes(confidence.reaction)) {
+        tested += 1;
+      } else if (confidence.state === 'CONTESTED') contested += 1;
+      else if (confidence.state === 'PENDING') pending += 1;
+      else if (confidence.state === 'PREDICTED' && confidence.predicted === 'positive') predicted += 1;
+    }
+
+    const s = f === 1 ? '' : 's';
+    let expected;
+    let branch;
+    if (f > 0 && loved > 0) { expected = `${f} favourite${s}, ${loved} loved`; branch = 'favourites and loved'; }
+    else if (f > 0) { expected = `${f} favourite${s}`; branch = 'favourites only'; }
+    else if (loved > 0) { expected = `${loved} loved`; branch = 'loved only'; }
+    else if (tested > 0) { expected = `${tested} tested, none loved yet`; branch = 'tested'; }
+    else if (contested > 0) { expected = `${contested} contested`; branch = 'contested'; }
+    else if (pending > 0) { expected = `${pending} awaiting review`; branch = 'pending'; }
+    else if (predicted > 0) { expected = `${predicted} worth trying`; branch = 'worth trying'; }
+    else { expected = 'nothing tested yet'; branch = 'nothing tested yet'; }
+
+    branchesSeen.add(branch);
+    assert.equal(characterSummary(idx, ch), expected, ch.id);
+  }
+
+  assert.ok(sawFavourite, 'expected at least one character with a favourite');
+  for (const branch of ['loved only', 'worth trying']) {
+    assert.ok(branchesSeen.has(branch), `expected at least one character in the "${branch}" branch`);
+  }
 });
 
 // The Gifts tab's second entry point into a missing-item report. Like the
