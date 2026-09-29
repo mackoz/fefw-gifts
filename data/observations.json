@@ -1699,5 +1699,180 @@
     "character": "ludia",
     "reaction": "liked",
     "date": "2026-09-28"
+  },
+  {
+    "id": "ec584afb-ee95-4bf1-ac33-99d67bec16ea",
+    "gift": "magic-trick-set",
+    "character": "olympia",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "6ee3b72c-36e7-40df-877c-39ae8af25c98",
+    "gift": "magic-trick-set",
+    "character": "dante",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "a732309a-8fd0-4240-933f-e58a2329a7c7",
+    "gift": "magic-trick-set",
+    "character": "jester",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "733c4fb1-f081-47b4-b02b-d4a520c915ab",
+    "gift": "magic-trick-set",
+    "character": "diego",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "59a7c4c8-6719-40d2-a40a-e80883f685e3",
+    "gift": "magic-trick-set",
+    "character": "lilian",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "446f08fe-f5da-4d26-948d-50414b9bba11",
+    "gift": "magic-trick-set",
+    "character": "lysander",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "02b1604d-be90-430e-a90f-78dad6f85a02",
+    "gift": "magic-trick-set",
+    "character": "ursula",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "78150131-868e-4ea1-8e4e-e6fc8e8e2277",
+    "gift": "magic-trick-set",
+    "character": "ludia",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "4bb33d61-06cc-44a9-8148-5e7a447ff15b",
+    "gift": "magic-trick-set",
+    "character": "simon",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "d369ba6e-07ba-41a7-a76e-0b6caf2d9718",
+    "gift": "magic-trick-set",
+    "character": "fianna",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "1c2a12a0-cd7c-4147-a376-00f15dab90c7",
+    "gift": "magic-trick-set",
+    "character": "sirocco",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "643816e6-6951-4dee-aed1-6605b13e3c1e",
+    "gift": "magic-trick-set",
+    "character": "dadao",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "13963527-fd91-4811-9805-beabf4345a46",
+    "gift": "magic-trick-set",
+    "character": "io",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "80458629-5cda-4f95-ac9b-0b6eb3958d24",
+    "gift": "magic-trick-set",
+    "character": "peppe",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "e1c487a6-edc7-43af-80f5-a502c57651bd",
+    "gift": "magic-trick-set",
+    "character": "sofia",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "69b07e34-5d39-41ae-b821-8a35f0226bdc",
+    "gift": "magic-trick-set",
+    "character": "catania",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "1a570c71-ebec-4fb6-ba45-3e9789998260",
+    "gift": "magic-trick-set",
+    "character": "zarcone",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "144d6bac-6232-49d4-a50d-e795a5105265",
+    "gift": "magic-trick-set",
+    "character": "benditz",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "83d17b82-755b-4e45-96fb-43c887456182",
+    "gift": "magic-trick-set",
+    "character": "jasmine",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "5ec4fe55-daa4-4828-9a05-b82b108ebad9",
+    "gift": "magic-trick-set",
+    "character": "nuzzuo",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "2b252716-6904-42ac-a9d4-3e985601f703",
+    "gift": "magic-trick-set",
+    "character": "kiroc",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "fc2d07e3-5c22-449c-a9d8-7d92fd89c098",
+    "gift": "magic-trick-set",
+    "character": "ninae",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "f4fd0fb9-951a-4577-8c2a-cb64d1d0d952",
+    "gift": "pickled-vegetables",
+    "character": "simon",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "a287a3a9-491d-4589-af7b-f1621ab2c4d0",
+    "gift": "sharp-fishhook",
+    "character": "lysander",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "fd725519-54a7-43e4-8f2b-9d477cb2d418",
+    "gift": "sharp-fishhook",
+    "character": "zarcone",
+    "reaction": "none",
+    "date": "2026-09-28"
   }
 ]
