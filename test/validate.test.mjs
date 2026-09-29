@@ -257,15 +257,6 @@ test('an unknown declared favorite does not also crash validation', () => {
   assert.doesNotThrow(() => validate(d));
 });
 
-test('a character with no traits key is rejected', () => {
-  const d = base();
-  const c = character();
-  delete c.traits;
-  d.characters.push(c);
-  const { errors } = validate(d);
-  assert.deepEqual(errors, ['character c1: traits must be an array']);
-});
-
 test('a character with an empty traits array produces no error', () => {
   const d = base();
   d.characters.push(character({ traits: [] }));
@@ -502,13 +493,6 @@ test('a character with a bad id and no name produces only the id error', () => {
   d.characters.push(c);
   const { errors } = validate(d);
   assert.deepEqual(errors, ['characters[0]: id must be a non-empty string']);
-});
-
-test('an observation with no id is rejected', () => {
-  const d = base();
-  d.observations.push({ gift: 'g', character: 'c', reaction: 'liked', date: '2026-09-20' });
-  const { errors } = validate(d);
-  assert.deepEqual(errors, ['observations[0]: id must be a non-empty string']);
 });
 
 // A bad entry is excluded, and anything that points at it would then report

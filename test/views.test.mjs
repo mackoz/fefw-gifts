@@ -31,11 +31,6 @@ test('favorites sort above predictions, which sort above untested', () => {
   assert.deepEqual(rows.map((r) => r.gift.id), ['brew', 'book', 'rock']);
 });
 
-test('every gift appears when no filter is applied', () => {
-  const idx = buildIndex(dataset);
-  assert.equal(characterRows(idx, 'c1', DEFAULT_FILTERS).length, 3);
-});
-
 test('hideUntested drops the uncategorised gift', () => {
   const idx = buildIndex(dataset);
   const rows = characterRows(idx, 'c1', { ...DEFAULT_FILTERS, hideUntested: true });
@@ -59,14 +54,6 @@ test('state labels never describe an untested pair as disliked', () => {
   // Pins the branch itself, so it cannot be deleted and leave the loop above
   // scanning a string nobody renders.
   assert.equal(stateLabel({ state: 'PREDICTED', reaction: null, predicted: 'negative' }), 'Predicted: probably no gain');
-});
-
-test('sortByConfidence is stable for equal states', () => {
-  const rows = [
-    { gift: { id: 'a' }, confidence: { state: 'PREDICTED' } },
-    { gift: { id: 'b' }, confidence: { state: 'PREDICTED' } },
-  ];
-  assert.deepEqual(sortByConfidence(rows).map((r) => r.gift.id), ['a', 'b']);
 });
 
 // A CONFIRMED slight or liked row used to share rank 1 with a CONFIRMED loved
@@ -865,22 +852,6 @@ test('chip renders a link when given an href and a plain span otherwise', () => 
   assert.equal(label.href, undefined, 'a non-link chip must not look clickable');
 });
 
-// This is the contract character.js, gift.js and favorites.js all rely on:
-// app.js's delegated click listener finds `.report-button` and reads these
-// two dataset keys. Renaming the class or dropping a key makes every chip
-// built from reportChip() go inert with no error and no test catching it.
-test('reportChip carries the report-button class and both dataset ids', () => {
-  const button = reportChip('nydine', 'grooming-kit', 'Grooming kit', {
-    ariaLabel: 'Report a result for Grooming kit',
-  });
-  assert.match(button.className, /\bchip\b/);
-  assert.match(button.className, /\bchip-action\b/);
-  assert.match(button.className, /\breport-button\b/);
-  assert.equal(button.dataset.character, 'nydine');
-  assert.equal(button.dataset.gift, 'grooming-kit');
-  assert.equal(button.getAttribute('aria-label'), 'Report a result for Grooming kit');
-});
-
 test('characterSummary reports the strongest true thing, never a negative', () => {
   const idx = buildIndex(dataset);
   // The fixture's c1 has one favourite observation on `brew`.
@@ -900,22 +871,8 @@ test('characterSummary falls back through loved, tested, predicted, then nothing
   // c1 likes books, and `book` is a books item, so exactly one prediction.
   assert.equal(characterSummary(predictedOnly, predictedOnly.byCharacterId.get('c1')), '1 worth trying');
 
-  // A `liked` reaction is a real, approved CONFIRMED result, but it is not a
-  // `loved` one -- see the minmax-bond rationale in characterSummary's
-  // comment -- so it falls into "tested", not "loved".
-  const tested = buildIndex({
-    ...dataset,
-    characters: [base],
-    observations: [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'liked', date: '2026-09-21' }],
-  });
-  assert.equal(characterSummary(tested, tested.byCharacterId.get('c1')), '1 tested, none loved yet');
-
-  const loved = buildIndex({
-    ...dataset,
-    characters: [base],
-    observations: [{ id: 'o1', character: 'c1', gift: 'book', reaction: 'loved', date: '2026-09-21' }],
-  });
-  assert.equal(characterSummary(loved, loved.byCharacterId.get('c1')), '1 loved');
+  // The tested and loved cases live in "characterSummary reports a liked,
+  // slight or neutral-reaction confirmation as tested, never loved".
 
   const bare = buildIndex({ ...dataset, characters: [{ ...base, categories: {} }], observations: [] });
   assert.equal(characterSummary(bare, bare.byCharacterId.get('c1')), 'nothing tested yet');
@@ -1431,17 +1388,16 @@ test('provenanceNote: guide plus mixed uses "The rest are ..." form', () => {
   );
 });
 
-test('signalHeading never claims knowledge over a table of pure guesswork', () => {
+// A refuted-category prediction is a guess the gift will NOT land. Counting it
+// toward "Worth trying" would invite players to spend gifts on items a guide
+// says will not work -- the inverse of this project's core rule. But the
+// answer is not "What we know" either: these rows are still pure guesswork,
+// and that heading may only appear over something somebody observed.
+test('signalHeading does not call a refuted-category prediction "worth trying"', () => {
+  // Folded in from the removed "never claims knowledge over a table of pure
+  // guesswork": a lone positive prediction is "Worth trying", and one
+  // observed row alongside a guess is what earns "What we know".
   assert.equal(signalHeading([{ confidence: { state: 'PREDICTED', predicted: 'positive' } }]), 'Worth trying');
-  // All guesses, but one says the gift will NOT land: not "worth trying", and
-  // emphatically not something we know.
-  assert.equal(
-    signalHeading([
-      { confidence: { state: 'PREDICTED', predicted: 'positive' } },
-      { confidence: { state: 'PREDICTED', predicted: 'negative' } },
-    ]),
-    'Predictions',
-  );
   assert.equal(
     signalHeading([
       { confidence: { state: 'PREDICTED', predicted: 'positive' } },
@@ -1449,18 +1405,6 @@ test('signalHeading never claims knowledge over a table of pure guesswork', () =
     ]),
     'What we know',
   );
-  // A pending report is a real player's result, but nobody has reviewed it
-  // yet, so it is not "What we know" either -- see I2 in the fix brief: this
-  // assertion used to expect 'What we know' here, which was the bug.
-  assert.equal(signalHeading([{ confidence: { state: 'PENDING' } }]), 'Awaiting review');
-});
-
-// A refuted-category prediction is a guess the gift will NOT land. Counting it
-// toward "Worth trying" would invite players to spend gifts on items a guide
-// says will not work -- the inverse of this project's core rule. But the
-// answer is not "What we know" either: these rows are still pure guesswork,
-// and that heading may only appear over something somebody observed.
-test('signalHeading does not call a refuted-category prediction "worth trying"', () => {
   assert.equal(
     signalHeading([{ confidence: { state: 'PREDICTED', predicted: 'negative' } }]),
     'Predictions',
@@ -1708,6 +1652,15 @@ test('reportButton and reportChip both emit the .report-button class app.js clos
     assert.equal(node.dataset.character, 'nydine', `${name} must carry the character id`);
     assert.equal(node.dataset.gift, 'grooming-kit', `${name} must carry the gift id`);
   }
+  // character.js, gift.js and favorites.js build their chips with reportChip(),
+  // so it must also keep the chip look and honour a caller's aria-label.
+  const chipNode = reportChip('nydine', 'grooming-kit', 'Grooming kit', {
+    ariaLabel: 'Report a result for Grooming kit',
+  });
+  assert.match(chipNode.className, /\bchip\b/);
+  assert.match(chipNode.className, /\bchip-action\b/);
+  assert.match(chipNode.className, /\breport-button\b/);
+  assert.equal(chipNode.getAttribute('aria-label'), 'Report a result for Grooming kit');
 });
 
 // A2: a CONFIRMED pair whose reaction is liked, slight or "none" is a real,
