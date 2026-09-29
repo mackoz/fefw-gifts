@@ -207,8 +207,8 @@ test('no Worker request carries a telemetry id, in its URL, headers or credentia
   assert.equal(fetchImpl.calls.length, 8, 'every api method reached fetch');
   for (const { url, init } of fetchImpl.calls) {
     assert.equal(new URL(url).search, '', `${url} carries a query string`);
-    for (const name of Object.keys(init.headers ?? {})) {
-      assert.ok(['Content-Type', 'Authorization'].includes(name), `${url} sends header ${name}`);
+    for (const name of new Headers(init.headers ?? {}).keys()) {
+      assert.ok(['content-type', 'authorization'].includes(name), `${url} sends header ${name}`);
     }
     assert.notEqual(init.credentials, 'include', `${url} sends cookies`);
   }

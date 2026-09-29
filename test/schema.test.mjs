@@ -6,10 +6,12 @@ import { readFile } from 'node:fs/promises';
 // identifying column is a design change; this makes adding one fail loudly.
 const schema = await readFile(new URL('../worker/schema.sql', import.meta.url), 'utf8');
 
+const stripComments = (sql) => sql.replace(/--.*$/gm, '');
+
 function columns(sql) {
-  const body = sql.replace(/--.*$/gm, '');
+  const body = stripComments(sql);
   const found = [];
-  for (const [, table, cols] of body.matchAll(/CREATE TABLE IF NOT EXISTS (\w+) \(([\s\S]*?)\);/g)) {
+  for (const [, table, cols] of body.matchAll(/CREATE TABLE (?:IF NOT EXISTS )?(\w+) \(([\s\S]*?)\);/gi)) {
     for (const line of cols.split(',')) {
       const m = line.trim().match(/^"?(\w+)"?/);
       if (m) found.push(`${table}.${m[1]}`);
@@ -33,4 +35,14 @@ test('no D1 column identifies a person', () => {
   for (const column of COLUMNS) {
     assert.doesNotMatch(column.split('.')[1], IDENTIFYING, column);
   }
+});
+
+test('the schema adds no column by ALTER TABLE, which the parser would not see', () => {
+  assert.doesNotMatch(stripComments(schema), /ALTER\s+TABLE/i);
+});
+
+test('the parser finds every CREATE TABLE in the schema', () => {
+  const declared = (stripComments(schema).match(/CREATE\s+TABLE/gi) ?? []).length;
+  const parsed = new Set(COLUMNS.map((c) => c.split('.')[0])).size;
+  assert.equal(parsed, declared);
 });
