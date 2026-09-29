@@ -1587,5 +1587,117 @@
     "character": "olympia",
     "reaction": "favorite",
     "date": "2026-09-28"
+  },
+  {
+    "id": "42a2c81a-af48-49ba-8ff9-c97b08dfbc2d",
+    "gift": "potted-vegetables",
+    "character": "zarcone",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "daa4b60a-76bc-4897-a09e-6340cce78f48",
+    "gift": "pickled-bulbs",
+    "character": "zarcone",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "8d308231-ef11-46ee-befe-80d54137b654",
+    "gift": "pickled-vegetables",
+    "character": "zarcone",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "1120adaa-149f-425d-9180-c5db8f00b9e7",
+    "gift": "exquisite-ring",
+    "character": "zarcone",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "803096f3-c8b0-4893-b9ce-1107406ad0b1",
+    "gift": "flexible-fishing-rod",
+    "character": "zarcone",
+    "reaction": "none",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "ccee6922-9dd3-4b6a-ac7a-f4e253610f9c",
+    "gift": "common-coffee",
+    "character": "zarcone",
+    "reaction": "none",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "eb4d2be1-fe89-488f-8bb9-226e84bf62b4",
+    "gift": "common-coffee",
+    "character": "catania",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "54605333-c6b6-48e5-b33a-8775f4b1b410",
+    "gift": "southern-coffee",
+    "character": "catania",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "12160c59-f072-4720-930d-1d3315e7ef5b",
+    "gift": "select-coffee",
+    "character": "io",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "c05d286d-7fca-440a-9caa-845fb3652ed5",
+    "gift": "flexible-fishing-rod",
+    "character": "io",
+    "reaction": "none",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "c1bf4ab9-868e-49b6-9d3c-8e01916526fb",
+    "gift": "full-sewing-kit",
+    "character": "olympia",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "0956f1b1-f5ea-4fff-9dc7-2a8f3dc8253e",
+    "gift": "southern-coffee",
+    "character": "fianna",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "1257c9cd-896b-4891-9dc8-3a8f54ad5af5",
+    "gift": "flexible-fishing-rod",
+    "character": "lysander",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "40dc6d09-43d2-43e7-a201-a9c43115fa1e",
+    "gift": "smooth-garum",
+    "character": "ludia",
+    "reaction": "slight",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "5cff1c09-d916-4039-9cfa-0eb2264f0f9c",
+    "gift": "select-coffee",
+    "character": "ludia",
+    "reaction": "loved",
+    "date": "2026-09-28"
+  },
+  {
+    "id": "d3122cd2-ccc0-4528-aa24-5f4e31098ddb",
+    "gift": "sharp-fishhook",
+    "character": "ludia",
+    "reaction": "liked",
+    "date": "2026-09-28"
   }
 ]

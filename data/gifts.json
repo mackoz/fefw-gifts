@@ -353,7 +353,7 @@
     "id": "exquisite-ring",
     "name": "Exquisite Ring",
     "category": "fashion",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -483,7 +483,7 @@
     "id": "southern-coffee",
     "name": "Southern Coffee",
     "category": "coffee",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -573,7 +573,7 @@
     "id": "pickled-vegetables",
     "name": "Pickled Vegetables",
     "category": "vegetables",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -813,7 +813,7 @@
     "id": "smooth-garum",
     "name": "Smooth Garum",
     "category": "cooking",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
@@ -843,7 +843,7 @@
     "id": "pickled-bulbs",
     "name": "Pickled Bulbs",
     "category": "vegetables",
-    "rarity": null,
+    "rarity": "common",
     "description": "",
     "sources": [
       "game8-items"
