@@ -126,6 +126,40 @@ test('badge classes a below-loved result as state-liked/state-slight/state-none,
   assert.equal(slightBadge.textContent, 'Tested: Small gain');
 });
 
+// M2: a play-backed PREDICTED badge (no stored link, no source) explains
+// itself the same way a guide prediction does, so a player can see why an
+// untested item is "worth trying". A guide prediction keeps its own title,
+// and a tested (CONFIRMED) badge gets none at all.
+test('badge titles a play-backed prediction as found through play, keeps the guide title, and adds none once tested', () => {
+  const ds = {
+    categories: [{ id: 'books', label: 'Books', inGameDescriptor: null, aliases: [] }],
+    gifts: [
+      { id: 'a', name: 'A', category: 'books', rarity: 'common', description: '', sources: [] },
+      { id: 'b', name: 'B', category: 'books', rarity: 'common', description: '', sources: [] },
+    ],
+    characters: [
+      { id: 'c1', name: 'C1', giftable: true, spoiler: false, traits: [], categories: {}, rarityPreference: null, favorites: [], notes: null },
+      {
+        id: 'c2', name: 'C2', giftable: true, spoiler: false, traits: [],
+        categories: { books: { state: 'guide', source: 'polygon-1' } },
+        rarityPreference: null, favorites: [], notes: null,
+      },
+    ],
+    observations: [{ id: 'o1', gift: 'a', character: 'c1', reaction: 'loved', date: '2026-09-20' }],
+    sources: [{ id: 'polygon-1', title: '', author: null, publisher: 'Polygon', url: '', retrieved: '2026-09-20' }],
+  };
+  const idx = buildIndex(ds);
+
+  const playBadge = badge(idx.confidenceFor('c1', 'b'), idx);
+  assert.equal(playBadge.title, 'Found through play — nobody has tried this item yet.');
+
+  const guideBadge = badge(idx.confidenceFor('c2', 'b'), idx);
+  assert.equal(guideBadge.title, 'Prediction carried over from Polygon — no player has confirmed it.');
+
+  const confirmedBadge = badge(idx.confidenceFor('c1', 'a'), idx);
+  assert.equal(confirmedBadge.title, undefined);
+});
+
 test('giftRows lists giftable characters ranked by confidence', () => {
   const idx = buildIndex({
     ...dataset,
@@ -2092,20 +2126,22 @@ test('on the real dataset, every untested gift in a category a character loved i
       if (idx.pendingFor(ch.id, gift.id).length > 0) continue;
 
       const confidence = idx.confidenceFor(ch.id, gift.id);
+      assert.equal(confidence.state, 'PREDICTED', `${ch.id} / ${gift.id}`);
+      assert.equal(confidence.predicted, 'positive', `${ch.id} / ${gift.id}`);
+
       const stored = ch.categories?.[gift.category];
       if (stored && (stored.state === 'profile' || stored.state === 'discovered')) {
         assert.equal(confidence.provenance, stored.state, `${ch.id} / ${gift.id}`);
       } else {
-        assert.equal(confidence.state, 'PREDICTED', `${ch.id} / ${gift.id}`);
-        assert.equal(confidence.predicted, 'positive', `${ch.id} / ${gift.id}`);
         assert.equal(confidence.provenance, 'discovered', `${ch.id} / ${gift.id}`);
       }
       checked += 1;
     }
   }
 
-  // 129 such pairs exist in the committed data today; any positive count is a
-  // valid guard so a future edit to data/ can't turn this test red by accident.
+  // Every such pair in the committed data today is checked above; any
+  // positive count is a valid guard so a future edit to data/ can't turn this
+  // test red by accident.
   assert.ok(checked > 0, 'expected at least one play-backed prediction in the real dataset');
 });
 

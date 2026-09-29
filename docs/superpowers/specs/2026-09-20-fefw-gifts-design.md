@@ -111,18 +111,19 @@ For any (character, gift item) pair the site derives one of:
 - **CONFIRMED** — an observation exists for this exact item, showing its tier
 - **EXCEPTION** — an observation contradicts the prediction, with a `reason` where
   one is known
-- **PREDICTED** — no observation for this item, but a character-to-category link
-  exists. Shaded by that link's provenance, so a `guide` prediction reads as
-  weaker than a `profile` one. The link can come from a character-to-category
-  link, or from an approved loved result on another item in that category (a
-  play-backed prediction, shown as found through play), which takes the place
-  of a guide or refuted link for that category.
+- **PREDICTED** — no observation for this item, but a prediction for its category
+  exists: either a stored character-to-category link, or a play link (another
+  item in the category whose approved results are all `loved`; a favourite or
+  contested result doesn't count). A play link is derived, never stored,
+  carries provenance `discovered`, and takes the place of a missing, `guide`
+  or `refuted` link; a `profile` or `discovered` link is kept. Shaded by
+  provenance, so a `guide` prediction reads as weaker than a `profile` one.
 - **CONTESTED** — observations for this pair disagree. Surfaced for review.
 - **PENDING** — a report exists but a maintainer has not approved it yet. Ranked
   between CONFIRMED and PREDICTED, labelled as awaiting review, and explicitly
   **not** a confirmation: it contributes no reaction, no tally and no negative
   verdict. Lives only in the Worker overlay, never in the repo.
-- **UNTESTED** — no link, no observation
+- **UNTESTED** — no link, no play link, no observation
 
 **Absence of a category match is never rendered as a dislike.** Only an
 observation can mark a pair as a dud. Given that profiles under-report and seeded

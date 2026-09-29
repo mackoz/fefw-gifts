@@ -178,6 +178,13 @@ test('a loved category never overrides a stored profile link', () => {
   assert.equal(c.provenance, 'profile');
 });
 
+test('a loved category never overrides a stored discovered link, source included', () => {
+  const character_ = character({ categories: { books: { state: 'discovered', source: 'some-source' } } });
+  const c = deriveConfidence({ character: character_, gift: gift(), observations: [], lovedCategories: new Set(['books']) });
+  assert.equal(c.provenance, 'discovered');
+  assert.equal(c.source, 'some-source');
+});
+
 test('an undefined lovedCategories behaves exactly like before', () => {
   const c = deriveConfidence({ character: character(), gift: gift(), observations: [] });
   assert.equal(c.state, 'UNTESTED');
