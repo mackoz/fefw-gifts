@@ -4,7 +4,7 @@ import {
   partitionRows, categoryChips, favouriteGifts, chip,
 } from './shared.js';
 import { voteControl, voteControlModel } from '../vote-control.js';
-import { BELOW_LOVED_REACTIONS } from '../confidence.js';
+import { BELOW_LOVED_REACTIONS, RARITY_ORDER } from '../confidence.js';
 
 export function characterRows(index, characterId, filters) {
   const rows = index.gifts
@@ -102,17 +102,60 @@ export function characterSummary(index, character) {
   return 'nothing tested yet';
 }
 
+// How many guide picks a card names before it hands over to "+N more".
+export const CARD_WORTH_TRYING_LIMIT = 6;
+
+// Rare first, then uncommon, common, and unrated last.
+const rarityRank = (gift) => RARITY_ORDER[gift.rarity] ?? -1;
+const byRarityThenName = (a, b) => rarityRank(b) - rarityRank(a) || a.name.localeCompare(b.name);
+
+// Items a character has been seen to love, minus favourites (those show as
+// their own chips, and a gift is never listed twice).
+function lovedGifts(index, character, favourites) {
+  const favouriteIds = new Set(favourites.map((gift) => gift.id));
+  return index.gifts
+    .filter((gift) => {
+      if (favouriteIds.has(gift.id)) return false;
+      const confidence = index.confidenceFor(character.id, gift.id);
+      return confidence.state === 'CONFIRMED' && confidence.reaction === 'loved';
+    })
+    .sort(byRarityThenName);
+}
+
+// Guide picks nobody has tested: a prediction about one item, never a
+// confirmation. Only PREDICTED + positive qualifies, so a tested, pending or
+// contested pair never shows here. A pick whose prediction is a play link
+// still counts -- the guide does name it.
+function guidePicksWorthTrying(index, character) {
+  const picks = index.guidePicksByCharacter.get(character.id);
+  if (!picks) return [];
+  return index.gifts
+    .filter((gift) => {
+      if (!picks.has(gift.id)) return false;
+      const confidence = index.confidenceFor(character.id, gift.id);
+      return confidence.state === 'PREDICTED' && confidence.predicted === 'positive';
+    })
+    .sort((a, b) => (picks.get(b.id)?.length ?? 0) - (picks.get(a.id)?.length ?? 0) || byRarityThenName(a, b));
+}
+
 export function characterIndexModel(index, filters, search) {
   return index.characters
     .filter((c) => c.giftable)
     .filter((c) => !(filters.hideSpoilers && c.spoiler))
     .filter((c) => !search || c.name.toLowerCase().includes(search))
-    .map((character) => ({
-      character,
-      categories: categoryChips(index, character),
-      favourites: favouriteGifts(index, character),
-      summary: characterSummary(index, character),
-    }));
+    .map((character) => {
+      const favourites = favouriteGifts(index, character);
+      const picks = guidePicksWorthTrying(index, character);
+      return {
+        character,
+        categories: categoryChips(index, character),
+        favourites,
+        loved: lovedGifts(index, character, favourites),
+        worthTrying: picks.slice(0, CARD_WORTH_TRYING_LIMIT),
+        worthTryingMore: Math.max(0, picks.length - CARD_WORTH_TRYING_LIMIT),
+        summary: characterSummary(index, character),
+      };
+    });
 }
 
 const OBSERVED = new Set(['FAVORITE', 'CONFIRMED', 'CONTESTED']);
@@ -259,6 +302,12 @@ export function provenanceNote(index, chips) {
   return sentences.join(' ');
 }
 
+function itemsLine(label, gifts) {
+  const line = el('p', 'tessera-items');
+  line.append(el('span', 'tessera-label', label), ` ${gifts.map((gift) => gift.name).join(', ')}`);
+  return line;
+}
+
 function renderPicker(container, index, state) {
   const entries = characterIndexModel(index, state.filters, state.search);
   container.append(el('h2', null, 'Characters'));
@@ -278,7 +327,18 @@ function renderPicker(container, index, state) {
     link.href = `#/character/${entry.character.id}`;
     item.append(link);
     if (entry.favourites.length || entry.categories.length) item.append(chipList(entry.categories, entry.favourites));
-    item.append(el('p', 'tessera-summary', entry.summary));
+    if (entry.loved.length) item.append(itemsLine('Loved:', entry.loved));
+    if (entry.worthTrying.length) {
+      const line = itemsLine('Worth trying:', entry.worthTrying);
+      if (entry.worthTryingMore > 0) {
+        const more = el('a', 'tessera-more', `+${entry.worthTryingMore} more`);
+        more.href = `#/character/${entry.character.id}`;
+        line.append(' ', more);
+      }
+      item.append(line);
+    }
+    // The summary only fills a card that would otherwise name no items.
+    if (!entry.loved.length && !entry.worthTrying.length) item.append(el('p', 'tessera-summary', entry.summary));
     grid.append(item);
   }
   container.append(grid);

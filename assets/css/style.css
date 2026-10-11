@@ -901,6 +901,26 @@ a.chip:hover {
   font-size: var(--step--1);
 }
 
+/* Item names on a card read in the body colour; only the label recedes. */
+.tessera-items {
+  margin: 8px 0 0;
+  font-size: var(--step--1);
+}
+
+.tessera-label {
+  color: var(--muted);
+}
+
+.tessera-more {
+  font-size: var(--step--1);
+  text-decoration: none;
+}
+
+.tessera-more:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
 /* --- Gift and character tables --- */
 
 .gift-table {
