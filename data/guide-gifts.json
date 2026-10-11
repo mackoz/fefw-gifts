@@ -356,6 +356,13 @@
   },
   {
     "character": "anatolia",
+    "gift": "candy-crystals",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "anatolia",
     "gift": "ceremonial-spear",
     "sources": [
       "raiderking-2026-09-28"
@@ -372,7 +379,8 @@
     "character": "anatolia",
     "gift": "eastern-black-silk",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -393,14 +401,16 @@
     "character": "anatolia",
     "gift": "eastern-tea-leaves",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
     "character": "anatolia",
     "gift": "history-of-a-master",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -414,14 +424,16 @@
     "character": "anatolia",
     "gift": "magic-trick-set",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
     "character": "anatolia",
     "gift": "morfis-almanac",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -435,7 +447,8 @@
     "character": "anatolia",
     "gift": "protection-figurine",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -470,14 +483,16 @@
     "character": "anatolia",
     "gift": "tales-of-adventure",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
     "character": "anatolia",
     "gift": "tome-from-away",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -729,9 +744,86 @@
   },
   {
     "character": "bertrand",
+    "gift": "alecto-garum",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "bertrand",
+    "gift": "dual-fish-knives",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "bertrand",
     "gift": "garum",
     "sources": [
       "raiderking-2026-09-28"
+    ]
+  },
+  {
+    "character": "bertrand",
+    "gift": "legendary-garum",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "bertrand",
+    "gift": "morfis-almanac",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "bertrand",
+    "gift": "rancid-garum",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "bertrand",
+    "gift": "smooth-garum",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "bertrand",
+    "gift": "strategy-manuscript",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "bertrand",
+    "gift": "sturdy-rucksack",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "bertrand",
+    "gift": "tales-of-adventure",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "bertrand",
+    "gift": "tome-from-away",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "bertrand",
+    "gift": "training-bracelet",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -772,6 +864,13 @@
   },
   {
     "character": "bonaventure",
+    "gift": "garum",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "bonaventure",
     "gift": "herbal-recipe-guide",
     "sources": [
       "raiderking-2026-09-28"
@@ -781,7 +880,8 @@
     "character": "bonaventure",
     "gift": "home-recipe-book",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -962,9 +1062,38 @@
   },
   {
     "character": "buccar",
+    "gift": "eastern-tea-leaves",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "buccar",
+    "gift": "energizing-ghosh",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "buccar",
     "gift": "garum",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "buccar",
+    "gift": "home-recipe-book",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "buccar",
+    "gift": "legendary-garum",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -1021,7 +1150,8 @@
     "character": "buccar",
     "gift": "rancid-garum",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -1392,9 +1522,38 @@
   },
   {
     "character": "centurio",
+    "gift": "board-game-tactics",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "centurio",
+    "gift": "ceremonial-spear",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "centurio",
+    "gift": "eastern-board-games",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "centurio",
+    "gift": "history-of-a-master",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "centurio",
     "gift": "portrait-of-yu-phas",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -1406,9 +1565,58 @@
   },
   {
     "character": "centurio",
+    "gift": "school-scandal",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "centurio",
     "gift": "shield-portrait",
     "sources": [
       "raiderking-2026-09-28"
+    ]
+  },
+  {
+    "character": "centurio",
+    "gift": "spirit-board-game",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "centurio",
+    "gift": "strategy-manuscript",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "centurio",
+    "gift": "tales-of-the-arena",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "centurio",
+    "gift": "traders-handbook",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "centurio",
+    "gift": "training-pillar",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "centurio",
+    "gift": "training-weights",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -1682,6 +1890,13 @@
   },
   {
     "character": "dante",
+    "gift": "everyday-scenes",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "dante",
     "gift": "exquisite-ring",
     "sources": [
       "raiderking-2026-09-28"
@@ -1692,6 +1907,13 @@
     "gift": "herbal-recipe-guide",
     "sources": [
       "raiderking-2026-09-28"
+    ]
+  },
+  {
+    "character": "dante",
+    "gift": "history-of-a-master",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -1732,6 +1954,13 @@
   },
   {
     "character": "dante",
+    "gift": "morfis-almanac",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "dante",
     "gift": "morfis-tea",
     "sources": [
       "raiderking-2026-09-28"
@@ -1749,14 +1978,16 @@
     "character": "dante",
     "gift": "poems-of-the-greats",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
     "character": "dante",
     "gift": "portrait-of-yu-phas",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -1764,6 +1995,13 @@
     "gift": "rancid-garum",
     "sources": [
       "raiderking-2026-09-28"
+    ]
+  },
+  {
+    "character": "dante",
+    "gift": "school-scandal",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -1839,9 +2077,23 @@
   },
   {
     "character": "dante",
+    "gift": "tales-of-the-arena",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "dante",
     "gift": "the-works-of-dante",
     "sources": [
       "raiderking-2026-09-28",
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "dante",
+    "gift": "tome-from-away",
+    "sources": [
       "game8-gifts"
     ]
   },
@@ -1906,7 +2158,8 @@
     "character": "diego",
     "gift": "decorative-arrows",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -1985,6 +2238,13 @@
     "gift": "rugged-blade",
     "sources": [
       "raiderking-2026-09-28"
+    ]
+  },
+  {
+    "character": "diego",
+    "gift": "sharp-dagger",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -2806,7 +3066,8 @@
     "character": "gaitz",
     "gift": "ceremonial-spear",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -2911,6 +3172,13 @@
   },
   {
     "character": "gaitz",
+    "gift": "history-of-a-master",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "gaitz",
     "gift": "home-recipe-book",
     "sources": [
       "raiderking-2026-09-28"
@@ -2964,7 +3232,8 @@
     "character": "gaitz",
     "gift": "morfis-almanac",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -2993,7 +3262,8 @@
     "character": "gaitz",
     "gift": "portrait-of-yu-phas",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -3119,7 +3389,8 @@
     "character": "gaitz",
     "gift": "the-works-of-dante",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -3133,7 +3404,8 @@
     "character": "gaitz",
     "gift": "tome-from-away",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -3204,6 +3476,13 @@
   {
     "character": "goliath",
     "gift": "jade-ghosh",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "goliath",
+    "gift": "kitten-figurine",
     "sources": [
       "game8-gifts"
     ]
@@ -4114,7 +4393,8 @@
     "character": "jester",
     "gift": "common-coffee",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -4178,7 +4458,8 @@
     "character": "jester",
     "gift": "orgus-coffee",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -4192,7 +4473,8 @@
     "character": "jester",
     "gift": "pastry-cookbook",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -4220,14 +4502,16 @@
     "character": "jester",
     "gift": "select-coffee",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
     "character": "jester",
     "gift": "southern-coffee",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -4715,6 +4999,13 @@
   },
   {
     "character": "loretta",
+    "gift": "ginji-cervi",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "loretta",
     "gift": "honey-milk",
     "sources": [
       "game8-gifts"
@@ -4774,6 +5065,13 @@
     "gift": "shield-portrait",
     "sources": [
       "raiderking-2026-09-28"
+    ]
+  },
+  {
+    "character": "loretta",
+    "gift": "simple-pastries",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -4874,6 +5172,13 @@
   {
     "character": "ludia",
     "gift": "orgus-coffee",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "ludia",
+    "gift": "pack-of-pastels",
     "sources": [
       "game8-gifts"
     ]
@@ -5011,6 +5316,13 @@
     "gift": "shield-portrait",
     "sources": [
       "raiderking-2026-09-28"
+    ]
+  },
+  {
+    "character": "lysander",
+    "gift": "training-weights",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -5394,6 +5706,13 @@
   },
   {
     "character": "mu",
+    "gift": "history-of-a-master",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "mu",
     "gift": "jamel-milk",
     "sources": [
       "raiderking-2026-09-28",
@@ -5424,6 +5743,13 @@
   {
     "character": "mu",
     "gift": "pickled-vegetables",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "mu",
+    "gift": "portrait-of-yu-phas",
     "sources": [
       "game8-gifts"
     ]
@@ -5461,6 +5787,13 @@
     "gift": "tales-of-adventure",
     "sources": [
       "raiderking-2026-09-28"
+    ]
+  },
+  {
+    "character": "mu",
+    "gift": "tome-from-away",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -5631,6 +5964,13 @@
   {
     "character": "ninae",
     "gift": "morfis-almanac",
+    "sources": [
+      "raiderking-2026-09-28"
+    ]
+  },
+  {
+    "character": "ninae",
+    "gift": "poems-of-the-greats",
     "sources": [
       "raiderking-2026-09-28"
     ]
@@ -6221,6 +6561,13 @@
   },
   {
     "character": "olympia",
+    "gift": "blue-rose-bouquet",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "olympia",
     "gift": "coffee-pastries",
     "sources": [
       "game8-gifts"
@@ -6265,6 +6612,13 @@
   },
   {
     "character": "olympia",
+    "gift": "history-of-a-master",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "olympia",
     "gift": "orgus-coffee",
     "sources": [
       "raiderking-2026-09-28",
@@ -6273,9 +6627,17 @@
   },
   {
     "character": "olympia",
+    "gift": "pack-of-pastels",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "olympia",
     "gift": "portrait-of-yu-phas",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -6323,6 +6685,20 @@
   },
   {
     "character": "orchel",
+    "gift": "crimson-bull-figure",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
+    "gift": "dual-fish-knives",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
     "gift": "exquisite-ring",
     "sources": [
       "raiderking-2026-09-28"
@@ -6330,23 +6706,75 @@
   },
   {
     "character": "orchel",
+    "gift": "garum",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
+    "gift": "herbal-recipe-guide",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
+    "gift": "history-of-a-master",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
     "gift": "home-recipe-book",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
+    "gift": "horse-grooming-kit",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
+    "gift": "jade-panther-figure",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
+    "gift": "kitten-figurine",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
     "character": "orchel",
     "gift": "outdoor-cooking-set",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
+    "gift": "poems-of-the-greats",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
     "character": "orchel",
     "gift": "portrait-of-yu-phas",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -6358,9 +6786,65 @@
   },
   {
     "character": "orchel",
+    "gift": "school-scandal",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
     "gift": "shield-portrait",
     "sources": [
       "raiderking-2026-09-28"
+    ]
+  },
+  {
+    "character": "orchel",
+    "gift": "strong-seasonings",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
+    "gift": "tales-of-adventure",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
+    "gift": "tales-of-the-arena",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
+    "gift": "the-knights-suitors",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
+    "gift": "the-works-of-dante",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
+    "gift": "traders-handbook",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "orchel",
+    "gift": "village-recipes",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -6508,7 +6992,22 @@
     "character": "peter",
     "gift": "arrowhead-gem",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "peter",
+    "gift": "candy-crystals",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "peter",
+    "gift": "ceremonial-spear",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -6521,6 +7020,13 @@
   {
     "character": "peter",
     "gift": "dagda-beard-grass",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "peter",
+    "gift": "decorative-arrows",
     "sources": [
       "game8-gifts"
     ]
@@ -6542,6 +7048,13 @@
   {
     "character": "peter",
     "gift": "ginji-cervi",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "peter",
+    "gift": "history-of-a-master",
     "sources": [
       "game8-gifts"
     ]
@@ -6577,6 +7090,13 @@
   {
     "character": "peter",
     "gift": "pastry-cookbook",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "peter",
+    "gift": "portrait-of-yu-phas",
     "sources": [
       "game8-gifts"
     ]
@@ -6654,6 +7174,13 @@
   {
     "character": "seteth",
     "gift": "eastern-tea-leaves",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "seteth",
+    "gift": "everyday-scenes",
     "sources": [
       "game8-gifts"
     ]
@@ -6858,7 +7385,15 @@
     "character": "simon",
     "gift": "arrowhead-gem",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "simon",
+    "gift": "ceremonial-spear",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -6885,6 +7420,13 @@
   },
   {
     "character": "simon",
+    "gift": "history-of-a-master",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "simon",
     "gift": "joint-relief-gloves",
     "sources": [
       "raiderking-2026-09-28"
@@ -6892,9 +7434,17 @@
   },
   {
     "character": "simon",
+    "gift": "pickled-vegetables",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "simon",
     "gift": "portrait-of-yu-phas",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -6908,7 +7458,8 @@
     "character": "simon",
     "gift": "rancid-garum",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -6916,6 +7467,13 @@
     "gift": "shield-portrait",
     "sources": [
       "raiderking-2026-09-28"
+    ]
+  },
+  {
+    "character": "simon",
+    "gift": "solomon-coffee",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -6973,7 +7531,15 @@
     "character": "sirocco",
     "gift": "history-of-a-master",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "sirocco",
+    "gift": "jade-ghosh",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -7028,9 +7594,17 @@
   },
   {
     "character": "sirocco",
+    "gift": "poems-of-the-greats",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "sirocco",
     "gift": "portrait-of-yu-phas",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -7066,6 +7640,13 @@
     "gift": "tales-of-adventure",
     "sources": [
       "raiderking-2026-09-28"
+    ]
+  },
+  {
+    "character": "sirocco",
+    "gift": "tome-from-away",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -7273,9 +7854,38 @@
   },
   {
     "character": "talimun",
+    "gift": "arrowhead-gem",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "talimun",
+    "gift": "blue-rose-bouquet",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "talimun",
     "gift": "ceremonial-spear",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "talimun",
+    "gift": "crimson-bull-figure",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "talimun",
+    "gift": "crimson-ghosh",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -7287,9 +7897,45 @@
   },
   {
     "character": "talimun",
+    "gift": "history-of-a-master",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "talimun",
+    "gift": "jade-panther-figure",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "talimun",
+    "gift": "portrait-of-yu-phas",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "talimun",
+    "gift": "secret-ghosh",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "talimun",
+    "gift": "southern-ghosh",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "talimun",
     "gift": "volcano-ghosh",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -7382,7 +8028,8 @@
     "character": "tialla",
     "gift": "board-game-tactics",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -7431,7 +8078,8 @@
     "character": "tialla",
     "gift": "eastern-board-games",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -7444,6 +8092,13 @@
   {
     "character": "tialla",
     "gift": "eastern-tea-leaves",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "tialla",
+    "gift": "everyday-scenes",
     "sources": [
       "game8-gifts"
     ]
@@ -7476,6 +8131,13 @@
     "gift": "herbal-recipe-guide",
     "sources": [
       "raiderking-2026-09-28",
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "tialla",
+    "gift": "history-of-a-master",
+    "sources": [
       "game8-gifts"
     ]
   },
@@ -7520,7 +8182,8 @@
     "character": "tialla",
     "gift": "morfis-almanac",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -7570,7 +8233,8 @@
     "character": "tialla",
     "gift": "portrait-of-yu-phas",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -7592,6 +8256,13 @@
     "gift": "pure-white-cervi",
     "sources": [
       "raiderking-2026-09-28"
+    ]
+  },
+  {
+    "character": "tialla",
+    "gift": "school-scandal",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -7631,9 +8302,17 @@
   },
   {
     "character": "tialla",
+    "gift": "solomon-coffee",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "tialla",
     "gift": "spirit-board-game",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -7676,9 +8355,17 @@
   },
   {
     "character": "tialla",
+    "gift": "tales-of-the-arena",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "tialla",
     "gift": "the-knights-suitors",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -7699,7 +8386,8 @@
     "character": "tialla",
     "gift": "tome-from-away",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -7961,9 +8649,17 @@
   },
   {
     "character": "ultand",
+    "gift": "candy-crystals",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "ultand",
     "gift": "ceremonial-spear",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -8039,6 +8735,13 @@
   },
   {
     "character": "ultand",
+    "gift": "full-sewing-kit",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "ultand",
     "gift": "garum",
     "sources": [
       "raiderking-2026-09-28",
@@ -8050,6 +8753,13 @@
     "gift": "herbal-recipe-guide",
     "sources": [
       "raiderking-2026-09-28"
+    ]
+  },
+  {
+    "character": "ultand",
+    "gift": "history-of-a-master",
+    "sources": [
+      "game8-gifts"
     ]
   },
   {
@@ -8089,9 +8799,17 @@
   },
   {
     "character": "ultand",
+    "gift": "legendary-garum",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "ultand",
     "gift": "morfis-almanac",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -8105,7 +8823,8 @@
     "character": "ultand",
     "gift": "niiza-garum",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -8141,14 +8860,16 @@
     "character": "ultand",
     "gift": "portrait-of-yu-phas",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
     "character": "ultand",
     "gift": "rancid-garum",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
@@ -8337,6 +9058,13 @@
   },
   {
     "character": "ursula",
+    "gift": "history-of-a-master",
+    "sources": [
+      "game8-gifts"
+    ]
+  },
+  {
+    "character": "ursula",
     "gift": "kitten-figurine",
     "sources": [
       "game8-gifts"
@@ -8367,14 +9095,16 @@
     "character": "ursula",
     "gift": "portrait-of-yu-phas",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {
     "character": "ursula",
     "gift": "select-coffee",
     "sources": [
-      "raiderking-2026-09-28"
+      "raiderking-2026-09-28",
+      "game8-gifts"
     ]
   },
   {

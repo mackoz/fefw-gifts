@@ -104,10 +104,10 @@ convenience layer over it, and the site works completely without it.
   Weave*, Polygon (retrieved 2026-09-20; Sept. 21 update retrieved 2026-09-23).
 - *List of All Items*, Game8 (retrieved 2026-09-23).
 - Melissa Oprea, *Fire Emblem: Fortune's Weave - All Loved Gifts Guide*, Raider
-  King (retrieved 2026-09-28;
+  King (retrieved 2026-10-12;
   https://raiderking.com/fire-emblem-fortunes-weave-all-loved-gifts-guide/).
   Supplies item-level guide picks (predictions only).
-- *Gift Giving Guide*, Game8 (retrieved 2026-09-23;
+- *Gift Giving Guide*, Game8 (retrieved 2026-10-12;
   https://game8.co/games/Fire-Emblem-Fortunes-Weave/archives/623690). Supplies
   item-level guide picks (predictions only).
 
