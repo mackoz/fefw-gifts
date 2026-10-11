@@ -216,3 +216,78 @@ test('the reaction vocabulary has one definition', () => {
   assert.deepEqual(REACTIONS, ['none', 'slight', 'liked', 'loved', 'favorite']);
   assert.deepEqual(POSITIVE_REACTIONS, REACTIONS.filter((r) => r !== 'none'));
 });
+
+// --- Item-level guide picks: a prediction about one gift, never a result ---
+
+const PICK = ['raiderking-2026-09-28', 'game8-gifts'];
+const pickOf = (over = {}) => deriveConfidence({ character: character(), gift: gift(), observations: [], guidePick: PICK, ...over });
+
+test('a guide pick predicts positively where there is no category link, sourced to its first source', () => {
+  const c = pickOf();
+  assert.equal(c.state, 'PREDICTED');
+  assert.equal(c.predicted, 'positive');
+  assert.equal(c.provenance, 'guide');
+  assert.equal(c.source, 'raiderking-2026-09-28');
+});
+
+test('a guide pick predicts a gift that has no category at all', () => {
+  const c = pickOf({ gift: gift({ category: null }) });
+  assert.equal(c.state, 'PREDICTED');
+  assert.equal(c.predicted, 'positive');
+});
+
+test('a guide pick replaces a stored guide link, taking the pick\'s source', () => {
+  const character_ = character({ categories: { books: { state: 'guide', source: 'polygon-2026-09-17' } } });
+  const c = pickOf({ character: character_ });
+  assert.equal(c.provenance, 'guide');
+  assert.equal(c.source, 'raiderking-2026-09-28');
+});
+
+test('a guide pick replaces a refuted link and predicts positively', () => {
+  const character_ = character({ categories: { books: { state: 'refuted', source: null } } });
+  const c = pickOf({ character: character_ });
+  assert.equal(c.state, 'PREDICTED');
+  assert.equal(c.predicted, 'positive');
+  assert.equal(c.provenance, 'guide');
+});
+
+test('a guide pick loses to a profile link', () => {
+  const character_ = character({ categories: { books: { state: 'profile', source: null } } });
+  const c = pickOf({ character: character_ });
+  assert.equal(c.provenance, 'profile');
+  assert.equal(c.source, null);
+});
+
+test('a guide pick loses to a discovered link', () => {
+  const character_ = character({ categories: { books: { state: 'discovered', source: null } } });
+  const c = pickOf({ character: character_ });
+  assert.equal(c.provenance, 'discovered');
+});
+
+test('a guide pick loses to a play link', () => {
+  const c = pickOf({ lovedCategories: new Set(['books']) });
+  assert.equal(c.provenance, 'discovered');
+  assert.equal(c.source, null);
+});
+
+test('an approved observation outranks a guide pick', () => {
+  const c = pickOf({ observations: [observation({ reaction: 'none' })] });
+  assert.equal(c.state, 'CONFIRMED');
+  assert.equal(c.reaction, 'none');
+  assert.equal(c.isException, true);
+});
+
+test('a pending report outranks a guide pick and stays unconfirmed', () => {
+  const c = pickOf({ pending: [{ id: 'r1', reaction: 'loved' }] });
+  assert.equal(c.state, 'PENDING');
+  assert.equal(c.reaction, null);
+});
+
+test('an empty or absent guide pick changes nothing', () => {
+  for (const guidePick of [undefined, []]) {
+    const c = pickOf({ guidePick });
+    assert.equal(c.state, 'UNTESTED');
+    assert.equal(c.predicted, null);
+    assert.equal(c.provenance, null);
+  }
+});

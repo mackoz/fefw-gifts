@@ -46,6 +46,8 @@ Everything lives under `data/` as hand-edited, validated JSON:
 - `data/observations.json` — anonymous player results, never guide data.
   Append-only, and carries no reporter, name, email, IP, or other identifying field.
   This is enforced by the validator, not just a convention.
+- `data/guide-gifts.json` — item-level guide picks: a published guide names this
+  gift for this character (predictions, never results).
 - `data/sources.json` — the published guides and references this project
   credits and cites.
 
@@ -101,6 +103,13 @@ convenience layer over it, and the site works completely without it.
 - Josh Broadwell, *Best gifts for each character in Fire Emblem: Fortune's
   Weave*, Polygon (retrieved 2026-09-20; Sept. 21 update retrieved 2026-09-23).
 - *List of All Items*, Game8 (retrieved 2026-09-23).
+- Melissa Oprea, *Fire Emblem: Fortune's Weave - All Loved Gifts Guide*, Raider
+  King (retrieved 2026-09-28;
+  https://raiderking.com/fire-emblem-fortunes-weave-all-loved-gifts-guide/).
+  Supplies item-level guide picks (predictions only).
+- *Gift Giving Guide*, Game8 (retrieved 2026-09-23;
+  https://game8.co/games/Fire-Emblem-Fortunes-Weave/archives/623690). Supplies
+  item-level guide picks (predictions only).
 
 Full citations, including URLs and retrieval dates, are recorded in
 `data/sources.json`. Guide-derived category predictions always carry their

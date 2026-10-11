@@ -594,3 +594,53 @@ test('two bad traits on one character are each reported at their own position', 
     'character c1: traits[1]: text must be a non-empty string',
   ]);
 });
+
+// --- guide-gifts: item-level picks are predictions, never results --------
+
+const withPicks = (rows) => {
+  const d = base();
+  d.gifts.push(gift());
+  d.characters.push(character(), character({ id: 'npc', giftable: false }));
+  d['guide-gifts'] = rows;
+  return d;
+};
+const goodPick = (over = {}) => ({ character: 'c1', gift: 'g1', sources: ['s1'], ...over });
+
+test('a good guide pick validates, and a dataset without the file does too', () => {
+  assert.deepEqual(validate(withPicks([goodPick()])).errors, []);
+  assert.deepEqual(validate(base()).errors, []);
+});
+
+for (const [label, row, pattern] of [
+  ['an unknown character', goodPick({ character: 'ghost' }), /unknown character: ghost/],
+  ['a non-giftable character', goodPick({ character: 'npc' }), /not giftable/],
+  ['an unknown gift', goodPick({ gift: 'ghost' }), /unknown gift: ghost/],
+  ['an unknown source', goodPick({ sources: ['nope'] }), /unknown source: nope/],
+  ['an empty sources list', goodPick({ sources: [] }), /sources must be a non-empty array/],
+  ['a missing sources list', { character: 'c1', gift: 'g1' }, /sources must be a non-empty array/],
+  ['a duplicate source', goodPick({ sources: ['s1', 's1'] }), /duplicate source: s1/],
+  ['a reaction key', goodPick({ reaction: 'loved' }), /unexpected field: reaction/],
+]) {
+  test(`a guide pick with ${label} is rejected`, () => {
+    const { errors } = validate(withPicks([row]));
+    assert.equal(errors.length, 1, errors.join('; '));
+    assert.match(errors[0], pattern);
+  });
+}
+
+test('a duplicate guide pick pair is rejected', () => {
+  const { errors } = validate(withPicks([goodPick(), goodPick()]));
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /duplicate pick: c1 \/ g1/);
+});
+
+test('a non-array guide-gifts is rejected', () => {
+  const d = base();
+  d['guide-gifts'] = 7;
+  assert.deepEqual(validate(d).errors, ['guide-gifts must be an array']);
+});
+
+test('the real guide-gifts file validates', async () => {
+  const { loadDataset } = await import('../scripts/validate.mjs');
+  assert.deepEqual(validate(await loadDataset('data')).errors, []);
+});

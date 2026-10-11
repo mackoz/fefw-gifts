@@ -26,6 +26,9 @@
   link imported from a published guide has `state: "guide"` and a non-null
   `source` that exists in `data/sources.json`, so it can be audited or removed
   wholesale.
+  Item-level guide picks in `data/guide-gifts.json` always name a source and
+  never carry a reaction; they predict, they never confirm, and they never make
+  a category chip.
 - **Run `npm test` and `npm run validate` before committing.** Both must pass
   cleanly (no stray warnings) before any change lands.
 - **Votes never reach the published site.** `GET /pending` must not select or

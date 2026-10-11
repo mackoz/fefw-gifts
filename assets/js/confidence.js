@@ -29,24 +29,31 @@ function rarityMismatches(character, gift) {
   return RARITY_ORDER[gift.rarity] < min;
 }
 
-// States a stored link takes on when a loved category found through play
-// should take its place: absent entirely, a guide's guess, or a refuted one.
-// A `profile` or `discovered` link is a stronger claim already and is kept.
+// States a stored link takes on when a stronger signal should take its
+// place: absent entirely, a guide's guess, or a refuted one. A `profile` or
+// `discovered` link is a stronger claim already and is kept.
 const OVERRIDABLE_LINK_STATES = new Set([undefined, 'guide', 'refuted']);
 
-export function deriveConfidence({ character, gift, observations, pending = [], lovedCategories }) {
+// Which link a pair's prediction rests on, in order (it matters only for a
+// pair with no approved observation and no pending report):
+//   1. a stored `profile` or `discovered` category link is kept;
+//   2. a loved category found through play -- a "play link" -- gives
+//      `discovered`;
+//   3. a guide pick (a published guide names this very item for this
+//      character) gives `guide`, sourced to the pick's first source;
+//   4. otherwise the stored `guide` or `refuted` link, or none.
+// Steps 2 and 3 only replace a missing, `guide` or `refuted` link, and a
+// guide pick never outranks a play link. `lovedCategories` is a Set and
+// `guidePick` an array of source ids, both derived by the caller (buildIndex);
+// this function only consults them.
+export function deriveConfidence({ character, gift, observations, pending = [], lovedCategories, guidePick }) {
   const storedLink = gift.category ? character.categories?.[gift.category] ?? null : null;
 
-  // A category the character has loved through play predicts the rest of
-  // that category -- a "play link" -- in place of a missing/guide/refuted
-  // stored link. It never overrides a `profile` or `discovered` link, and a
-  // gift with no category can never have one. `lovedCategories` is a Set the
-  // caller derives (buildIndex does the deriving from approved observations);
-  // this function only consults it.
   const isLovedCategory = Boolean(gift.category) && (lovedCategories?.has(gift.category) ?? false);
-  const link = isLovedCategory && OVERRIDABLE_LINK_STATES.has(storedLink?.state)
-    ? { state: 'discovered', source: null }
-    : storedLink;
+  const overridable = OVERRIDABLE_LINK_STATES.has(storedLink?.state);
+  let link = storedLink;
+  if (isLovedCategory && overridable) link = { state: 'discovered', source: null };
+  else if (guidePick?.length > 0 && overridable) link = { state: 'guide', source: guidePick[0] };
 
   const predicted = link ? (link.state === 'refuted' ? 'negative' : 'positive') : null;
 
@@ -71,8 +78,9 @@ export function deriveConfidence({ character, gift, observations, pending = [], 
       result.state = 'PENDING';
       return result;
     }
-    // A prediction exists only when a category link does. Absence of a link is
-    // never a negative -- see the spec's "Pair confidence" section.
+    // A prediction exists only when a link (category or guide pick) does.
+    // Absence of a link is never a negative -- see the spec's "Pair
+    // confidence" section.
     if (link) result.state = 'PREDICTED';
     return result;
   }

@@ -1,7 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const FILES = ['categories', 'gifts', 'characters', 'observations', 'sources'];
+// Files whose every element is an entity with an `id`.
+const ENTITY_FILES = ['categories', 'gifts', 'characters', 'observations', 'sources'];
+// `guide-gifts` rows are (character, gift) pairs with no id of their own. A
+// dataset that omits it is treated as empty, so fixtures need not carry one.
+const FILES = [...ENTITY_FILES, 'guide-gifts'];
 
 // Fields that would identify a contributor. Observations are anonymous by design;
 // see the spec's "Anonymity and abuse" section.
@@ -56,6 +60,7 @@ export function validate(dataset) {
   // unrelated error elsewhere for a readable one now. That trade is
   // deliberate -- do not "fix" this into a fall-through.
   for (const name of FILES) {
+    if (name === 'guide-gifts' && dataset[name] === undefined) continue;
     if (!Array.isArray(dataset[name])) errors.push(`${name} must be an array`);
   }
   if (errors.length) return { errors };
@@ -67,7 +72,7 @@ export function validate(dataset) {
   // to be fixed first. Nothing is copied out: the second return below stops
   // before any loop reads a collection, so every array a loop below actually
   // sees only ever contains elements that passed both checks here.
-  for (const name of FILES) {
+  for (const name of ENTITY_FILES) {
     dataset[name].forEach((item, i) => {
       if (item === null || typeof item !== 'object' || Array.isArray(item)) {
         errors.push(`${name}[${i}] must be an object`);
@@ -199,6 +204,39 @@ export function validate(dataset) {
     else if (!ch.giftable) errors.push(`observation ${o.id}: character ${o.character} is not giftable`);
     if (!REACTIONS.has(o.reaction)) errors.push(`observation ${o.id}: invalid reaction: ${o.reaction}`);
   }
+
+  // Item-level guide picks: a prediction that a guide names one gift for one
+  // character. Never a result, so a row carries no reaction -- exactly these
+  // three keys. See the spec's "Pair confidence" section.
+  const PICK_KEYS = ['character', 'gift', 'sources'];
+  const seenPicks = new Set();
+  (dataset['guide-gifts'] ?? []).forEach((row, i) => {
+    const where = `guide-gifts[${i}]`;
+    if (row === null || typeof row !== 'object' || Array.isArray(row)) {
+      errors.push(`${where} must be an object`);
+      return;
+    }
+    for (const key of Object.keys(row)) {
+      if (!PICK_KEYS.includes(key)) errors.push(`${where}: unexpected field: ${key}`);
+    }
+    const ch = charById.get(row.character);
+    if (!ch) errors.push(`${where}: unknown character: ${row.character}`);
+    else if (!ch.giftable) errors.push(`${where}: character ${row.character} is not giftable`);
+    if (!giftIds.has(row.gift)) errors.push(`${where}: unknown gift: ${row.gift}`);
+    if (!Array.isArray(row.sources) || row.sources.length === 0) {
+      errors.push(`${where}: sources must be a non-empty array`);
+    } else {
+      const seenSources = new Set();
+      for (const s of row.sources) {
+        if (!sourceIds.has(s)) errors.push(`${where}: unknown source: ${s}`);
+        if (seenSources.has(s)) errors.push(`${where}: duplicate source: ${s}`);
+        seenSources.add(s);
+      }
+    }
+    const key = `${row.character}\u0000${row.gift}`;
+    if (seenPicks.has(key)) errors.push(`${where}: duplicate pick: ${row.character} / ${row.gift}`);
+    seenPicks.add(key);
+  });
 
   return { errors };
 }

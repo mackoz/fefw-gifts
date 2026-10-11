@@ -1,7 +1,7 @@
 import { deriveConfidence } from './confidence.js';
 import { buildPendingIndex } from './overlay.js';
 
-const FILES = ['categories', 'gifts', 'characters', 'observations', 'sources'];
+const FILES = ['categories', 'gifts', 'characters', 'observations', 'sources', 'guide-gifts'];
 
 export async function fetchDataset(baseUrl = './data') {
   const entries = await Promise.all(
@@ -44,6 +44,15 @@ export function buildIndex(dataset, pending = []) {
     lovedByCharacter.get(characterId).add(category);
   }
 
+  // Item-level guide picks: characterId -> giftId -> the sources that name it.
+  // Predictions about one item only -- never a category link, never a chip.
+  // A dataset without the file has none.
+  const guidePicksByCharacter = new Map();
+  for (const row of dataset['guide-gifts'] ?? []) {
+    if (!guidePicksByCharacter.has(row.character)) guidePicksByCharacter.set(row.character, new Map());
+    guidePicksByCharacter.get(row.character).set(row.gift, row.sources);
+  }
+
   const overlay = buildPendingIndex(pending);
 
   const index = {
@@ -54,6 +63,7 @@ export function buildIndex(dataset, pending = []) {
     bySourceId: new Map(sources.map((s) => [s.id, s])),
     observationsFor: (characterId, giftId) => byObsKey.get(`${characterId}\u0000${giftId}`) ?? [],
     pendingFor: overlay.pendingFor,
+    guidePicksByCharacter,
   };
 
   index.confidenceFor = (characterId, giftId) => deriveConfidence({
@@ -62,6 +72,7 @@ export function buildIndex(dataset, pending = []) {
     observations: index.observationsFor(characterId, giftId),
     pending: overlay.pendingFor(characterId, giftId),
     lovedCategories: lovedByCharacter.get(characterId),
+    guidePick: guidePicksByCharacter.get(characterId)?.get(giftId),
   });
 
   return index;

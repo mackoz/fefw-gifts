@@ -97,3 +97,38 @@ test('buildIndex never writes a play link back into character.categories', () =>
   idx.confidenceFor('c1', 'a');
   assert.deepEqual(idx.byCharacterId.get('c1').categories, before);
 });
+
+// Item-level guide picks: buildIndex passes them to deriveConfidence, and they
+// are about one item, so they never touch the character's stored categories.
+test('buildIndex passes a guide pick through as a guide-sourced prediction', () => {
+  const d = makeDataset({
+    categories: [category()],
+    gifts: [gift({ id: 'a', name: 'A' }), gift({ id: 'b', name: 'B' })],
+    characters: [character()],
+    sources: [{ id: 's1', publisher: 'P' }],
+    'guide-gifts': [{ character: 'c1', gift: 'a', sources: ['s1'] }],
+  });
+  const idx = buildIndex(d);
+  assert.deepEqual(idx.guidePicksByCharacter.get('c1').get('a'), ['s1']);
+  const a = idx.confidenceFor('c1', 'a');
+  assert.equal(a.state, 'PREDICTED');
+  assert.equal(a.provenance, 'guide');
+  assert.equal(a.source, 's1');
+  assert.equal(idx.confidenceFor('c1', 'b').state, 'UNTESTED');
+  assert.deepEqual(idx.byCharacterId.get('c1').categories, {});
+});
+
+test('fetchDataset requests guide-gifts.json and returns its rows', async (t) => {
+  const original = globalThis.fetch;
+  t.after(() => { globalThis.fetch = original; });
+  const rows = [{ character: 'c1', gift: 'g1', sources: ['s1'] }];
+  const requested = [];
+  globalThis.fetch = async (url) => {
+    requested.push(url);
+    return { ok: true, status: 200, json: async () => (url.endsWith('/guide-gifts.json') ? rows : []) };
+  };
+  const { fetchDataset } = await import('../assets/js/data.js');
+  const loaded = await fetchDataset('./base');
+  assert.ok(requested.includes('./base/guide-gifts.json'));
+  assert.deepEqual(loaded['guide-gifts'], rows);
+});
