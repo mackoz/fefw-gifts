@@ -8,7 +8,7 @@ import {
 import { DEFAULT_FILTERS } from '../assets/js/filters.js';
 import { giftRows, giftIndexModel, missingItemButton } from '../assets/js/views/gift.js';
 import { loadDataset } from '../scripts/validate.mjs';
-import { category, gift, character, source } from '../test-support/fixtures.mjs';
+import { category, gift, character, observation, source } from '../test-support/fixtures.mjs';
 
 // The character most tests observe: one id, one name, everything else default.
 const tested = (over = {}) => character({ id: 'p1', name: 'P', ...over });
@@ -2104,7 +2104,6 @@ const itemsDataset = (over = {}) => ({
   'guide-gifts': [],
   ...over,
 });
-const obs = (id, giftId, reaction) => ({ id, character: 'c1', gift: giftId, reaction, date: '2026-09-21' });
 const firstEntry = (idx) => characterIndexModel(idx, DEFAULT_FILTERS, '')[0];
 
 test('loved lists only confirmed loved gifts, not favourites, lesser results or pending ones, rarest first then by name', () => {
@@ -2123,10 +2122,10 @@ test('loved lists only confirmed loved gifts, not favourites, lesser results or 
       gift({ id: 'co', name: 'Co' }),
     ],
     observations: [
-      obs('o1', 'cb', 'loved'), obs('o2', 'ca', 'loved'), obs('o3', 'r', 'loved'), obs('o4', 'u', 'loved'),
-      obs('o5', 'nr', 'loved'), obs('o6', 'fav', 'favorite'), obs('o7', 'li', 'liked'),
-      obs('o8', 'sl', 'slight'), obs('o9', 'no', 'none'),
-      obs('o10', 'co', 'loved'), obs('o11', 'co', 'none'),
+      observation({ id: 'o1', gift: 'cb', reaction: 'loved' }), observation({ id: 'o2', gift: 'ca', reaction: 'loved' }), observation({ id: 'o3', gift: 'r', reaction: 'loved' }), observation({ id: 'o4', gift: 'u', reaction: 'loved' }),
+      observation({ id: 'o5', gift: 'nr', reaction: 'loved' }), observation({ id: 'o6', gift: 'fav', reaction: 'favorite' }), observation({ id: 'o7', gift: 'li', reaction: 'liked' }),
+      observation({ id: 'o8', gift: 'sl', reaction: 'slight' }), observation({ id: 'o9', gift: 'no', reaction: 'none' }),
+      observation({ id: 'o10', gift: 'co', reaction: 'loved' }), observation({ id: 'o11', gift: 'co', reaction: 'none' }),
     ],
   }), [{ id: 'p1', character: 'c1', gift: 'pe', reaction: 'loved' }]);
   assert.deepEqual(firstEntry(idx).loved.map((g) => g.id), ['r', 'u', 'ca', 'cb', 'nr']);
@@ -2136,7 +2135,7 @@ test('a gift that is both a declared favourite and loved is listed once, as a fa
   const idx = buildIndex(itemsDataset({
     gifts: [gift({ id: 'a', name: 'A' })],
     characters: [character({ favorites: ['a'] })],
-    observations: [obs('o1', 'a', 'loved')],
+    observations: [observation({ id: 'o1', gift: 'a', reaction: 'loved' })],
   }));
   const entry = firstEntry(idx);
   assert.deepEqual(entry.favourites.map((g) => g.id), ['a']);
@@ -2156,7 +2155,7 @@ test('worthTrying lists untested positive guide picks only, by sources then rari
       gift({ id: 'pend', name: 'Pp' }),
     ],
     characters: [character({ categories: { tea: { state: 'discovered', source: null } } })],
-    observations: [obs('o1', 'tested', 'liked')],
+    observations: [observation({ id: 'o1', gift: 'tested', reaction: 'liked' })],
     'guide-gifts': [
       { character: 'c1', gift: 'two', sources: ['s1', 's2'] },
       { character: 'c1', gift: 'rare', sources: ['s1'] },
@@ -2176,11 +2175,53 @@ test('worthTrying lists untested positive guide picks only, by sources then rari
 
 test('worthTrying never lists a category-only prediction', () => {
   const idx = buildIndex(itemsDataset({
-    gifts: [gift({ id: 'a', name: 'A' })],
-    characters: [character({ categories: { books: { state: 'profile', source: null } } })],
+    categories: [category(), category({ id: 'tea', label: 'Tea' })],
+    gifts: [gift({ id: 'pick', name: 'Pick' }), gift({ id: 'catonly', name: 'Catonly', category: 'tea' })],
+    characters: [character({ categories: { tea: { state: 'guide', source: 'polygon-1' } } })],
+    sources: [source()],
+    'guide-gifts': [{ character: 'c1', gift: 'pick', sources: ['polygon-1'] }],
   }));
-  assert.equal(idx.confidenceFor('c1', 'a').state, 'PREDICTED');
-  assert.deepEqual(firstEntry(idx).worthTrying, []);
+  assert.equal(idx.confidenceFor('c1', 'catonly').state, 'PREDICTED');
+  assert.deepEqual(firstEntry(idx).worthTrying.map((g) => g.id), ['pick']);
+});
+
+test('a favourite that is also a guide pick appears only as a favourite', () => {
+  const idx = buildIndex(itemsDataset({
+    gifts: [gift({ id: 'a', name: 'A' }), gift({ id: 'b', name: 'B' })],
+    characters: [character({ favorites: ['a'] })],
+    'guide-gifts': [
+      { character: 'c1', gift: 'a', sources: ['s1'] },
+      { character: 'c1', gift: 'b', sources: ['s1'] },
+    ],
+  }));
+  const entry = firstEntry(idx);
+  assert.deepEqual(entry.favourites.map((g) => g.id), ['a']);
+  assert.deepEqual(entry.worthTrying.map((g) => g.id), ['b']);
+});
+
+test('hiding unconfirmed predictions empties worthTrying and its overflow, and brings the summary back', () => {
+  const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+  const idx = buildIndex(itemsDataset({
+    gifts: ids.map((id) => gift({ id, name: id.toUpperCase() })),
+    'guide-gifts': ids.map((id) => ({ character: 'c1', gift: id, sources: ['s1'] })),
+  }));
+  const filters = { ...DEFAULT_FILTERS, hideUnconfirmed: true };
+  const [entry] = characterIndexModel(idx, filters, '');
+  assert.deepEqual(entry.worthTrying, []);
+  assert.equal(entry.worthTryingMore, 0);
+  const container = renderView(characterView.render, idx, { filters, search: '', submissionsEnabled: false });
+  assert.equal(findFirst(container, (n) => n.className === 'tessera-more'), undefined);
+  assert.equal(findFirst(container, (n) => n.className === 'tessera-summary').textContent, '7 worth trying');
+  assert.equal(firstEntry(idx).worthTrying.length, 6, 'with the toggle off the picks show');
+});
+
+test('hiding unconfirmed predictions keeps loved items', () => {
+  const idx = buildIndex(itemsDataset({
+    gifts: [gift({ id: 'l', name: 'Lovely' })],
+    observations: [observation({ id: 'o1', gift: 'l', reaction: 'loved' })],
+  }));
+  const [entry] = characterIndexModel(idx, { ...DEFAULT_FILTERS, hideUnconfirmed: true }, '');
+  assert.deepEqual(entry.loved.map((g) => g.id), ['l']);
 });
 
 test('worthTrying stops at the limit and worthTryingMore counts the rest', () => {
@@ -2218,7 +2259,7 @@ test('the index card names loved and worth-trying items, with +N more only when 
   const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
   const idx = buildIndex(itemsDataset({
     gifts: [gift({ id: 'l', name: 'Lovely' }), ...ids.map((id) => gift({ id, name: id.toUpperCase() }))],
-    observations: [obs('o1', 'l', 'loved')],
+    observations: [observation({ id: 'o1', gift: 'l', reaction: 'loved' })],
     'guide-gifts': ids.map((id) => ({ character: 'c1', gift: id, sources: ['s1'] })),
   }));
   const card = cardOf(idx);
@@ -2226,6 +2267,7 @@ test('the index card names loved and worth-trying items, with +N more only when 
   assert.equal(card.worth.children[1], ' A, B, C, D, E, F');
   assert.equal(card.more.textContent, '+1 more');
   assert.equal(card.more.href, '#/character/c1');
+  assert.equal(card.more.getAttribute('aria-label'), '1 more worth trying for C');
   assert.equal(card.summary, undefined);
 
   const few = cardOf(buildIndex(itemsDataset({
@@ -2235,12 +2277,13 @@ test('the index card names loved and worth-trying items, with +N more only when 
   assert.equal(few.worth.children[1], ' A');
   assert.equal(few.more, undefined);
   assert.equal(few.loved, undefined);
+  assert.equal(few.summary, undefined, 'worth-trying items alone also replace the summary');
 });
 
 test('the index card keeps its summary line only when it names no items', () => {
   const idx = buildIndex(itemsDataset({
     gifts: [gift({ id: 'a', name: 'A' })],
-    observations: [obs('o1', 'a', 'liked')],
+    observations: [observation({ id: 'o1', gift: 'a', reaction: 'liked' })],
   }));
   const card = cardOf(idx);
   assert.equal(card.loved, undefined);

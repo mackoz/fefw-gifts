@@ -111,13 +111,14 @@ const byRarityThenName = (a, b) => rarityRank(b) - rarityRank(a) || a.name.local
 
 // Items a character has been seen to love, minus favourites (those show as
 // their own chips, and a gift is never listed twice).
-function lovedGifts(index, character, favourites) {
+function lovedGifts(index, character, favourites, filters) {
   const favouriteIds = new Set(favourites.map((gift) => gift.id));
   return index.gifts
     .filter((gift) => {
       if (favouriteIds.has(gift.id)) return false;
       const confidence = index.confidenceFor(character.id, gift.id);
-      return confidence.state === 'CONFIRMED' && confidence.reaction === 'loved';
+      return passesFilters(confidence, filters)
+        && confidence.state === 'CONFIRMED' && confidence.reaction === 'loved';
     })
     .sort(byRarityThenName);
 }
@@ -126,14 +127,18 @@ function lovedGifts(index, character, favourites) {
 // confirmation. Only PREDICTED + positive qualifies, so a tested, pending or
 // contested pair never shows here. A pick whose prediction is a play link
 // still counts -- the guide does name it.
-function guidePicksWorthTrying(index, character) {
+// Filtered like the character page's rows, so "Hide unconfirmed predictions"
+// empties the list the same way it empties the page the "+N more" link opens.
+// A favourite is never repeated here, as in lovedGifts.
+function guidePicksWorthTrying(index, character, favourites, filters) {
   const picks = index.guidePicksByCharacter.get(character.id);
   if (!picks) return [];
+  const favouriteIds = new Set(favourites.map((gift) => gift.id));
   return index.gifts
     .filter((gift) => {
-      if (!picks.has(gift.id)) return false;
+      if (!picks.has(gift.id) || favouriteIds.has(gift.id)) return false;
       const confidence = index.confidenceFor(character.id, gift.id);
-      return confidence.state === 'PREDICTED' && confidence.predicted === 'positive';
+      return passesFilters(confidence, filters) && confidence.state === 'PREDICTED' && confidence.predicted === 'positive';
     })
     .sort((a, b) => (picks.get(b.id)?.length ?? 0) - (picks.get(a.id)?.length ?? 0) || byRarityThenName(a, b));
 }
@@ -145,12 +150,12 @@ export function characterIndexModel(index, filters, search) {
     .filter((c) => !search || c.name.toLowerCase().includes(search))
     .map((character) => {
       const favourites = favouriteGifts(index, character);
-      const picks = guidePicksWorthTrying(index, character);
+      const picks = guidePicksWorthTrying(index, character, favourites, filters);
       return {
         character,
         categories: categoryChips(index, character),
         favourites,
-        loved: lovedGifts(index, character, favourites),
+        loved: lovedGifts(index, character, favourites, filters),
         worthTrying: picks.slice(0, CARD_WORTH_TRYING_LIMIT),
         worthTryingMore: Math.max(0, picks.length - CARD_WORTH_TRYING_LIMIT),
         summary: characterSummary(index, character),
@@ -333,6 +338,7 @@ function renderPicker(container, index, state) {
       if (entry.worthTryingMore > 0) {
         const more = el('a', 'tessera-more', `+${entry.worthTryingMore} more`);
         more.href = `#/character/${entry.character.id}`;
+        more.setAttribute('aria-label', `${entry.worthTryingMore} more worth trying for ${entry.character.name}`);
         line.append(' ', more);
       }
       item.append(line);

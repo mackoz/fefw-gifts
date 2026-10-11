@@ -911,16 +911,6 @@ a.chip:hover {
   color: var(--muted);
 }
 
-.tessera-more {
-  font-size: var(--step--1);
-  text-decoration: none;
-}
-
-.tessera-more:hover {
-  text-decoration: underline;
-  text-underline-offset: 0.16em;
-}
-
 /* --- Gift and character tables --- */
 
 .gift-table {
